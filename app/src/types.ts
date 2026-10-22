@@ -1,0 +1,31 @@
+export type Card = {
+  id: string;
+  name: string;
+  cost: string;
+  type: string;
+  subtype?: string;
+  power?: number;
+  toughness?: number;
+  rarity: string;
+  text: string[];
+  flavor?: string;
+};
+
+/** カードID → 枚数 */
+export type DeckCards = Record<string, number>;
+
+export type DeckDraft = {
+  /** 保存済みデッキのID。未保存なら undefined */
+  id?: string;
+  name: string;
+  note: string;
+  cards: DeckCards;
+};
+
+export type SavedDeck = {
+  id: string;
+  name: string;
+  note: string;
+  cards: DeckCards;
+  updatedAt: string;
+};

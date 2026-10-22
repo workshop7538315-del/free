@@ -19,7 +19,16 @@ MTGをベースにした2人対戦のトレーディングカードゲームで�
 | [docs/keywords.md](docs/keywords.md) | このゲーム独自のキーワード能力 |
 | [docs/open-questions.md](docs/open-questions.md) | 未決定事項・検討中の論点 |
 | [cards/README.md](cards/README.md) | カードデータの書式 |
+| [cards/cards.json](cards/cards.json) | 全カードのデータ |
+
+## デッキビルダー
+
+[`app/`](app/) にデッキを組んで保存できるWebアプリがあります。保存先は Supabase です(未設定ならブラウザ内に保存)。動かし方と Supabase の設定は [app/README.md](app/README.md) を見てください。
+
+```bash
+cd app && npm install && npm run dev
+```
 
 ## 現在の状態
 
-ルールの骨組みを作った段階(v0.1)です。数値や細部はテストプレイで調整していきます。
+ルールの骨組み(v0.1)と、サンプルカード35種類、デッキビルダーがある段階です。数値や細部はテストプレイで調整していきます。
