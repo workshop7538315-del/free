@@ -1,4 +1,8 @@
+import type { Ability } from "./game/schema";
+
 export type Card = {
+  /** 効果のデータ(ゲームエンジンが実行する) */
+  abilities?: Ability[];
   id: string;
   name: string;
   cost: string;

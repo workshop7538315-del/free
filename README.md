@@ -18,17 +18,36 @@ MTGをベースにした2人対戦のトレーディングカードゲームで�
 | [docs/colors.md](docs/colors.md) | 各色の役割と得意・苦手 |
 | [docs/keywords.md](docs/keywords.md) | このゲーム独自のキーワード能力 |
 | [docs/open-questions.md](docs/open-questions.md) | 未決定事項・検討中の論点 |
-| [cards/README.md](cards/README.md) | カードデータの書式 |
+| [cards/README.md](cards/README.md) | カードの追加・変更のしかた |
 | [cards/cards.json](cards/cards.json) | 全カードのデータ |
+| [cards/decks.json](cards/decks.json) | スターターデッキ |
 
-## デッキビルダー
+## 遊ぶ
 
-[`app/`](app/) にデッキを組んで保存できるWebアプリがあります。保存先は Supabase です(未設定ならブラウザ内に保存)。動かし方と Supabase の設定は [app/README.md](app/README.md) を見てください。
+**https://workshop7538315-del.github.io/free/**
+
+- **デッキを組む**:166種類のカードからデッキを組み、Supabaseに保存できます(未ログインならブラウザ内に保存)。
+- **対戦する**:CPUと対戦できます。自分で組んだ40枚のデッキか、10種類のスターターデッキを使えます。ルールの処理(マナの支払い、戦闘、効果)は自動です。
+
+手元で動かす場合や Supabase の設定は [app/README.md](app/README.md) を見てください。
 
 ```bash
 cd app && npm install && npm run dev
 ```
 
+## カードの内訳
+
+| 色 | 種類 |
+|---|---|
+| 白 | 25 |
+| 青 | 24 |
+| 黒 | 24 |
+| 赤 | 24 |
+| 緑 | 24 |
+| 欠色 | 16 |
+| 多色(混成・3色を含む) | 29 |
+| **合計** | **166** |
+
 ## 現在の状態
 
-ルールの骨組み(v0.1)と、サンプルカード35種類、デッキビルダーがある段階です。数値や細部はテストプレイで調整していきます。
+ルール v0.1、カード166種類、スターターデッキ10種類、デッキビルダー、CPU対戦がある段階です。CPU同士の自動対戦(`cd app && npm run simulate`)でエラーが出ないこと、全カードが実際に使われることを確認しています。数値や細部はテストプレイで調整していきます。

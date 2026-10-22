@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import rawCards from "../../cards/cards.json";
+import rawDecks from "../../cards/decks.json";
 import type { Card, DeckDraft, SavedDeck } from "./types";
 import { DECK_SIZE, addCard, deckCount } from "./lib/deck";
 import { COLORS } from "./lib/mana";
@@ -11,9 +12,11 @@ import { CardTile } from "./components/CardTile";
 import { DeckPanel } from "./components/DeckPanel";
 import { Account } from "./components/Account";
 import { Filters } from "./components/Filters";
+import { Battle, type StarterDeck } from "./components/battle/Battle";
 
 const CARDS = rawCards as Card[];
 const BY_ID = new Map(CARDS.map((c) => [c.id, c]));
+const STARTERS = rawDecks as unknown as StarterDeck[];
 
 const emptyDraft = (): DeckDraft => ({ name: "新しいデッキ", note: "", cards: {} });
 
@@ -37,6 +40,7 @@ export default function App() {
   const [status, setStatus] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<FilterState>(initialFilters);
+  const [mode, setMode] = useState<"build" | "battle">("build");
 
   // ログイン状態
   useEffect(() => {
@@ -144,9 +148,22 @@ export default function App() {
           </span>
           デッキビルダー
         </h1>
+        <nav className="tabs" aria-label="画面の切り替え">
+          <button type="button" className="tab" aria-current={mode === "build" ? "page" : undefined} onClick={() => setMode("build")}>
+            デッキを組む
+          </button>
+          <button type="button" className="tab" aria-current={mode === "battle" ? "page" : undefined} onClick={() => setMode("battle")}>
+            対戦する
+          </button>
+        </nav>
         <Account session={session} />
       </header>
 
+      {mode === "battle" ? (
+        <main className="battle-wrap">
+          <Battle byId={BY_ID} starters={STARTERS} saved={saved} draft={draft} />
+        </main>
+      ) : (
       <main className="layout">
         <section className="pool" aria-label="カード一覧">
           <Filters value={filters} onChange={setFilters} shown={visible.length} total={CARDS.length} />
@@ -184,13 +201,16 @@ export default function App() {
           status={status}
         />
       </main>
+      )}
 
+      {mode === "build" && (
       <a className="mobile-bar" href="#deck">
         <span>
           <strong>{deckCount(draft.cards)}</strong> / {DECK_SIZE}枚
         </span>
         デッキを見る
       </a>
+      )}
     </div>
   );
 }

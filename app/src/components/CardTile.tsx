@@ -6,7 +6,7 @@ import { KeywordTip } from "./KeywordTip";
 import { splitKeywords } from "../lib/keywords";
 
 /** ルール文中の {5}{G}{G} や {T} を記号に、キーワードを説明つきにして表示する */
-function RulesText({ text }: { text: string }) {
+export function RulesText({ text }: { text: string }) {
   const parts = text.split(/((?:\{[^}]+\})+)/);
   return (
     <>
