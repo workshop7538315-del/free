@@ -2,16 +2,27 @@ import type { Card } from "../types";
 import { MAX_COPIES } from "../lib/deck";
 import { cardColors, colorCategory } from "../lib/mana";
 import { ManaCost } from "./ManaCost";
+import { KeywordTip } from "./KeywordTip";
+import { splitKeywords } from "../lib/keywords";
 
-/** ルール文中の {5}{G}{G} や {T} を記号で表示する */
+/** ルール文中の {5}{G}{G} や {T} を記号に、キーワードを説明つきにして表示する */
 function RulesText({ text }: { text: string }) {
   const parts = text.split(/((?:\{[^}]+\})+)/);
   return (
     <>
       {parts.map((part, i) => {
-        if (!part.startsWith("{")) return part;
-        if (part === "{T}") return <span key={i} className="pip pip-generic" role="img" aria-label="タップ">↷</span>;
-        return <ManaCost key={i} cost={part} size="sm" />;
+        if (part.startsWith("{")) {
+          if (part === "{T}")
+            return (
+              <span key={i} className="pip pip-generic" role="img" aria-label="タップ">
+                ↷
+              </span>
+            );
+          return <ManaCost key={i} cost={part} size="sm" />;
+        }
+        return splitKeywords(part).map((seg, j) =>
+          seg.keyword ? <KeywordTip key={`${i}-${j}`} text={seg.text} keyword={seg.keyword} /> : <span key={`${i}-${j}`}>{seg.text}</span>,
+        );
       })}
     </>
   );

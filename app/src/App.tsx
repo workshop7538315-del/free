@@ -3,17 +3,17 @@ import type { Session } from "@supabase/supabase-js";
 import rawCards from "../../cards/cards.json";
 import type { Card, DeckDraft, SavedDeck } from "./types";
 import { DECK_SIZE, addCard, deckCount } from "./lib/deck";
-import { COLORS, COLOR_NAMES, colorCategory, manaValue, type ColorCategory } from "./lib/mana";
+import { COLORS } from "./lib/mana";
+import { applyFilters, initialFilters, type FilterState } from "./lib/filters";
 import { supabase } from "./lib/supabase";
 import { localStore, supabaseStore, type DeckStore } from "./lib/storage";
 import { CardTile } from "./components/CardTile";
 import { DeckPanel } from "./components/DeckPanel";
 import { Account } from "./components/Account";
+import { Filters } from "./components/Filters";
 
 const CARDS = rawCards as Card[];
 const BY_ID = new Map(CARDS.map((c) => [c.id, c]));
-const CATEGORIES: ColorCategory[] = [...COLORS, "C", "M"];
-const TYPE_FILTERS = ["すべて", "クリーチャー", "インスタント", "ソーサリー", "エンチャント", "アーティファクト"];
 
 const emptyDraft = (): DeckDraft => ({ name: "新しいデッキ", note: "", cards: {} });
 
@@ -36,10 +36,7 @@ export default function App() {
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
-  const [colorFilter, setColorFilter] = useState<Set<ColorCategory>>(new Set());
-  const [typeFilter, setTypeFilter] = useState("すべて");
-  const [query, setQuery] = useState("");
-  const [onlyInDeck, setOnlyInDeck] = useState(false);
+  const [filters, setFilters] = useState<FilterState>(initialFilters);
 
   // ログイン状態
   useEffect(() => {
@@ -134,21 +131,7 @@ export default function App() {
     }
   };
 
-  const toggleColor = (c: ColorCategory) => {
-    const next = new Set(colorFilter);
-    if (next.has(c)) next.delete(c);
-    else next.add(c);
-    setColorFilter(next);
-  };
-
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return CARDS.filter((c) => colorFilter.size === 0 || colorFilter.has(colorCategory(c.cost)))
-      .filter((c) => typeFilter === "すべて" || c.type.includes(typeFilter))
-      .filter((c) => !onlyInDeck || (draft.cards[c.id] ?? 0) > 0)
-      .filter((c) => !q || [c.name, c.type, c.subtype ?? "", ...c.text].join(" ").toLowerCase().includes(q))
-      .sort((a, b) => manaValue(a.cost) - manaValue(b.cost) || a.id.localeCompare(b.id));
-  }, [colorFilter, typeFilter, query, onlyInDeck, draft.cards]);
+  const visible = useMemo(() => applyFilters(CARDS, filters, draft.cards), [filters, draft.cards]);
 
   return (
     <div className="app">
@@ -166,52 +149,7 @@ export default function App() {
 
       <main className="layout">
         <section className="pool" aria-label="カード一覧">
-          <div className="filters">
-            <fieldset className="color-filter">
-              <legend className="visually-hidden">色で絞り込む</legend>
-              {CATEGORIES.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  className={`chip chip-${c}`}
-                  aria-pressed={colorFilter.has(c)}
-                  onClick={() => toggleColor(c)}
-                >
-                  {c === "C" ? (
-                    <span className="pip pip-C" aria-hidden="true">
-                      ◇
-                    </span>
-                  ) : c === "M" ? (
-                    <span className="pip pip-M" aria-hidden="true" />
-                  ) : (
-                    <span className={`pip pip-${c}`} aria-hidden="true" />
-                  )}
-                  {COLOR_NAMES[c]}
-                </button>
-              ))}
-            </fieldset>
-            <div className="filter-row">
-              <label>
-                <span className="visually-hidden">カードタイプ</span>
-                <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-                  {TYPE_FILTERS.map((t) => (
-                    <option key={t}>{t}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="search">
-                <span className="visually-hidden">カード名・テキストで検索</span>
-                <input type="search" placeholder="名前やテキストで検索" value={query} onChange={(e) => setQuery(e.target.value)} />
-              </label>
-              <label className="check">
-                <input type="checkbox" checked={onlyInDeck} onChange={(e) => setOnlyInDeck(e.target.checked)} />
-                デッキに入っているカードだけ
-              </label>
-            </div>
-            <p className="hint">
-              {visible.length} / {CARDS.length}種類
-            </p>
-          </div>
+          <Filters value={filters} onChange={setFilters} shown={visible.length} total={CARDS.length} />
 
           {visible.length === 0 ? (
             <p className="empty">条件に合うカードがありません。絞り込みを外してみてください。</p>

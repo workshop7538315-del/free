@@ -1,0 +1,183 @@
+import { COLORS, COLOR_NAMES, type Color } from "../lib/mana";
+import { KEYWORDS } from "../lib/keywords";
+import { activeRangeCount, emptyRange, initialFilters, isFiltering, type FilterState, type Range } from "../lib/filters";
+
+const TYPE_FILTERS = ["すべて", "クリーチャー", "インスタント", "ソーサリー", "エンチャント", "アーティファクト"];
+
+type Props = {
+  value: FilterState;
+  onChange: (f: FilterState) => void;
+  shown: number;
+  total: number;
+};
+
+export function Filters({ value: f, onChange, shown, total }: Props) {
+  const set = (patch: Partial<FilterState>) => onChange({ ...f, ...patch });
+
+  const toggleColor = (c: Color) =>
+    set({ colors: f.colors.includes(c) ? f.colors.filter((x) => x !== c) : COLORS.filter((x) => x === c || f.colors.includes(x)) });
+
+  const rangeCount = activeRangeCount(f);
+
+  return (
+    <div className="filters">
+      <fieldset className="color-filter">
+        <legend className="visually-hidden">色で絞り込む</legend>
+        {COLORS.map((c) => (
+          <button key={c} type="button" className="chip" aria-pressed={f.colors.includes(c)} onClick={() => toggleColor(c)}>
+            <span className={`pip pip-${c}`} aria-hidden="true" />
+            {COLOR_NAMES[c]}
+          </button>
+        ))}
+        <button
+          type="button"
+          className="chip"
+          aria-pressed={f.colorless}
+          disabled={f.multi}
+          onClick={() => set({ colorless: !f.colorless })}
+        >
+          <span className="pip pip-C" aria-hidden="true">
+            ◇
+          </span>
+          欠色
+        </button>
+        <button
+          type="button"
+          className="chip chip-multi"
+          aria-pressed={f.multi}
+          onClick={() => set({ multi: !f.multi, colorless: false })}
+        >
+          <span className="pip pip-M" aria-hidden="true" />
+          多色
+        </button>
+      </fieldset>
+
+      {f.multi && (
+        <div className="multi-mode">
+          <div className="segmented" role="radiogroup" aria-label="多色の色の合わせ方">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={f.multiMatch === "include"}
+              onClick={() => set({ multiMatch: "include" })}
+            >
+              選んだ色を含む
+            </button>
+            <button type="button" role="radio" aria-checked={f.multiMatch === "exact"} onClick={() => set({ multiMatch: "exact" })}>
+              ちょうど選んだ色
+            </button>
+          </div>
+          <p className="hint">
+            {f.colors.length === 0
+              ? "多色カードだけを表示中です。色を選ぶと、その色の多色カードに絞り込みます。"
+              : f.multiMatch === "include"
+                ? `${f.colors.map((c) => COLOR_NAMES[c]).join("と")}を含む多色カード(3色以上も含む)`
+                : `ちょうど${f.colors.map((c) => COLOR_NAMES[c]).join("")}の多色カード`}
+          </p>
+        </div>
+      )}
+
+      <div className="filter-row">
+        <label>
+          <span className="visually-hidden">カードタイプ</span>
+          <select value={f.type} onChange={(e) => set({ type: e.target.value })}>
+            {TYPE_FILTERS.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span className="visually-hidden">キーワード</span>
+          <select value={f.keyword} onChange={(e) => set({ keyword: e.target.value })}>
+            <option value="">キーワード:すべて</option>
+            <optgroup label="このゲーム独自">
+              {KEYWORDS.filter((k) => k.kind === "独自").map((k) => (
+                <option key={k.name} value={k.name}>
+                  {k.name}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="基本キーワード">
+              {KEYWORDS.filter((k) => k.kind === "基本").map((k) => (
+                <option key={k.name} value={k.name}>
+                  {k.name}
+                </option>
+              ))}
+            </optgroup>
+          </select>
+        </label>
+        <label className="search">
+          <span className="visually-hidden">カード名・テキストで検索</span>
+          <input type="search" placeholder="名前やテキストで検索" value={f.query} onChange={(e) => set({ query: e.target.value })} />
+        </label>
+      </div>
+
+      <details className="ranges" open={rangeCount > 0 || undefined}>
+        <summary>
+          数値で絞り込む
+          {rangeCount > 0 && <span className="ranges-count">{rangeCount}件指定中</span>}
+        </summary>
+        <div className="range-grid">
+          <RangeInput label="コスト(マナ総量)" value={f.cost} onChange={(cost) => set({ cost })} />
+          <RangeInput label="パワー" value={f.power} onChange={(power) => set({ power })} />
+          <RangeInput label="タフネス" value={f.toughness} onChange={(toughness) => set({ toughness })} />
+        </div>
+        <p className="hint">パワーかタフネスを指定すると、クリーチャーだけが表示されます。</p>
+      </details>
+
+      <div className="filter-foot">
+        <label className="check">
+          <input type="checkbox" checked={f.onlyInDeck} onChange={(e) => set({ onlyInDeck: e.target.checked })} />
+          デッキに入っているカードだけ
+        </label>
+        <p className="hint filter-count">
+          {shown} / {total}種類
+        </p>
+        {isFiltering(f) && (
+          <button type="button" className="btn btn-quiet" onClick={() => onChange(initialFilters())}>
+            条件をクリア
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RangeInput({ label, value, onChange }: { label: string; value: Range; onChange: (r: Range) => void }) {
+  const parse = (s: string) => (s === "" ? null : Math.max(0, Math.floor(Number(s))));
+  const invalid = value.min !== null && value.max !== null && value.min > value.max;
+  return (
+    <fieldset className={`range ${invalid ? "is-invalid" : ""}`}>
+      <legend>{label}</legend>
+      <label>
+        <span className="visually-hidden">{label}の最小</span>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          placeholder="最小"
+          value={value.min ?? ""}
+          onChange={(e) => onChange({ ...value, min: parse(e.target.value) })}
+        />
+      </label>
+      <span aria-hidden="true">〜</span>
+      <label>
+        <span className="visually-hidden">{label}の最大</span>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          placeholder="最大"
+          value={value.max ?? ""}
+          onChange={(e) => onChange({ ...value, max: parse(e.target.value) })}
+        />
+      </label>
+      {(value.min !== null || value.max !== null) && (
+        <button type="button" className="range-clear" aria-label={`${label}の指定を消す`} onClick={() => onChange(emptyRange())}>
+          ×
+        </button>
+      )}
+      {invalid && <span className="range-error">最小が最大より大きくなっています。</span>}
+    </fieldset>
+  );
+}
