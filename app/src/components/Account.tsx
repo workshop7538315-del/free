@@ -4,12 +4,32 @@ import { supabase } from "../lib/supabase";
 
 type Props = { session: Session | null };
 
+/** 確認メールのリンクを開いたあとに戻ってくるURL(このページ自身) */
+const redirectTo = () => `${window.location.origin}${window.location.pathname}`;
+
+/**
+ * 確認メールのリンクが失敗すると、Supabase は URL の # に
+ * error_code などを付けて戻してくる。それを読み取って消す。
+ */
+function takeLinkError(): string | null {
+  const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "";
+  const params = new URLSearchParams(hash);
+  const code = params.get("error_code") ?? params.get("error");
+  if (!code) return null;
+  history.replaceState(null, "", window.location.pathname + window.location.search);
+  if (code === "otp_expired") {
+    return "確認メールのリンクが無効か、期限切れです。最後に届いたメールのリンクを開くか、「確認メールを再送」を押してください。";
+  }
+  return `確認リンクを開けませんでした(${params.get("error_description") ?? code})。「確認メールを再送」を試してください。`;
+}
+
 export function Account({ session }: Props) {
+  const [linkError] = useState(takeLinkError);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState<string | null>(linkError);
+  const [open, setOpen] = useState(!!linkError);
 
   if (!supabase) {
     return <p className="account-note">Supabase未設定のため、デッキはこのブラウザに保存されます。</p>;
@@ -26,17 +46,31 @@ export function Account({ session }: Props) {
     );
   }
 
-  const run = async (mode: "in" | "up") => {
+  const run = async (mode: "in" | "up" | "resend") => {
     setBusy(true);
     setMessage(null);
     try {
       if (mode === "in") {
         const { error } = await supabase!.auth.signInWithPassword({ email, password });
         if (error) throw error;
-      } else {
-        const { data, error } = await supabase!.auth.signUp({ email, password });
+      } else if (mode === "up") {
+        const { data, error } = await supabase!.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: redirectTo() },
+        });
         if (error) throw error;
-        if (!data.session) setMessage("確認メールを送りました。メール内のリンクを開いてからログインしてください。");
+        if (!data.session) {
+          setMessage("確認メールを送りました。届いたメールのリンクを1回だけ開いてください。開くとこのページに戻り、ログインした状態になります。");
+        }
+      } else {
+        const { error } = await supabase!.auth.resend({
+          type: "signup",
+          email,
+          options: { emailRedirectTo: redirectTo() },
+        });
+        if (error) throw error;
+        setMessage("確認メールを再送しました。古いメールのリンクは使えなくなるので、新しいメールのリンクを開いてください。");
       }
     } catch (e) {
       setMessage(authMessage(e));
@@ -91,6 +125,9 @@ export function Account({ session }: Props) {
         >
           新規登録
         </button>
+        <button type="button" className="btn btn-quiet" disabled={busy || !email} onClick={() => void run("resend")}>
+          確認メールを再送
+        </button>
         <button type="button" className="btn btn-quiet" onClick={() => setOpen(false)}>
           閉じる
         </button>
@@ -107,7 +144,8 @@ export function Account({ session }: Props) {
 function authMessage(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
   if (/invalid login credentials/i.test(msg)) return "メールアドレスかパスワードが違います。";
-  if (/email not confirmed/i.test(msg)) return "メールアドレスの確認がまだです。確認メールのリンクを開いてください。";
+  if (/email not confirmed/i.test(msg)) return "メールアドレスの確認がまだです。確認メールのリンクを開くか、「確認メールを再送」を押してください。";
   if (/already registered/i.test(msg)) return "このメールアドレスは登録済みです。ログインしてください。";
-  return `ログインできませんでした:${msg}`;
+  if (/rate limit|security purposes|seconds/i.test(msg)) return "メールの送信回数の上限に達しました。少し時間をおいてから試してください。";
+  return `うまくいきませんでした:${msg}`;
 }
