@@ -522,12 +522,23 @@ function actionLabel(g: Game, a: Action): string {
   switch (a.type) {
     case "charge":
       return "チャージ(マナにする)";
-    case "cast":
-      return a.from === "mana" ? "マナ解放で唱える" : "唱える";
+    case "cast": {
+      if (a.from === "mana") return "マナ解放で唱える";
+      if (a.from === "graveyard") return "再演で唱える";
+      const o = g.find(a.uid);
+      return o && g.effectiveCost(ME, o, "hand") === "" && o.card.cost !== "" ? "零式で唱える(コストなし)" : "唱える";
+    }
+    case "cycle":
+      return "循環(捨てて1枚引く)";
+    case "equip":
+      return "装備する";
     case "activate": {
       const o = g.find(a.uid);
       const ab = o ? abilitiesOf(o.card)[a.index] : undefined;
-      if (ab && ab.a === "activated") return `能力を起動(${[ab.cost.mana, ab.cost.tap ? "タップ" : ""].filter(Boolean).join("、")})`;
+      if (ab && ab.a === "activated")
+        return `能力を起動(${[ab.cost.mana, ab.cost.tap ? "タップ" : "", ab.cost.sac ? "生け贄" : "", ab.cost.sacSelf ? "これを生け贄" : "", ab.cost.life ? `ライフ${ab.cost.life}` : ""]
+          .filter(Boolean)
+          .join("、")})`;
       return "能力を起動";
     }
     default:
@@ -588,6 +599,7 @@ function Graveyards({ g, onCard }: { g: Game; onCard: (o: Obj) => void }) {
                 <li key={o.uid}>
                   <button type="button" className="link" onClick={() => onCard(o)}>
                     {o.card.name}
+                    {id === ME && o.card.abilities?.some((a) => a.a === "flashback") && "(再演できる)"}
                   </button>
                 </li>
               ))}

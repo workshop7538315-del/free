@@ -4,7 +4,7 @@
  * 人間は画面で、CPUは ai.ts で答える。
  */
 import type { Card } from "../types";
-import type { Ability, Amount, Cond, Effect, StaticSpec, TargetSpec, TriggerEvent } from "./schema";
+import type { Ability, ActivatedCost, Amount, Cond, Effect, Filter, StaticSpec, TargetSpec, TriggerEvent } from "./schema";
 import { cardColors, manaValue, parseCost, type Color } from "../lib/mana";
 import { findPayment, type ManaUnit } from "./payment";
 
@@ -50,6 +50,7 @@ export type Obj = {
   /** オーラがつけられているクリーチャー */
   attachedTo: number | null;
   burned: boolean;
+  kicked: boolean;
   x: number;
   token: boolean;
   /** トークンの色 */
@@ -71,6 +72,8 @@ export type Player = {
   /** 浮いているマナ(W/U/B/R/G/C) */
   pool: string[];
   drewFromEmpty: boolean;
+  /** 孤高:デッキに同名カードが2枚以上入っていない */
+  highlander: boolean;
 };
 
 export type TargetRef =
@@ -86,21 +89,28 @@ export type StackItem = {
   ability: Ability | null;
   targets: TargetRef[];
   burned: boolean;
+  kicked: boolean;
+  /** 再演で墓地から唱えた(解決後に追放される) */
+  flashback: boolean;
   x: number;
 };
 
+export type CastFrom = "hand" | "mana" | "graveyard";
+
 export type Action =
   | { type: "pass" }
-  | { type: "cast"; uid: number; from: "hand" | "mana" }
+  | { type: "cast"; uid: number; from: CastFrom }
   | { type: "charge"; uid: number }
-  | { type: "activate"; uid: number; index: number };
+  | { type: "activate"; uid: number; index: number }
+  | { type: "cycle"; uid: number }
+  | { type: "equip"; uid: number };
 
 export type Decision =
   | { kind: "action"; options: Action[] }
   | { kind: "target"; prompt: string; spec: TargetSpec; options: TargetRef[]; source: Obj; effects: Effect[]; index: number }
-  | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "lookTop" | "mulligan" | "reclaim"; obj?: Obj }
+  | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "kicker" | "lookTop" | "mulligan" | "reclaim"; obj?: Obj }
   | { kind: "number"; prompt: string; min: number; max: number }
-  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" }
+  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" }
   | { kind: "attackers"; options: number[] }
   | { kind: "blockers"; attackers: number[]; blockers: number[] };
 
@@ -141,6 +151,39 @@ export const spellAbility = (c: Card) => abilitiesOf(c).find((a) => a.a === "spe
 export const burnAbility = (c: Card) => abilitiesOf(c).find((a) => a.a === "burn") as Extract<Ability, { a: "burn" }> | undefined;
 export const releaseAbility = (c: Card) => abilitiesOf(c).find((a) => a.a === "release") as Extract<Ability, { a: "release" }> | undefined;
 export const isAura = (c: Card) => abilitiesOf(c).some((a) => a.a === "enchant");
+export const isEquipment = (c: Card) => abilitiesOf(c).some((a) => a.a === "equip");
+export function abilityOf<K extends Ability["a"]>(c: Card, kind: K): Extract<Ability, { a: K }> | undefined {
+  return abilitiesOf(c).find((a) => a.a === kind) as Extract<Ability, { a: K }> | undefined;
+}
+
+/** カードが絞り込みに合うか */
+export function matchFilter(c: Card, f: Filter | undefined, colors?: Color[]): boolean {
+  if (!f) return true;
+  if (f.type && !c.type.includes(f.type)) return false;
+  if (f.spell && !(isInstantCard(c) || isSorceryCard(c))) return false;
+  if (f.sub && !(c.subtype ?? "").split("・").includes(f.sub)) return false;
+  if (f.name && !c.name.includes(f.name)) return false;
+  const mv = manaValue(c.cost);
+  if (f.mv !== undefined && mv !== f.mv) return false;
+  if (f.minMV !== undefined && mv < f.minMV) return false;
+  if (f.maxMV !== undefined && mv > f.maxMV) return false;
+  if (f.maxPower !== undefined && (c.power ?? 99) > f.maxPower) return false;
+  if (f.color && !(colors ?? cardColors(c.cost)).includes(f.color)) return false;
+  return true;
+}
+
+/** コストの汎用部分を n 減らす */
+export function reduceGeneric(cost: string, n: number): string {
+  if (n <= 0) return cost;
+  let generic = 0;
+  const rest: string[] = [];
+  for (const m of cost.matchAll(/\{([^}]+)\}/g)) {
+    if (/^\d+$/.test(m[1])) generic += Number(m[1]);
+    else rest.push(m[0]);
+  }
+  const left = Math.max(0, generic - n);
+  return (left > 0 ? `{${left}}` : "") + rest.join("");
+}
 
 const AURA_TARGET: TargetSpec = { t: "creature" };
 
@@ -201,6 +244,7 @@ export class Game {
       extraChargesThisTurn: 0,
       pool: [],
       drewFromEmpty: false,
+      highlander: new Set(opts.decks[id].map((c) => c.name)).size === opts.decks[id].length,
     });
     this.players = [mk(0), mk(1)];
     this.firstPlayer = opts.first ?? (this.rng() < 0.5 ? 0 : 1);
@@ -224,6 +268,7 @@ export class Game {
       freeze: false,
       attachedTo: null,
       burned: false,
+      kicked: false,
       x: 0,
       token: false,
     };
@@ -299,7 +344,12 @@ export class Game {
     o.perm = [];
     o.freeze = false;
     o.attachedTo = null;
-    if (wasBattlefield && to !== "battlefield") o.burned = false;
+    if (wasBattlefield && to !== "battlefield") {
+      o.burned = false;
+      o.kicked = false;
+      // 装備品は外れる
+      for (const q of this.players) for (const e of q.battlefield) if (e.attachedTo === o.uid && isEquipment(e.card)) e.attachedTo = null;
+    }
     o.controller = opts.controller ?? o.owner;
     o.zone = to;
     if (o.token && to !== "battlefield") return;
@@ -335,14 +385,54 @@ export class Game {
   }
 
   // ------------------------------------------------------------ 条件・性質
-  cond(c: Cond, p: PlayerId, burned = false): boolean {
+  cond(c: Cond, p: PlayerId, burned = false, kicked = false): boolean {
+    const pl = this.players[p];
+    if (typeof c === "object") {
+      if ("armed" in c) return pl.mana.filter((o) => cardColors(o.card.cost).includes(c.armed)).length >= c.n;
+      return pl.battlefield.filter((o) => matchFilter(o.card, c.control, this.colorsOf(o))).length >= c.n;
+    }
     switch (c) {
       case "burned":
         return burned;
+      case "kicked":
+        return kicked;
       case "bloom":
-        return this.players[p].mana.length >= 7;
+        return pl.mana.length >= 7;
       case "fewerMana":
-        return this.players[p].mana.length < this.players[this.other(p)].mana.length;
+        return pl.mana.length < this.players[this.other(p)].mana.length;
+      case "threshold":
+        return pl.graveyard.length >= 7;
+      case "hellbent":
+        return pl.hand.length === 0;
+      case "highlander":
+        return pl.highlander;
+      case "metalcraft":
+        return pl.battlefield.filter((o) => o.card.type.includes("アーティファクト")).length >= 3;
+      case "ferocious":
+        return this.creatures(p).some((o) => this.power(o) >= 4);
+    }
+  }
+
+  /** 数を数える(自分基準) */
+  count(n: Amount, p: PlayerId, x = 0): number {
+    if (typeof n === "number") return n;
+    if (n === "X") return x;
+    const pl = this.players[p];
+    switch (n.count) {
+      case "mana":
+        return pl.mana.length;
+      case "creatures":
+        return this.creatures(p).length;
+      case "oppCreatures":
+        return this.creatures(this.other(p)).length;
+      case "graveyard":
+        return pl.graveyard.length;
+      case "hand":
+        return pl.hand.length;
+      case "colorsInMana":
+        return new Set(pl.mana.flatMap((o) => cardColors(o.card.cost))).size;
+      case "perm":
+        return pl.battlefield.filter((o) => matchFilter(o.card, n.filter, this.colorsOf(o))).length;
     }
   }
 
@@ -355,15 +445,21 @@ export class Game {
         if (a.a !== "static") continue;
         if (a.if && !this.cond(a.if, src.controller)) continue;
         const st = a.st;
-        if (st.s === "anthem" && creature && !(st.others && src === o)) mods.push({ p: st.p, t: st.t, kw: st.kw ?? [] });
+        if (st.s === "anthem" && creature && !(st.others && src === o) && matchFilter(o.card, st.filter, this.colorsOf(o)))
+          mods.push({ p: st.p, t: st.t, kw: st.kw ?? [] });
         if (st.s === "self" && src === o) mods.push({ p: st.p, t: st.t, kw: st.kw ?? [] });
+        if (st.s === "scale" && src === o) {
+          const k = this.count(st.per, o.controller);
+          mods.push({ p: st.p * k, t: st.t * k, kw: [] });
+        }
       }
     }
     for (const p of this.players) {
       for (const aura of p.battlefield) {
         if (aura.attachedTo !== o.uid) continue;
         for (const a of abilitiesOf(aura.card)) {
-          if (a.a === "static" && a.st.s === "auraBuff") mods.push({ p: a.st.p, t: a.st.t, kw: a.st.kw ?? [] });
+          if (a.a === "static" && a.st.s === "auraBuff" && (!a.if || this.cond(a.if, aura.controller)))
+            mods.push({ p: a.st.p, t: a.st.t, kw: a.st.kw ?? [] });
         }
       }
     }
@@ -416,7 +512,7 @@ export class Game {
   }
 
   canBlock(blocker: Obj, attacker: Obj): boolean {
-    if (blocker.tapped || !isCreatureCard(blocker.card) || this.isPacified(blocker)) return false;
+    if (blocker.tapped || !isCreatureCard(blocker.card) || this.isPacified(blocker) || this.hasKw(blocker, "ブロックできない")) return false;
     if (this.hasKw(attacker, "飛行") && !this.hasKw(blocker, "飛行") && !this.hasKw(blocker, "到達")) return false;
     return true;
   }
@@ -477,6 +573,7 @@ export class Game {
     if (spec.minPower !== undefined && this.power(o) < spec.minPower) return false;
     if (spec.maxPower !== undefined && this.power(o) > spec.maxPower) return false;
     if (spec.flying && !this.hasKw(o, "飛行")) return false;
+    if (spec.filter && !matchFilter(o.card, spec.filter, this.colorsOf(o))) return false;
     return true;
   }
 
@@ -491,6 +588,9 @@ export class Game {
         for (const o of bf) if (this.matchCreature(o, { t: "creature" }, by)) out.push({ kind: "obj", uid: o.uid, zone: o.zone });
         out.push({ kind: "player", id: this.other(by) }, { kind: "player", id: by });
         break;
+      case "player":
+        out.push({ kind: "player", id: this.other(by) });
+        break;
       case "spell":
         for (const s of this.stack) {
           if (s.kind !== "spell" || s === exclude) continue;
@@ -501,18 +601,25 @@ export class Game {
         break;
       case "permanent":
         for (const o of bf)
-          if (spec.types.some((t) => o.card.type.includes(t)) && this.targetable(o, by)) out.push({ kind: "obj", uid: o.uid, zone: o.zone });
+          if (
+            spec.types.some((t) => o.card.type.includes(t)) &&
+            this.targetable(o, by) &&
+            !(spec.who === "you" && o.controller !== by) &&
+            !(spec.who === "opp" && o.controller === by)
+          )
+            out.push({ kind: "obj", uid: o.uid, zone: o.zone });
         break;
       case "graveyard":
         for (const o of this.players[by].graveyard)
-          if (!spec.cardType || o.card.type.includes(spec.cardType)) out.push({ kind: "obj", uid: o.uid, zone: o.zone });
+          if ((!spec.cardType || o.card.type.includes(spec.cardType)) && matchFilter(o.card, spec.filter))
+            out.push({ kind: "obj", uid: o.uid, zone: o.zone });
         break;
     }
     return out;
   }
 
   private stillLegal(r: TargetRef, spec: TargetSpec, by: PlayerId): boolean {
-    if (r.kind === "player") return spec.t === "any";
+    if (r.kind === "player") return spec.t === "any" || spec.t === "player";
     if (r.kind === "stack") return this.stack.some((s) => s.id === r.id);
     const o = this.find(r.uid);
     if (!o || o.zone !== r.zone) return false;
@@ -616,17 +723,38 @@ export class Game {
     return p === this.active && this.isMain() && this.stack.length === 0;
   }
 
-  /** 唱えられるか(コストと対象の有無とタイミング) */
-  canCast(p: PlayerId, o: Obj, from: "hand" | "mana"): boolean {
+  /** 実際に払うコスト(共鳴・コスト軽減・零式を反映) */
+  effectiveCost(p: PlayerId, o: Obj, from: CastFrom): string | null {
     const c = o.card;
-    const instantSpeed = isInstantCard(c) || hasPrintedKw(c, "瞬速");
-    if (!instantSpeed && !this.sorcerySpeed(p)) return false;
     let cost = c.cost;
     if (from === "mana") {
       const rel = releaseAbility(c);
-      if (!rel) return false;
+      if (!rel) return null;
       cost = rel.cost;
+    } else if (from === "graveyard") {
+      const fb = abilityOf(c, "flashback");
+      if (!fb) return null;
+      cost = fb.cost;
+    } else {
+      const free = abilityOf(c, "free");
+      if (free && this.cond(free.if, p)) return "";
     }
+    let discount = 0;
+    const aff = abilityOf(c, "affinity");
+    if (aff) discount += this.players[p].battlefield.filter((x) => matchFilter(x.card, aff.filter, this.colorsOf(x))).length;
+    for (const src of this.players[p].battlefield)
+      for (const a of abilitiesOf(src.card))
+        if (a.a === "static" && a.st.s === "discount" && matchFilter(c, a.st.filter) && (!a.if || this.cond(a.if, p))) discount += a.st.n;
+    return reduceGeneric(cost, discount);
+  }
+
+  /** 唱えられるか(コストと対象の有無とタイミング) */
+  canCast(p: PlayerId, o: Obj, from: CastFrom): boolean {
+    const c = o.card;
+    const instantSpeed = isInstantCard(c) || hasPrintedKw(c, "瞬速");
+    if (!instantSpeed && !this.sorcerySpeed(p)) return false;
+    const cost = this.effectiveCost(p, o, from);
+    if (cost === null) return false;
     if (!this.canPay(p, cost, 0, from === "mana" ? o : undefined)) return false;
     const sp = spellAbility(c);
     if (sp?.targets) for (const t of sp.targets) if (this.targetOptions(t, p).length === 0) return false;
@@ -634,10 +762,18 @@ export class Game {
     return true;
   }
 
+  /** 生け贄コストに使えるクリーチャー */
+  sacOptions(p: PlayerId, cost: ActivatedCost): Obj[] {
+    if (!cost.sac) return [];
+    return this.creatures(p).filter((x) => matchFilter(x.card, cost.sac, this.colorsOf(x)));
+  }
+
   canActivate(p: PlayerId, o: Obj, index: number): boolean {
     const a = abilitiesOf(o.card)[index];
     if (!a || a.a !== "activated" || o.zone !== "battlefield" || o.controller !== p) return false;
     if (a.cost.tap && (o.tapped || (isCreatureCard(o.card) && o.sick))) return false;
+    if (a.cost.sac && this.sacOptions(p, a.cost).length === 0) return false;
+    if (a.cost.life && this.players[p].life <= a.cost.life) return false;
     if (a.cost.mana && !this.canPay(p, a.cost.mana, 0, a.cost.tap ? o : undefined)) return false;
     if (a.targets) for (const t of a.targets) if (this.targetOptions(t, p).length === 0) return false;
     return true;
@@ -652,6 +788,16 @@ export class Game {
     }
     for (const o of pl.hand) if (this.canCast(p, o, "hand")) out.push({ type: "cast", uid: o.uid, from: "hand" });
     for (const o of pl.mana) if (releaseAbility(o.card) && this.canCast(p, o, "mana")) out.push({ type: "cast", uid: o.uid, from: "mana" });
+    for (const o of pl.graveyard) if (abilityOf(o.card, "flashback") && this.canCast(p, o, "graveyard")) out.push({ type: "cast", uid: o.uid, from: "graveyard" });
+    for (const o of pl.hand) {
+      const cy = abilityOf(o.card, "cycling");
+      if (cy && this.canPay(p, cy.cost)) out.push({ type: "cycle", uid: o.uid });
+    }
+    if (this.sorcerySpeed(p))
+      for (const o of pl.battlefield) {
+        const eq = abilityOf(o.card, "equip");
+        if (eq && this.creatures(p).some((c) => c.uid !== o.attachedTo) && this.canPay(p, eq.cost)) out.push({ type: "equip", uid: o.uid });
+      }
     for (const o of pl.battlefield)
       abilitiesOf(o.card).forEach((a, i) => {
         if (a.a === "activated" && this.canActivate(p, o, i)) out.push({ type: "activate", uid: o.uid, index: i });
@@ -669,9 +815,34 @@ export class Game {
       this.addLog(`${o.card.name}をチャージした`, p);
       this.putIntoMana(o, p);
     } else if (a.type === "cast") {
-      const zone = a.from === "hand" ? this.players[p].hand : this.players[p].mana;
+      const pl = this.players[p];
+      const zone = a.from === "hand" ? pl.hand : a.from === "mana" ? pl.mana : pl.graveyard;
       const o = zone.find((x) => x.uid === a.uid);
       if (o && this.canCast(p, o, a.from)) await this.cast(p, o, a.from);
+    } else if (a.type === "cycle") {
+      const o = this.players[p].hand.find((x) => x.uid === a.uid);
+      const cy = o && abilityOf(o.card, "cycling");
+      if (!o || !cy || !this.pay(p, cy.cost, 0)) return;
+      this.usedCards.add(o.card.id);
+      this.move(o, "graveyard");
+      this.addLog(`${o.card.name}を循環した`, p);
+      this.draw(p, 1);
+    } else if (a.type === "equip") {
+      const o = this.players[p].battlefield.find((x) => x.uid === a.uid);
+      const eq = o && abilityOf(o.card, "equip");
+      if (!o || !eq || !this.sorcerySpeed(p)) return;
+      const spec: TargetSpec = { t: "creature", who: "you" };
+      const opts = this.targetOptions(spec, p).filter((r) => r.kind === "obj" && r.uid !== o.attachedTo);
+      if (!opts.length || !this.canPay(p, eq.cost)) return;
+      const pick =
+        opts.length === 1
+          ? opts[0]
+          : await this.ask<TargetRef>(p, { kind: "target", prompt: `${o.card.name}を装備するクリーチャーを選んでください`, spec, options: opts, source: o, effects: [], index: 0 });
+      const target = opts.find((r) => JSON.stringify(r) === JSON.stringify(pick)) ?? opts[0];
+      if (!this.pay(p, eq.cost, 0)) return;
+      this.usedCards.add(o.card.id);
+      o.attachedTo = (target as { uid: number }).uid;
+      this.addLog(`${o.card.name}を${this.describeRef(target)}に装備した`, p);
     } else if (a.type === "activate") {
       const o = this.players[p].battlefield.find((x) => x.uid === a.uid);
       if (o && this.canActivate(p, o, a.index)) await this.activate(p, o, a.index);
@@ -684,11 +855,12 @@ export class Game {
     for (const ab of abilitiesOf(o.card)) {
       if (ab.a === "trigger" && ab.on === "charge") this.pendingTriggers.push({ obj: o, ability: ab, controller: p });
     }
+    this.queueTriggers("manaEnter", this.players[p].battlefield);
   }
 
-  private async cast(p: PlayerId, o: Obj, from: "hand" | "mana") {
+  private async cast(p: PlayerId, o: Obj, from: CastFrom) {
     const c = o.card;
-    const cost = from === "mana" ? releaseAbility(c)!.cost : c.cost;
+    let cost = this.effectiveCost(p, o, from) ?? c.cost;
     const exclude = from === "mana" ? o : undefined;
     let x = 0;
     if (cost.includes("{X}")) {
@@ -706,6 +878,12 @@ export class Game {
     if (b && manaLeft >= b.n) {
       burned = await this.askYesNo(p, `${c.name}:燃焼 ${b.n}(マナゾーンのカードを${b.n}枚墓地に置く)を行いますか?`, "burn", o);
     }
+    let kicked = false;
+    const k = abilityOf(c, "kicker");
+    if (k && this.canPay(p, cost + k.cost, x, exclude)) {
+      kicked = await this.askYesNo(p, `${c.name}:追加払い ${k.cost} を支払いますか?`, "kicker", o);
+      if (kicked) cost = cost + k.cost;
+    }
     if (!this.pay(p, cost, x, exclude)) return;
     if (burned && b) {
       const opts = this.players[p].mana.filter((m) => m !== o);
@@ -714,14 +892,17 @@ export class Game {
     }
     this.move(o, "stack");
     this.usedCards.add(c.id);
-    const item: StackItem = { id: this.stackId++, kind: "spell", obj: o, controller: p, ability: sp ?? null, targets, burned, x };
+    const item: StackItem = { id: this.stackId++, kind: "spell", obj: o, controller: p, ability: sp ?? null, targets, burned, kicked, flashback: from === "graveyard", x };
     this.stack.push(item);
     const tgt = targets.length ? `(対象:${targets.map((t) => this.describeRef(t)).join("、")})` : "";
-    this.addLog(`${c.name}を${from === "mana" ? "マナ解放で" : ""}唱えた${burned ? "(燃焼)" : ""}${x ? `(X=${x})` : ""}${tgt}`, p);
-    if (isInstantCard(c) || isSorceryCard(c)) {
-      for (const src of this.players[p].battlefield)
-        for (const ab of abilitiesOf(src.card)) if (ab.a === "trigger" && ab.on === "castSpell") this.pendingTriggers.push({ obj: src, ability: ab, controller: p });
-    }
+    const how = from === "mana" ? "マナ解放で" : from === "graveyard" ? "再演で" : cost === "" ? "零式で" : "";
+    this.addLog(`${c.name}を${how}唱えた${burned ? "(燃焼)" : ""}${kicked ? "(追加払い)" : ""}${x ? `(X=${x})` : ""}${tgt}`, p);
+    for (const src of this.players[p].battlefield)
+      for (const ab of abilitiesOf(src.card)) {
+        if (ab.a !== "trigger") continue;
+        if (ab.on === "castSpell" && (isInstantCard(c) || isSorceryCard(c))) this.pendingTriggers.push({ obj: src, ability: ab, controller: p });
+        if (ab.on === "cast" && matchFilter(c, ab.filter)) this.pendingTriggers.push({ obj: src, ability: ab, controller: p });
+      }
   }
 
   private async activate(p: PlayerId, o: Obj, index: number) {
@@ -730,8 +911,23 @@ export class Game {
     if (!targets) return;
     if (a.cost.mana && !this.pay(p, a.cost.mana, 0, a.cost.tap ? o : undefined)) return;
     if (a.cost.tap) o.tapped = true;
+    if (a.cost.life) {
+      this.players[p].life -= a.cost.life;
+      this.addLog(`${a.cost.life}点のライフを支払った`, p);
+    }
+    if (a.cost.sac) {
+      const [victim] = await this.askCards(p, "生け贄に捧げるクリーチャーを選んでください", this.sacOptions(p, a.cost), 1, "sacCost");
+      if (victim) {
+        this.addLog(`${victim.card.name}を生け贄に捧げた`, p);
+        this.die(victim);
+      }
+    }
+    if (a.cost.sacSelf) {
+      this.addLog(`${o.card.name}を生け贄に捧げた`, p);
+      this.die(o);
+    }
     this.usedCards.add(o.card.id);
-    this.stack.push({ id: this.stackId++, kind: "activated", obj: o, controller: p, ability: a, targets, burned: false, x: 0 });
+    this.stack.push({ id: this.stackId++, kind: "activated", obj: o, controller: p, ability: a, targets, burned: false, kicked: false, flashback: false, x: 0 });
     this.addLog(`${o.card.name}の能力を起動した`, p);
   }
 
@@ -748,12 +944,24 @@ export class Game {
       list.sort((a, b) => (a.controller === this.active ? 0 : 1) - (b.controller === this.active ? 0 : 1));
       for (const t of list) {
         const ab = t.ability;
-        if (ab.if && !this.cond(ab.if, t.controller, t.obj.burned)) continue;
-        // 燃焼したときだけの効果しかない誘発は、燃焼していなければ置かない
+        if (ab.if && !this.cond(ab.if, t.controller, t.obj.burned, t.obj.kicked)) continue;
+        // 燃焼・追加払いしたときだけの効果しかない誘発は、していなければ置かない
         if (ab.effects.every((e) => e.if === "burned") && !t.obj.burned) continue;
+        if (ab.effects.every((e) => e.if === "kicked") && !t.obj.kicked) continue;
         const targets = await this.chooseTargets(t.controller, ab.targets ?? [], t.obj, ab.effects);
         if (!targets) continue;
-        this.stack.push({ id: this.stackId++, kind: "trigger", obj: t.obj, controller: t.controller, ability: ab, targets, burned: t.obj.burned, x: 0 });
+        this.stack.push({
+          id: this.stackId++,
+          kind: "trigger",
+          obj: t.obj,
+          controller: t.controller,
+          ability: ab,
+          targets,
+          burned: t.obj.burned,
+          kicked: t.obj.kicked,
+          flashback: false,
+          x: 0,
+        });
       }
       this.update();
     }
@@ -777,26 +985,46 @@ export class Game {
           this.move(item.obj, "battlefield", { controller: item.controller });
           item.obj.attachedTo = (t as { uid: number }).uid;
           this.addLog(`${c.name}が${this.describeRef(t)}につけられた`, item.controller);
+          this.entered(item.obj);
           return;
         }
-        this.enterBattlefield(item.obj, item.controller, item.burned, item.x);
+        this.enterBattlefield(item.obj, item.controller, item.burned, item.x, item.kicked);
         return;
       }
       await this.runAbility(item);
-      if (item.obj.zone === "stack") this.move(item.obj, "graveyard");
+      if (item.obj.zone === "stack") this.move(item.obj, item.flashback ? "exile" : "graveyard");
       return;
     }
     this.stack.pop();
     await this.runAbility(item);
   }
 
-  private enterBattlefield(o: Obj, controller: PlayerId, burned = false, x = 0) {
+  private enterBattlefield(o: Obj, controller: PlayerId, burned = false, x = 0, kicked = false) {
     this.move(o, "battlefield", { controller });
     o.sick = true;
     o.burned = burned;
+    o.kicked = kicked;
     o.x = x;
     this.addLog(`${o.card.name}が戦場に出た`, controller);
+    this.entered(o);
+  }
+
+  /** 戦場に出たときの誘発(自身と、他のパーマネントの「〜が出るたび」) */
+  private entered(o: Obj) {
     this.queueTriggers("etb", [o]);
+    for (const src of this.players[o.controller].battlefield) {
+      if (src === o) continue;
+      for (const ab of abilitiesOf(src.card))
+        if (ab.a === "trigger" && ab.on === "allyEnter" && matchFilter(o.card, ab.filter, this.colorsOf(o)))
+          this.pendingTriggers.push({ obj: src, ability: ab, controller: src.controller });
+    }
+  }
+
+  /** ライフを得る(ライフを得たときの誘発つき) */
+  gainLife(p: PlayerId, n: number) {
+    if (n <= 0) return;
+    this.players[p].life += n;
+    this.queueTriggers("lifeGain", this.players[p].battlefield);
   }
 
   private async runAbility(item: StackItem) {
@@ -808,15 +1036,12 @@ export class Game {
       this.addLog(`${item.obj.card.name}は対象が不正になり、効果を発揮しなかった`, item.controller);
       return;
     }
-    if (ab.a === "trigger" && ab.if && !this.cond(ab.if, item.controller, item.burned)) return;
+    if (ab.a === "trigger" && ab.if && !this.cond(ab.if, item.controller, item.burned, item.kicked)) return;
     await this.runEffects(ab.effects, { item, legal });
   }
 
   private amount(n: Amount, ctx: Ctx): number {
-    if (typeof n === "number") return n;
-    if (n === "X") return ctx.item.x;
-    if (n.count === "mana") return this.players[ctx.item.controller].mana.length;
-    return this.creatures(ctx.item.controller).length;
+    return this.count(n, ctx.item.controller, ctx.item.x);
   }
 
   private ref(ctx: Ctx, i: number | undefined): TargetRef | null {
@@ -834,8 +1059,8 @@ export class Game {
   private async runEffects(effects: Effect[], ctx: Ctx) {
     for (const e of effects) {
       const p = ctx.item.controller;
-      if (e.if && !this.cond(e.if, p, ctx.item.burned)) continue;
-      if (e.unless && this.cond(e.unless, p, ctx.item.burned)) continue;
+      if (e.if && !this.cond(e.if, p, ctx.item.burned, ctx.item.kicked)) continue;
+      if (e.unless && this.cond(e.unless, p, ctx.item.burned, ctx.item.kicked)) continue;
       if (e.may) {
         if (!(await this.mayApply(e, ctx))) continue;
         const ok = await this.askYesNo(p, `${ctx.item.obj.card.name}:${effectSummary(e)}を行いますか?`, "may", ctx.item.obj);
@@ -868,24 +1093,35 @@ export class Game {
       if (o) this.dealDamage(source, o, n, combat);
       return;
     }
-    if (source && source.zone === "battlefield" && this.hasKw(source, "絆魂")) this.players[source.controller].life += n;
+    if (source && source.zone === "battlefield" && this.hasKw(source, "絆魂")) this.gainLife(source.controller, n);
   }
 
   private destroy(o: Obj) {
     if (o.zone !== "battlefield") return;
+    if (this.hasKw(o, "破壊不能")) {
+      this.addLog(`${o.card.name}は破壊されなかった(破壊不能)`, o.controller);
+      return;
+    }
     this.die(o);
   }
 
   /** 戦場から墓地へ(死亡) */
   private die(o: Obj) {
+    if (o.zone !== "battlefield") return;
     const controller = o.controller;
     const wasCreature = isCreatureCard(o.card);
     const dyingAbilities = abilitiesOf(o.card);
+    const undying = wasCreature && !o.token && o.counters === 0 && this.hasKw(o, "不屈");
     this.move(o, "graveyard");
     this.addLog(`${o.card.name}が墓地に置かれた`, controller);
     if (wasCreature) {
       for (const ab of dyingAbilities) if (ab.a === "trigger" && ab.on === "dies") this.pendingTriggers.push({ obj: o, ability: ab, controller });
       this.queueTriggers("allyDies", this.players[controller].battlefield);
+    }
+    if (undying && (o.zone as Zone) === "graveyard") {
+      this.enterBattlefield(o, o.owner);
+      o.counters = 1;
+      this.addLog(`${o.card.name}が不屈で戻ってきた`, o.owner);
     }
   }
 
@@ -909,9 +1145,10 @@ export class Game {
       }
       case "damageAll": {
         const n = this.amount(e.n, ctx);
-        for (const o of [...this.creatures(0), ...this.creatures(1)]) this.dealDamage(src, o, n);
-        if (e.players) for (const id of [0, 1] as PlayerId[]) this.dealDamage(src, { kind: "player", id }, n);
-        this.addLog(`${src.card.name}が${e.players ? "すべてのクリーチャーとプレイヤー" : "すべてのクリーチャー"}に${n}点のダメージ`, p);
+        const victims = e.who === "opp" ? this.creatures(opp) : [...this.creatures(0), ...this.creatures(1)];
+        for (const o of victims) this.dealDamage(src, o, n);
+        if (e.players) for (const id of (e.who === "opp" ? [opp] : [0, 1]) as PlayerId[]) this.dealDamage(src, { kind: "player", id }, n);
+        this.addLog(`${src.card.name}が${e.who === "opp" ? "相手の" : "すべての"}クリーチャー${e.players ? "とプレイヤー" : ""}に${n}点のダメージ`, p);
         break;
       }
       case "destroy": {
@@ -921,7 +1158,7 @@ export class Game {
       }
       case "destroyAll":
         for (const o of [...this.creatures(0), ...this.creatures(1)])
-          if (e.maxPower === undefined || this.power(o) <= e.maxPower) this.destroy(o);
+          if ((e.maxPower === undefined || this.power(o) <= e.maxPower) && matchFilter(o.card, e.filter, this.colorsOf(o))) this.destroy(o);
         break;
       case "exile": {
         const o = this.refObj(ctx, e.tg);
@@ -960,6 +1197,15 @@ export class Game {
         }
         break;
       }
+      case "untap": {
+        if (e.all) for (const o of this.creatures(p)) o.tapped = false;
+        else {
+          const o = this.refObj(ctx, e.tg);
+          if (o) o.tapped = false;
+        }
+        this.addLog(e.all ? "自分のクリーチャーをすべてアンタップした" : "アンタップした", p);
+        break;
+      }
       case "tapAll":
         for (const o of this.creatures(opp)) o.tapped = true;
         this.addLog("相手のクリーチャーをすべてタップした", p);
@@ -976,7 +1222,7 @@ export class Game {
       }
       case "pumpAll": {
         const targets = e.who === "all" ? [...this.creatures(0), ...this.creatures(1)] : this.creatures(p);
-        for (const o of targets) o.temp.push({ p: e.p, t: e.t, kw: e.kw ?? [] });
+        for (const o of targets) if (matchFilter(o.card, e.filter, this.colorsOf(o))) o.temp.push({ p: e.p, t: e.t, kw: e.kw ?? [] });
         break;
       }
       case "buffSelf":
@@ -984,11 +1230,11 @@ export class Game {
         break;
       case "counters": {
         const o = e.self ? (src.zone === "battlefield" ? src : null) : this.refObj(ctx, e.tg);
-        if (o) o.counters += e.n;
+        if (o) o.counters += this.amount(e.n, ctx);
         break;
       }
       case "countersAll":
-        for (const o of this.creatures(p)) o.counters += e.n;
+        for (const o of this.creatures(p)) if (matchFilter(o.card, e.filter, this.colorsOf(o))) o.counters += e.n;
         break;
       case "draw":
         this.draw(p, this.amount(e.n, ctx));
@@ -1006,7 +1252,7 @@ export class Game {
       }
       case "gainLife": {
         const n = this.amount(e.n, ctx);
-        pl.life += n;
+        this.gainLife(p, n);
         this.addLog(`${n}点のライフを得た`, p);
         break;
       }
@@ -1020,12 +1266,13 @@ export class Game {
       case "token": {
         const pp = this.amount(e.p, ctx);
         const tt = this.amount(e.t, ctx);
-        for (let i = 0; i < e.n; i++) {
+        const count = this.amount(e.n, ctx);
+        for (let i = 0; i < count; i++) {
           const card: Card = {
             id: `token-${e.sub}`,
             name: `${e.sub}トークン`,
             cost: "",
-            type: "クリーチャー",
+            type: e.artifact ? "アーティファクト・クリーチャー" : "クリーチャー",
             subtype: e.sub,
             power: pp,
             toughness: tt,
@@ -1038,9 +1285,9 @@ export class Game {
           o.tokenColors = e.color === "C" ? [] : [e.color];
           this.players[p].battlefield.push(o);
           o.sick = true;
-          this.queueTriggers("etb", [o]);
+          this.entered(o);
         }
-        this.addLog(`${pp}/${tt}の${e.sub}トークンを${e.n}体生成した`, p);
+        if (count > 0) this.addLog(`${pp}/${tt}の${e.sub}トークンを${count}体生成した`, p);
         break;
       }
       case "counter": {
@@ -1050,7 +1297,7 @@ export class Game {
           if (s) {
             this.stack = this.stack.filter((x) => x !== s);
             this.addLog(`${s.obj.card.name}が打ち消された`, p);
-            if (s.kind === "spell") this.move(s.obj, "graveyard");
+            if (s.kind === "spell") this.move(s.obj, s.flashback ? "exile" : "graveyard");
           }
         }
         break;
@@ -1136,6 +1383,33 @@ export class Game {
         for (const m of parseCost(e.mana)) pl.pool.push(m.kind === "color" ? m.c : "C");
         this.addLog(`${e.mana}を加えた`, p);
         break;
+      case "tutor": {
+        const found = pl.library.filter((o) => matchFilter(o.card, e.filter));
+        if (found.length) {
+          // 同じ名前は1つにまとめて選ばせる
+          const unique = found.filter((o, i) => found.findIndex((x) => x.card.name === o.card.name) === i);
+          const [o] = await this.askCards(p, "ライブラリーから探すカードを選んでください", unique, 1, "tutor");
+          if (e.to === "hand") {
+            this.move(o, "hand");
+            this.addLog(`ライブラリーから${o.card.name}を手札に加えた`, p);
+          } else if (e.to === "mana") {
+            this.putIntoMana(o, p);
+            this.addLog(`ライブラリーから${o.card.name}をマナゾーンに置いた`, p);
+          } else {
+            this.enterBattlefield(o, p);
+          }
+        } else this.addLog("ライブラリーに当てはまるカードがなかった", p);
+        this.shuffle(pl.library);
+        break;
+      }
+      case "mill": {
+        const who = e.who === "opp" ? opp : p;
+        const lib = this.players[who].library;
+        const n = Math.min(this.amount(e.n, ctx), lib.length);
+        for (let i = 0; i < n; i++) this.move(lib[0], "graveyard");
+        this.addLog(`${this.players[who].name}のライブラリーの上から${n}枚を墓地に置いた`, p);
+        break;
+      }
     }
   }
 
@@ -1157,7 +1431,9 @@ export class Game {
       let changed = false;
       for (const p of this.players) {
         for (const o of [...p.battlefield]) {
-          if (isCreatureCard(o.card) && (this.toughness(o) <= 0 || o.damage >= this.toughness(o) || (o.deathtouched && o.damage > 0))) {
+          if (!isCreatureCard(o.card)) continue;
+          const lethal = o.damage >= this.toughness(o) || (o.deathtouched && o.damage > 0);
+          if (this.toughness(o) <= 0 || (lethal && !this.hasKw(o, "破壊不能"))) {
             this.die(o);
             changed = true;
           }
@@ -1168,7 +1444,8 @@ export class Game {
           if (o.attachedTo !== null) {
             const host = this.find(o.attachedTo);
             if (!host || host.zone !== "battlefield") {
-              this.move(o, "graveyard");
+              if (isEquipment(o.card)) o.attachedTo = null;
+              else this.move(o, "graveyard");
               changed = true;
             }
           } else if (isAura(o.card)) {
@@ -1261,7 +1538,7 @@ export class Game {
 
     // ダメージ
     this.step = "damage";
-    const anyFirst = [...alive(), ...this.blockersInCombat()].some((o) => this.hasKw(o, "先制攻撃"));
+    const anyFirst = [...alive(), ...this.blockersInCombat()].some((o) => this.hasKw(o, "先制攻撃") || this.hasKw(o, "二段攻撃"));
     if (anyFirst) {
       this.combatDamage(true);
       this.checkState();
@@ -1302,7 +1579,8 @@ export class Game {
     const d = this.other(p);
     const dealsNow = (o: Obj) => {
       const fs = this.hasKw(o, "先制攻撃");
-      return firstStrikeStep ? fs : !fs || firstStrikeStep === null;
+      const ds = this.hasKw(o, "二段攻撃");
+      return firstStrikeStep ? fs || ds : !fs || ds || firstStrikeStep === null;
     };
     const hits: { src: Obj; to: Obj | PlayerId; n: number }[] = [];
     for (const uid of this.combat.attackers) {

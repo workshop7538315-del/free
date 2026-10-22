@@ -2,13 +2,15 @@
  * CPUの思考。エンジンからの質問に、簡単な評価関数で答える。
  */
 import type { Card } from "../types";
-import type { Effect, TargetSpec } from "./schema";
+import type { Amount, Effect, TargetSpec } from "./schema";
 import { cardColors, colorPips, manaValue, COLORS, type Color } from "../lib/mana";
 import {
   abilitiesOf,
   burnAbility,
+  abilityOf,
   isAura,
   isCreatureCard,
+  isEquipment,
   isInstantCard,
   releaseAbility,
   spellAbility,
@@ -99,6 +101,11 @@ function keepValue(g: Game, p: PlayerId, c: Card): number {
   // チャージ時能力があるならマナに置く価値が高い
   if (abilitiesOf(c).some((a) => a.a === "trigger" && a.on === "charge")) v -= 1.2;
   if (releaseAbility(c)) v -= 0.8;
+  if (abilityOf(c, "flashback")) v -= 0.4;
+  // 装備品は自分のクリーチャーがいる・来るなら手札に残す
+  if (abilityOf(c, "equip")) v += 1.2;
+  // 生け贄の起動型能力を持つものは、生け贄にするクリーチャーとの組み合わせで強い
+  if (abilitiesOf(c).some((a) => a.a === "activated" && (a.cost.sac || a.cost.sacSelf))) v += 0.6;
   return v;
 }
 
@@ -164,9 +171,21 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
     let s = -Infinity;
     if (a.type === "cast") s = scoreCast(g, p, a, main);
     else if (a.type === "activate") s = scoreActivate(g, p, a);
+    else if (a.type === "equip") s = main && g.step === "main1" && g.find(a.uid)?.attachedTo == null ? 2.2 : -1;
+    else if (a.type === "cycle") s = scoreCycle(g, p, a.uid);
     if (s > 0 && (!best || s > best.s)) best = { a, s };
   }
   return best?.a ?? pass;
+}
+
+function scoreCycle(g: Game, p: PlayerId, uid: number): number {
+  const o = g.find(uid);
+  if (!o) return -1;
+  const me = g.players[p];
+  const late = (g.step === "main2" && g.active === p) || (g.step === "end" && g.active !== p);
+  if (!late) return -1;
+  const tooBig = manaValue(o.card.cost) > me.mana.length + 2;
+  return tooBig || me.hand.length >= 5 ? 0.9 : -1;
 }
 
 function isCounter(g: Game, a: Action): boolean {
@@ -201,8 +220,12 @@ function scoreCast(g: Game, p: PlayerId, a: Extract<Action, { type: "cast" }>, m
     return v;
   }
   if (isAura(c)) {
-    const best = Math.max(0, ...g.creatures(opp).filter((x) => g.canAttack(x) || !x.tapped).map((x) => creatureValue(g, x)));
-    return best >= 4 ? best : -1;
+    if (!main) return -1;
+    if (auraIsHarmful(c)) {
+      const best = Math.max(0, ...g.creatures(opp).filter((x) => g.canAttack(x) || !x.tapped).map((x) => creatureValue(g, x)));
+      return best >= 3 ? best : -1;
+    }
+    return g.creatures(p).length ? 2.5 + manaValue(c.cost) * 0.3 : -1;
   }
   if (c.type === "エンチャント" || c.type === "アーティファクト") return main ? 2 + manaValue(c.cost) * 0.4 : -1;
   const sp = spellAbility(c);
@@ -222,6 +245,11 @@ function scoreCast(g: Game, p: PlayerId, a: Extract<Action, { type: "cast" }>, m
   return v > 0.8 ? v : -1;
 }
 
+/** 相手につけるオーラか(攻撃不能や、マイナス修整) */
+function auraIsHarmful(c: Card): boolean {
+  return abilitiesOf(c).some((a) => a.a === "static" && (a.st.s === "pacify" || (a.st.s === "auraBuff" && a.st.p + a.st.t < 0)));
+}
+
 function isCombatStart(g: Game, p: PlayerId) {
   return g.step === "main1" && g.active === p && g.creatures(p).filter((o) => g.canAttack(o)).length >= 2;
 }
@@ -233,7 +261,8 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
   const them = g.players[opp];
   const oppCreatures = g.creatures(opp);
   const myCreatures = g.creatures(p);
-  const n = (x: unknown, fallback = 1) => (typeof x === "number" ? x : x === "X" ? g.maxX(p, "{X}") : fallback);
+  const n = (x: unknown, fallback = 1) =>
+    typeof x === "number" ? x : x === "X" ? g.maxX(p, "{X}") : typeof x === "object" && x ? g.count(x as Amount, p) : fallback;
   const bestKillable = (dmg: number) =>
     Math.max(0, ...oppCreatures.filter((o) => !g.hasKw(o, "呪禁") && g.toughness(o) - o.damage <= dmg).map((o) => creatureValue(g, o)));
   const bestOpp = Math.max(0, ...oppCreatures.filter((o) => !g.hasKw(o, "呪禁")).map((o) => creatureValue(g, o)));
@@ -242,6 +271,7 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       if (e.to === "opp") return them.life <= n(e.n) ? 50 : n(e.n) * 0.8;
       const dmg = n(e.n, 3);
       const spec = targets[e.tg ?? 0];
+      if (spec?.t === "player") return them.life <= dmg ? 50 : dmg * 0.8;
       if (spec?.t === "any" && them.life <= dmg) return 50;
       const k = bestKillable(dmg);
       if (k > 0) return k + 0.5;
@@ -250,7 +280,7 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
     case "damageAll": {
       const dmg = n(e.n, 2);
       const theirs = oppCreatures.filter((o) => g.toughness(o) <= dmg).reduce((s, o) => s + creatureValue(g, o), 0);
-      const mine = myCreatures.filter((o) => g.toughness(o) <= dmg).reduce((s, o) => s + creatureValue(g, o), 0);
+      const mine = e.who === "opp" ? 0 : myCreatures.filter((o) => g.toughness(o) <= dmg).reduce((s, o) => s + creatureValue(g, o), 0);
       return theirs - mine - 1;
     }
     case "destroy":
@@ -291,7 +321,7 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       }
       return myCreatures.length * 0.8;
     case "counters":
-      return myCreatures.length ? e.n * 1.2 : 0;
+      return myCreatures.length || e.self ? n(e.n) * 1.2 : 0;
     case "countersAll":
       return myCreatures.length * e.n * 1.1;
     case "draw":
@@ -304,9 +334,9 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       if (e.who === "opp") return them.life <= n(e.n, 1) ? 50 : n(e.n, 1) * 0.6;
       return me.life <= n(e.n, 1) + 2 ? -50 : -0.3 * n(e.n, 1);
     case "token": {
-      const pw = typeof e.p === "number" ? e.p : me.mana.length;
-      const t = typeof e.t === "number" ? e.t : me.mana.length;
-      return e.n * (pw * 1.2 + t * 0.8 + (e.kw?.length ?? 0) * 0.8);
+      const pw = n(e.p, 1);
+      const t = n(e.t, 1);
+      return n(e.n, 1) * (pw * 1.2 + t * 0.8 + (e.kw?.length ?? 0) * 0.8);
     }
     case "counter":
       return 3;
@@ -339,6 +369,12 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
     }
     case "lookTop":
       return 0.3;
+    case "untap":
+      return e.all ? myCreatures.filter((o) => o.tapped).length * 0.6 : 0.4;
+    case "tutor":
+      return e.to === "battlefield" ? 3 : e.to === "hand" ? 2 : 1.5;
+    case "mill":
+      return e.who === "opp" ? n(e.n, 1) * (them.library.length <= n(e.n, 1) ? 20 : 0.35) : n(e.n, 1) * 0.2;
     case "addMana": {
       // 加えたマナで、今は唱えられない重いカードが唱えられるようになるなら使う
       if (!(g.step === "main1" || g.step === "main2") || g.active !== p) return 0;
@@ -362,19 +398,28 @@ function scoreActivate(g: Game, p: PlayerId, a: Extract<Action, { type: "activat
   const opp = g.other(p);
   const lateMain = g.step === "main2" && g.active === p && g.stack.length === 0;
   const oppEnd = g.step === "end" && g.active !== p;
-  for (const e of ab.effects) {
-    if (e.do === "draw") return lateMain || oppEnd ? 2 : -1;
-    if (e.do === "damage") {
-      if (!(lateMain || oppEnd)) return -1;
-      return 1.5;
-    }
-    if (e.do === "tap") {
-      // 攻撃前に相手の一番強いブロッカーをタップする
-      if (g.step === "main1" && g.active === p && g.creatures(p).some((x) => g.canAttack(x)) && g.creatures(opp).some((x) => !x.tapped)) return 1.5;
-      return -1;
-    }
+  const inCombat = !!g.combat && g.step === "block";
+  const effects = ab.effects;
+  // 攻撃前に相手のブロッカーをタップする
+  if (effects.some((e) => e.do === "tap")) {
+    if (g.step === "main1" && g.active === p && g.creatures(p).some((x) => g.canAttack(x)) && g.creatures(opp).some((x) => !x.tapped)) return 1.5;
+    return -1;
   }
-  return -1;
+  const pumps = effects.some((e) => e.do === "pump" || e.do === "pumpAll");
+  if (pumps && !inCombat) return -1;
+  if (!pumps && !(lateMain || oppEnd)) return -1;
+  let value = 0;
+  for (const e of effects) value += effectValue(g, p, e, ab.targets ?? [], inCombat);
+  let cost = 0;
+  if (ab.cost.sac) {
+    const opts = g.sacOptions(p, ab.cost);
+    const cheapest = Math.min(...opts.map((x) => creatureValue(g, x) - (x.token ? 2 : 0)));
+    cost += Math.max(0.5, cheapest);
+  }
+  if (ab.cost.sacSelf) cost += isCreatureCard(o.card) ? creatureValue(g, o) : 1.5;
+  if (ab.cost.life) cost += ab.cost.life * (g.players[p].life < 8 ? 1 : 0.3);
+  const score = value - cost;
+  return score > 0.5 ? score : -1;
 }
 
 // ---------------------------------------------------------------- 対象
@@ -385,6 +430,7 @@ function harmful(e: Effect | undefined, index: number): boolean {
       return (typeof e.p === "number" && e.p < 0) || (typeof e.t === "number" && e.t < 0);
     case "counters":
     case "returnCard":
+    case "untap":
       return false;
     case "fight":
     case "bite":
@@ -397,8 +443,7 @@ function harmful(e: Effect | undefined, index: number): boolean {
 function chooseTarget(g: Game, p: PlayerId, d: Extract<Decision, { kind: "target" }>): TargetRef {
   const opp = g.other(p);
   const effect = d.effects.find((e) => ("tg" in e && (Array.isArray(e.tg) ? e.tg.includes(d.index) : e.tg === d.index)) || false);
-  const auraEffect = isAura(d.source.card) ? abilitiesOf(d.source.card).find((a) => a.a === "static") : undefined;
-  const bad = auraEffect ? auraEffect.a === "static" && auraEffect.st.s === "pacify" : harmful(effect, d.index);
+  const bad = isEquipment(d.source.card) ? false : isAura(d.source.card) ? auraIsHarmful(d.source.card) : harmful(effect, d.index);
   const opts = d.options;
 
   // 呪文を対象にするなら相手の呪文
@@ -470,18 +515,21 @@ function chooseYesNo(g: Game, p: PlayerId, d: Extract<Decision, { kind: "yesno" 
     }
     case "reclaim":
       return me.mana.length >= 5;
+    case "kicker":
+      return true;
     case "lookTop":
       return !!d.obj && manaValue(d.obj.card.cost) > me.mana.length + 3;
     case "may":
       return true;
   }
+  return true;
 }
 
 // ---------------------------------------------------------------- カードを選ぶ
 function chooseCards(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseCards" }>): number[] {
   const objs = d.options.map((u) => g.find(u)).filter((o): o is Obj => !!o);
   const me = g.players[p];
-  let sorted: Obj[];
+  let sorted: Obj[] = objs;
   switch (d.reason) {
     case "discard":
     case "bottom":
@@ -500,7 +548,11 @@ function chooseCards(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseC
       sorted = [...objs].sort((a, b) => Number(a.tapped) - Number(b.tapped) || cardColors(b.card.cost).length - cardColors(a.card.cost).length);
       break;
     case "sacrifice":
-      sorted = [...objs].sort((a, b) => creatureValue(g, a) - creatureValue(g, b));
+    case "sacCost":
+      sorted = [...objs].sort((a, b) => creatureValue(g, a) - (a.token ? 2 : 0) - (creatureValue(g, b) - (b.token ? 2 : 0)));
+      break;
+    case "tutor":
+      sorted = [...objs].sort((a, b) => cardScore(b.card) - cardScore(a.card));
       break;
   }
   void me;

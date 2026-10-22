@@ -13,6 +13,8 @@ export type Card = {
   rarity: string;
   text: string[];
   flavor?: string;
+  /** アーキタイプ(人間、エンチャント、星詠み など) */
+  tags?: string[];
 };
 
 /** カードID → 枚数 */

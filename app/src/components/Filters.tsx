@@ -5,13 +5,15 @@ import { activeRangeCount, emptyRange, initialFilters, isFiltering, type FilterS
 const TYPE_FILTERS = ["すべて", "クリーチャー", "インスタント", "ソーサリー", "エンチャント", "アーティファクト"];
 
 type Props = {
+  /** 選べるアーキタイプ(カードの多い順) */
+  archetypes: { name: string; count: number }[];
   value: FilterState;
   onChange: (f: FilterState) => void;
   shown: number;
   total: number;
 };
 
-export function Filters({ value: f, onChange, shown, total }: Props) {
+export function Filters({ archetypes, value: f, onChange, shown, total }: Props) {
   const set = (patch: Partial<FilterState>) => onChange({ ...f, ...patch });
 
   const toggleColor = (c: Color) =>
@@ -104,6 +106,17 @@ export function Filters({ value: f, onChange, shown, total }: Props) {
                 </option>
               ))}
             </optgroup>
+          </select>
+        </label>
+        <label>
+          <span className="visually-hidden">アーキタイプ</span>
+          <select value={f.archetype} onChange={(e) => set({ archetype: e.target.value })}>
+            <option value="">アーキタイプ:すべて</option>
+            {archetypes.map((a) => (
+              <option key={a.name} value={a.name}>
+                {a.name}({a.count})
+              </option>
+            ))}
           </select>
         </label>
         <label className="search">

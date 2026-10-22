@@ -17,6 +17,11 @@ import { Battle, type StarterDeck } from "./components/battle/Battle";
 const CARDS = rawCards as Card[];
 const BY_ID = new Map(CARDS.map((c) => [c.id, c]));
 const STARTERS = rawDecks as unknown as StarterDeck[];
+const ARCHETYPES = (() => {
+  const counts = new Map<string, number>();
+  for (const c of CARDS) for (const t of c.tags ?? []) counts.set(t, (counts.get(t) ?? 0) + 1);
+  return [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+})();
 
 const emptyDraft = (): DeckDraft => ({ name: "新しいデッキ", note: "", cards: {} });
 
@@ -166,7 +171,7 @@ export default function App() {
       ) : (
       <main className="layout">
         <section className="pool" aria-label="カード一覧">
-          <Filters value={filters} onChange={setFilters} shown={visible.length} total={CARDS.length} />
+          <Filters archetypes={ARCHETYPES} value={filters} onChange={setFilters} shown={visible.length} total={CARDS.length} />
 
           {visible.length === 0 ? (
             <p className="empty">条件に合うカードがありません。絞り込みを外してみてください。</p>
