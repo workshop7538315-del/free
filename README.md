@@ -18,6 +18,7 @@ MTGをベースにした2人対戦のトレーディングカードゲームで�
 | [docs/colors.md](docs/colors.md) | 各色の役割と得意・苦手 |
 | [docs/keywords.md](docs/keywords.md) | キーワード能力(独自・拡張・基本) |
 | [docs/archetypes.md](docs/archetypes.md) | アーキタイプとスターターデッキの一覧 |
+| [docs/tier.md](docs/tier.md) | スターターデッキのティア表と相性表(CPU同士の総当たり) |
 | [docs/open-questions.md](docs/open-questions.md) | 未決定事項・検討中の論点 |
 | [cards/README.md](cards/README.md) | カードの追加・変更のしかた |
 | [cards/cards.json](cards/cards.json) | 全カードのデータ |
