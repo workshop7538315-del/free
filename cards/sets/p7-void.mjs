@@ -19,8 +19,8 @@ const voidUnless = (cond, e) => ({ ...e, unless: cond });
 export const VOIDS = tagAll("虚無", [
   // ---------------------------------------------------------------- 欠色を集める(虚無ではない。どのマナでも唱えられる)
   art("vd01", "虚ろの石", "{2}", "C", [mana("{C}")]),
-  art("vd02", "裏返しの鏡", "{2}", "C", [etb([E.veil(2), E.draw(1)])]),
-  sor("vd03", "色抜きの儀", "{1}", "C", spell([E.veil(2), E.lookTop()])),
+  art("vd02", "裏返しの鏡", "{4}", "C", [etb([E.veil(2), E.draw(1)])]),
+  sor("vd03", "色抜きの儀", "{2}", "C", spell([E.veil(1), E.draw(1)])),
   art("vd04", "無色の祭壇", "{3}", "U", [mana("{C}{C}")]),
   sor("vd05", "虚無の呼び声", "{2}", "U", spell(E.tutor(VOID))),
   art("vd06", "侵蝕の楔", "{3}", "U", [etb(E.plunder(1))]),
@@ -54,7 +54,7 @@ export const VOIDS = tagAll("虚無", [
   sor("vd32", "虚無の帰結", "{5}{C}{C}", "M", spell([E.destroyAll(4), drone(3)]), V),
   // ---------------------------------------------------------------- 虚無のパーマネント
   ench("vd33", "虚無の門", "{2}{C}", "R", [lord(VOID, 1, 1, undefined, false)], V),
-  ench("vd34", "裏返しの儀式", "{1}{C}", "U", [upkeep([E.veil(1), E.lookTop()])], V),
+  ench("vd34", "裏返しの儀式", "{1}{C}", "U", [etb(E.veil(1)), upkeep(E.lookTop())], V),
   art("vd35", "虚無の刻印", "{1}{C}", "U", [mana("{C}"), crest(discount(VOID, 1))], V),
   // ---------------------------------------------------------------- 虚無のクリーチャー(続き)
   cr("vd36", "虚ろの残響", "{1}{C}", "虚無・スピリット", 2, 1, "C", [kw("輪廻")]),

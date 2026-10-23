@@ -136,7 +136,7 @@ export type Effect = Common &
     | { do: "mill"; n: Amount; who: "you" | "opp" }
     /** 略奪:対戦相手のマナゾーンのカードをN枚、裏向き(欠色)にしてタップ状態で自分のマナゾーンに移す */
     | { do: "plunder"; n: number }
-    /** 虚化:自分のマナゾーンの表向きのカードをN枚、裏向き(欠色)にする */
+    /** 虚化:自分と対戦相手のマナゾーンの表向きのカードをそれぞれN枚、裏向き(欠色)にする(相手の分も自分が選ぶ) */
     | { do: "veil"; n: number }
     /** 顕現 N:自分のマナゾーンからマナ総量N以下のクリーチャー・カードを1枚戦場に出す */
     | { do: "manifest"; maxMV: number; haste?: boolean }

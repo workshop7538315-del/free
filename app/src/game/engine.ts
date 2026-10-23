@@ -1553,10 +1553,15 @@ export class Game {
         break;
       }
       case "veil": {
+        // 自分のマナゾーンをN枚、続いて相手のマナゾーンをN枚裏向きにする(どちらも自分が選ぶ)
         const faceUp = pl.mana.filter((o) => !o.faceDown);
-        const picked = await this.askCards(p, `虚化:裏向きにするマナゾーンのカードを${e.n}枚選んでください`, faceUp, Math.min(e.n, faceUp.length), "veil");
+        const picked = await this.askCards(p, `虚化:裏向きにする自分のマナゾーンのカードを${e.n}枚選んでください`, faceUp, Math.min(e.n, faceUp.length), "veil");
         for (const o of picked) o.faceDown = true;
-        if (picked.length) this.addLog(`虚化で${picked.map((o) => o.card.name).join("、")}を裏向きにした`, p);
+        if (picked.length) this.addLog(`虚化で自分の${picked.map((o) => o.card.name).join("、")}を裏向きにした`, p);
+        const theirs = this.players[opp].mana.filter((o) => !o.faceDown);
+        const pickedOpp = await this.askCards(p, `虚化:裏向きにする相手のマナゾーンのカードを${e.n}枚選んでください`, theirs, Math.min(e.n, theirs.length), "erode");
+        for (const o of pickedOpp) o.faceDown = true;
+        if (pickedOpp.length) this.addLog(`虚化で${this.players[opp].name}の${pickedOpp.map((o) => o.card.name).join("、")}を裏向きにした`, p);
         break;
       }
       case "mill": {

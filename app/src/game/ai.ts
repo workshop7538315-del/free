@@ -425,7 +425,9 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       // 虚無のカード(欠色が多いと強くなる)があるときだけ得
       const voidCards = [...me.hand, ...me.battlefield].filter((o) => o.card.tags?.includes("虚無")).length;
       const colored = me.mana.filter((o) => manaColors(o).length > 0).length;
-      return voidCards ? Math.min(e.n, colored) * 0.6 : 0;
+      // 相手のマナの色や紋章を消せる分も得
+      const theirs = them.mana.filter((o) => manaColors(o).length > 0 || crestActive(o)).length;
+      return (voidCards ? Math.min(e.n, colored) * 0.6 : 0) + Math.min(e.n, theirs) * 0.8;
     }
     case "mill":
       return e.who === "opp" ? n(e.n, 1) * (them.library.length <= n(e.n, 1) ? 20 : 0.35) : n(e.n, 1) * 0.2;
