@@ -158,6 +158,9 @@ export const burnAbility = (c: Card) => abilitiesOf(c).find((a) => a.a === "burn
 export const releaseAbility = (c: Card) => abilitiesOf(c).find((a) => a.a === "release") as Extract<Ability, { a: "release" }> | undefined;
 export const isAura = (c: Card) => abilitiesOf(c).some((a) => a.a === "enchant");
 export const isEquipment = (c: Card) => abilitiesOf(c).some((a) => a.a === "equip");
+/** 紋章(マナゾーンで働く能力)か */
+export const isCrestAbility = (a: Ability) => (a.a === "static" || a.a === "trigger") && a.from === "mana";
+export const hasCrest = (c: Card) => abilitiesOf(c).some(isCrestAbility);
 export function abilityOf<K extends Ability["a"]>(c: Card, kind: K): Extract<Ability, { a: K }> | undefined {
   return abilitiesOf(c).find((a) => a.a === kind) as Extract<Ability, { a: K }> | undefined;
 }
@@ -447,6 +450,8 @@ export class Game {
         return pl.hand.length;
       case "burned":
         return burnCount;
+      case "crests":
+        return pl.mana.filter((o) => hasCrest(o.card)).length;
       case "colorsInMana":
         return new Set(pl.mana.flatMap((o) => cardColors(o.card.cost))).size;
       case "perm":
@@ -454,12 +459,23 @@ export class Game {
     }
   }
 
+  /** その領域で働いている能力。紋章はマナゾーンでだけ、それ以外は戦場でだけ働く */
+  activeAbilities(o: Obj): Ability[] {
+    const inMana = o.zone === "mana";
+    return abilitiesOf(o.card).filter((a) => isCrestAbility(a) === inMana);
+  }
+
+  /** 能力を持ちうるパーマネントとマナゾーンのカード */
+  sources(p: PlayerId): Obj[] {
+    return [...this.players[p].battlefield, ...this.players[p].mana];
+  }
+
   private statics(o: Obj): Mod[] {
     const mods: Mod[] = [];
     if (o.zone !== "battlefield") return mods;
     const creature = isCreatureCard(o.card);
-    for (const src of this.players[o.controller].battlefield) {
-      for (const a of abilitiesOf(src.card)) {
+    for (const src of this.sources(o.controller)) {
+      for (const a of this.activeAbilities(src)) {
         if (a.a !== "static") continue;
         if (a.if && !this.cond(a.if, src.controller)) continue;
         const st = a.st;
@@ -538,8 +554,8 @@ export class Game {
 
   chargesAllowed(p: PlayerId): number {
     let n = 1 + this.players[p].extraChargesThisTurn;
-    for (const o of this.players[p].battlefield)
-      for (const a of abilitiesOf(o.card)) if (a.a === "static" && a.st.s === "extraCharge") n += a.st.n;
+    for (const o of this.sources(p))
+      for (const a of this.activeAbilities(o)) if (a.a === "static" && a.st.s === "extraCharge" && (!a.if || this.cond(a.if, p))) n += a.st.n;
     return n;
   }
 
@@ -765,8 +781,8 @@ export class Game {
     let discount = 0;
     const aff = abilityOf(c, "affinity");
     if (aff) discount += this.players[p].battlefield.filter((x) => matchFilter(x.card, aff.filter, this.colorsOf(x))).length;
-    for (const src of this.players[p].battlefield)
-      for (const a of abilitiesOf(src.card))
+    for (const src of this.sources(p))
+      for (const a of this.activeAbilities(src))
         if (a.a === "static" && a.st.s === "discount" && matchFilter(c, a.st.filter) && (!a.if || this.cond(a.if, p))) discount += a.st.n;
     return reduceGeneric(cost, discount);
   }
@@ -879,7 +895,7 @@ export class Game {
     for (const ab of abilitiesOf(o.card)) {
       if (ab.a === "trigger" && ab.on === "charge") this.pendingTriggers.push({ obj: o, ability: ab, controller: p });
     }
-    this.queueTriggers("manaEnter", this.players[p].battlefield);
+    this.queueTriggers("manaEnter", this.sources(p));
   }
 
   private async cast(p: PlayerId, o: Obj, from: CastFrom) {
@@ -941,8 +957,8 @@ export class Game {
     const tgt = targets.length ? `(対象:${targets.map((t) => this.describeRef(t)).join("、")})` : "";
     const how = from === "mana" ? "マナ解放で" : from === "graveyard" ? "再演で" : from === "dash" ? "疾駆で" : cost === "" ? "零式で" : "";
     this.addLog(`${c.name}を${how}唱えた${burned ? `(燃焼${burnCount}枚)` : ""}${kicked ? "(追加払い)" : ""}${x ? `(X=${x})` : ""}${tgt}`, p);
-    for (const src of this.players[p].battlefield)
-      for (const ab of abilitiesOf(src.card)) {
+    for (const src of this.sources(p))
+      for (const ab of this.activeAbilities(src)) {
         if (ab.a !== "trigger") continue;
         if (ab.on === "castSpell" && (isInstantCard(c) || isSorceryCard(c))) this.pendingTriggers.push({ obj: src, ability: ab, controller: p });
         if (ab.on === "cast" && matchFilter(c, ab.filter)) this.pendingTriggers.push({ obj: src, ability: ab, controller: p });
@@ -978,7 +994,7 @@ export class Game {
   // ------------------------------------------------------------ 誘発
   private queueTriggers(on: TriggerEvent, objs: Obj[]) {
     for (const o of objs)
-      for (const ab of abilitiesOf(o.card)) if (ab.a === "trigger" && ab.on === on) this.pendingTriggers.push({ obj: o, ability: ab, controller: o.controller });
+      for (const ab of this.activeAbilities(o)) if (ab.a === "trigger" && ab.on === on) this.pendingTriggers.push({ obj: o, ability: ab, controller: o.controller });
   }
 
   private async flushTriggers() {
@@ -1061,9 +1077,9 @@ export class Game {
   /** 戦場に出たときの誘発(自身と、他のパーマネントの「〜が出るたび」) */
   private entered(o: Obj) {
     this.queueTriggers("etb", [o]);
-    for (const src of this.players[o.controller].battlefield) {
+    for (const src of this.sources(o.controller)) {
       if (src === o) continue;
-      for (const ab of abilitiesOf(src.card))
+      for (const ab of this.activeAbilities(src))
         if (ab.a === "trigger" && ab.on === "allyEnter" && matchFilter(o.card, ab.filter, this.colorsOf(o)))
           this.pendingTriggers.push({ obj: src, ability: ab, controller: src.controller });
     }
@@ -1073,7 +1089,7 @@ export class Game {
   gainLife(p: PlayerId, n: number) {
     if (n <= 0) return;
     this.players[p].life += n;
-    this.queueTriggers("lifeGain", this.players[p].battlefield);
+    this.queueTriggers("lifeGain", this.sources(p));
   }
 
   private async runAbility(item: StackItem) {
@@ -1160,14 +1176,14 @@ export class Game {
     if (o.zone !== "battlefield") return;
     const controller = o.controller;
     const wasCreature = isCreatureCard(o.card);
-    const dyingAbilities = abilitiesOf(o.card);
+    const dyingAbilities = abilitiesOf(o.card).filter((a) => !isCrestAbility(a));
     const undying = wasCreature && !o.token && o.counters === 0 && this.hasKw(o, "不屈");
     const rinne = wasCreature && !o.token && this.hasKw(o, "輪廻");
     this.move(o, "graveyard");
     this.addLog(`${o.card.name}が墓地に置かれた`, controller);
     if (wasCreature) {
       for (const ab of dyingAbilities) if (ab.a === "trigger" && ab.on === "dies") this.pendingTriggers.push({ obj: o, ability: ab, controller });
-      this.queueTriggers("allyDies", this.players[controller].battlefield);
+      this.queueTriggers("allyDies", this.sources(controller));
     }
     if (undying && (o.zone as Zone) === "graveyard") {
       this.enterBattlefield(o, o.owner);
@@ -1456,6 +1472,18 @@ export class Game {
         this.shuffle(pl.library);
         break;
       }
+      case "manifest": {
+        const opts = pl.mana.filter((o) => isCreatureCard(o.card) && manaValue(o.card.cost) <= e.maxMV);
+        if (!opts.length) {
+          this.addLog("顕現:マナゾーンに出せるクリーチャーがなかった", p);
+          break;
+        }
+        const [o] = await this.askCards(p, `顕現:マナゾーンから戦場に出すクリーチャー(マナ総量${e.maxMV}以下)を選んでください`, opts, 1, "tutor");
+        this.addLog(`顕現で${o.card.name}をマナゾーンから戦場に出した`, p);
+        this.enterBattlefield(o, p);
+        if (e.haste) o.temp.push({ p: 0, t: 0, kw: ["速攻"] });
+        break;
+      }
       case "plunder": {
         const zone = this.players[opp].mana;
         const picked = await this.askCards(p, `略奪:相手のマナゾーンから奪うカードを${e.n}枚選んでください`, zone, Math.min(e.n, zone.length), "erode");
@@ -1742,7 +1770,7 @@ export class Game {
     pl.extraChargesThisTurn = 0;
     // アップキープ
     this.step = "upkeep";
-    this.queueTriggers("upkeep", pl.battlefield);
+    this.queueTriggers("upkeep", this.sources(p));
     await this.priorityStep();
     // ドロー
     this.step = "draw";
@@ -1764,7 +1792,7 @@ export class Game {
         this.addLog(`${o.card.name}は疾駆の効果で手札に戻った`, p);
       }
     }
-    this.queueTriggers("endStep", pl.battlefield);
+    this.queueTriggers("endStep", this.sources(p));
     await this.priorityStep();
     // クリンナップ
     this.step = "cleanup";

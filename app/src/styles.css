@@ -569,6 +569,33 @@ textarea {
   font-size: var(--step--1);
   color: var(--muted);
 }
+.card-foot {
+  gap: 0.5rem;
+}
+.card-pack {
+  margin-right: auto;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+.card-based {
+  margin-top: 0.4rem !important;
+  padding: 0.15rem 0.4rem;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.pack-info {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: var(--step--1);
+  color: var(--muted);
+  line-height: 1.6;
+}
+.pack-info strong {
+  color: var(--ink);
+}
 .card-pt {
   font-family: var(--font-card);
   font-weight: 800;

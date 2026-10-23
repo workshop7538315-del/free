@@ -95,6 +95,10 @@ export const act = (cost, effects, targets, text) => ({
   ...(text ? { text } : {}),
 });
 export const mana = (...produce) => ({ a: "mana", produce });
+/** 紋章:このカードがマナゾーンにあるあいだだけ働く常在・誘発能力にする */
+export const crest = (ability) => ({ ...ability, from: "mana" });
+/** 元になったカードとの関係(強化パック用):kind は 強化版 / リメイク / サポート */
+export const basedOn = (card, id, kind) => ({ ...card, basedOn: { id, kind } });
 
 // 常在能力の略記
 export const anthem = (p, t, opts = {}) => stat({ s: "anthem", p, t, ...opts });
@@ -181,6 +185,7 @@ export const E = {
   tutor: (filter, to = "hand") => ({ do: "tutor", filter, to }),
   mill: (n, who = "opp") => ({ do: "mill", n, who }),
   plunder: (n) => ({ do: "plunder", n }),
+  manifest: (maxMV, haste = false) => ({ do: "manifest", maxMV, ...(haste ? { haste } : {}) }),
 };
 export const iff = (cond, e) => ({ ...e, if: cond });
 export const unless = (cond, e) => ({ ...e, unless: cond });
@@ -224,6 +229,7 @@ const COUNT_TEXT = {
   hand: "あなたの手札の枚数",
   colorsInMana: "あなたのマナゾーンにあるカードの色の数",
   burned: "燃焼した枚数",
+  crests: "あなたのマナゾーンにある紋章を持つカードの枚数",
 };
 const PER_TEXT = {
   mana: "あなたのマナゾーンにあるカード1枚につき",
@@ -232,6 +238,7 @@ const PER_TEXT = {
   graveyard: "あなたの墓地にあるカード1枚につき",
   hand: "あなたの手札1枚につき",
   colorsInMana: "あなたのマナゾーンにあるカードの色1色につき",
+  crests: "あなたのマナゾーンにある紋章を持つカード1枚につき",
 };
 function countText(n) {
   if (n.count === "perm") return `あなたがコントロールする${filterPhrase(n.filter, "permanent")}の数`;
@@ -448,6 +455,8 @@ function effectText(e, name, abil, notes) {
     }
     case "plunder":
       return `略奪 ${e.n}。`;
+    case "manifest":
+      return `顕現 ${e.maxMV}。${e.haste ? "ターン終了時まで、そのクリーチャーは速攻を得る。" : ""}`;
     case "mill":
       return e.who === "opp"
         ? `対戦相手は自分のライブラリーの一番上から${a(e.n)}枚を墓地に置く。`
@@ -552,6 +561,11 @@ function costSymbolsText(cost, name) {
 }
 
 function abilityText(abil, card) {
+  const t = abilityTextBody(abil, card);
+  return abil.from === "mana" && !abil.text ? `紋章 ― ${t}` : t;
+}
+
+function abilityTextBody(abil, card) {
   const name = card.name;
   if (abil.text) return abil.text;
   switch (abil.a) {

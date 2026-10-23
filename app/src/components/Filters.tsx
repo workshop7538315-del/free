@@ -1,3 +1,4 @@
+import { PACKS, packById } from "../lib/packs";
 import { COLORS, COLOR_NAMES, type Color } from "../lib/mana";
 import { KEYWORDS } from "../lib/keywords";
 import { activeRangeCount, emptyRange, initialFilters, isFiltering, type FilterState, type Range } from "../lib/filters";
@@ -119,6 +120,17 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
             ))}
           </select>
         </label>
+        <label>
+          <span className="visually-hidden">収録パック</span>
+          <select value={f.pack} onChange={(e) => set({ pack: e.target.value })}>
+            <option value="">パック:すべて</option>
+            {PACKS.map((p) => (
+              <option key={p.id} value={p.id}>
+                第{p.number}弾「{p.name}」({p.total})
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="search">
           <span className="visually-hidden">カード名・テキストで検索</span>
           <input type="search" placeholder="名前やテキストで検索" value={f.query} onChange={(e) => set({ query: e.target.value })} />
@@ -137,6 +149,18 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
         </div>
         <p className="hint">パワーかタフネスを指定すると、クリーチャーだけが表示されます。</p>
       </details>
+
+      {f.pack && packById(f.pack) && (() => {
+        const p = packById(f.pack)!;
+        return (
+          <p className="pack-info">
+            <strong>
+              第{p.number}弾「{p.name}」
+            </strong>
+            ({p.kind}・{p.words.join("/")})新規{p.newCards}枚{p.reprints.length > 0 && `+再録${p.reprints.length}枚`}。{p.theme}
+          </p>
+        );
+      })()}
 
       <div className="filter-foot">
         <label className="check">

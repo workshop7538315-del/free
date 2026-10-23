@@ -4,6 +4,7 @@ import { cardColors, colorCategory } from "../lib/mana";
 import { ManaCost } from "./ManaCost";
 import { KeywordTip } from "./KeywordTip";
 import { splitKeywords } from "../lib/keywords";
+import { cardName, packLabel, packShort } from "../lib/packs";
 
 /** ルール文中の {5}{G}{G} や {T} を記号に、キーワードを説明つきにして表示する */
 export function RulesText({ text }: { text: string }) {
@@ -56,9 +57,20 @@ export function CardTile({ card, count, onChange }: Props) {
       <div className="card-text">
         {card.text.length === 0 ? <p className="card-vanilla">(能力なし)</p> : card.text.map((t, i) => <p key={i}><RulesText text={t} /></p>)}
         {card.flavor && <p className="card-flavor">{card.flavor}</p>}
+        {card.basedOn && (
+          <p className="card-based">
+            {card.basedOn.kind}:元「{cardName(card.basedOn.id)}」
+          </p>
+        )}
       </div>
       <footer className="card-foot">
         <span className="card-rarity">{card.rarity}</span>
+        {card.pack && (
+          <span className="card-pack" title={(card.packs ?? [card.pack]).map(packLabel).join(" / ")}>
+            {packShort(card.pack)}
+            {(card.packs?.length ?? 1) > 1 && ` ・再録 ${card.packs!.filter((p) => p !== card.pack).map(packShort).join("・")}`}
+          </span>
+        )}
         {isCreature && (
           <span className="card-pt">
             {card.power}/{card.toughness}

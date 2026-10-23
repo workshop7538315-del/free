@@ -4,14 +4,16 @@
 |---|---|
 | `sets/*.mjs` | **カードの定義**。アーキタイプごとのファイル(`core.mjs` が最初の166種類) |
 | `lib.mjs` | カードの書き方の補助と、効果データから文章を作る処理 |
-| `build.mjs` | 全セットをまとめて検証し、`cards.json` と `decks.json` を作る |
+| `packs.mjs` | **パック(第n弾)の一覧**。どのセットがどのパックか、再録、3つの単語 |
+| `build.mjs` | 全パックをまとめて検証し、`cards.json`・`decks.json`・`packs.json` を作る |
+| `packs.json` | `build.mjs` が作るパックの一覧(アプリの絞り込みで使う) |
 | `cards.json` | `build.mjs` が作る全カードのデータ(手で編集しない) |
-| `decks.json` | `build.mjs` が作るスターターデッキ(2色の汎用10種類+アーキタイプ18種類) |
+| `decks.json` | `build.mjs` が作るスターターデッキ(2色の汎用10種類+アーキタイプ20種類) |
 | `keywords.json` | キーワードの説明(ツールチップと絞り込みで使う) |
 
 ## カードを追加・変更する
 
-1. `sets/` の該当するファイルに書き足す(新しいアーキタイプなら新しいファイルを作り、`build.mjs` の `SETS` に加える)。
+1. `sets/` の該当するファイルに書き足す(新しいパックなら新しいファイルを作り、`packs.mjs` の `PACKS` に加える。[docs/packs.md](../docs/packs.md) を参照)。
 2. リポジトリ直下で `node cards/build.mjs` を実行する。`cards.json` と `decks.json` が作り直される。
 3. `cd app && npm run simulate` で、CPU同士の自動対戦を回してエラーが出ないか確かめる。
 
@@ -60,5 +62,7 @@ ins("r017", "激情の火炎", "{1}{R}{R}", "U", [burn(2), spell(
 | rarity | コモン/アンコモン/レア/神話レア |
 | text | 自動生成されるルール文章 |
 | abilities | 効果のデータ(エンジンが実行する) |
+| pack / packs | 初めて収録されたパック / 再録を含むすべてのパック(`packs.mjs` から自動で付く) |
+| basedOn | 既存カード強化パックのカードの元カード `{id, kind: 強化版/リメイク/サポート}` |
 
 カードの色はマナコストから自動で決まります([docs/rules.md](../docs/rules.md) 5.5)。

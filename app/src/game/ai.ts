@@ -8,6 +8,7 @@ import {
   abilitiesOf,
   burnAbility,
   abilityOf,
+  hasCrest,
   isAura,
   isCreatureCard,
   isEquipment,
@@ -110,6 +111,8 @@ function keepValue(g: Game, p: PlayerId, c: Card): number {
   if (abilitiesOf(c).some((a) => a.a === "trigger" && a.on === "charge")) v -= 1.2;
   if (releaseAbility(c)) v -= 0.8;
   if (abilityOf(c, "flashback")) v -= 0.4;
+  // 紋章を持つカードは、マナゾーンに置くと働くのでマナにしたい
+  if (hasCrest(c)) v -= 1.6;
   // 装備品は自分のクリーチャーがいる・来るなら手札に残す
   if (abilityOf(c, "equip")) v += 1.2;
   // 生け贄の起動型能力を持つものは、生け贄にするクリーチャーとの組み合わせで強い
@@ -385,6 +388,10 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return e.all ? myCreatures.filter((o) => o.tapped).length * 0.6 : 0.4;
     case "tutor":
       return e.to === "battlefield" ? 3 : e.to === "hand" ? 2 : 1.5;
+    case "manifest": {
+      const cands = me.mana.filter((o) => isCreatureCard(o.card) && manaValue(o.card.cost) <= e.maxMV);
+      return cands.length ? Math.max(...cands.map((o) => cardCreatureValue(o.card))) * 0.8 + (e.haste ? 1 : 0) : 0;
+    }
     case "plunder":
       return Math.min(e.n, them.mana.length) * 2.2;
     case "mill":
@@ -562,15 +569,25 @@ function chooseCards(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseC
       break;
     case "burn": {
       const need = colorNeed(g, p);
-      const score = (o: Obj) => (o.tapped ? 0 : 10) + cardColors(o.card.cost).reduce((s, c) => s + Math.max(0, need[c]), 0);
+      // 紋章を持つカードはマナゾーンに残す
+      const score = (o: Obj) =>
+        (o.tapped ? 0 : 10) + (hasCrest(o.card) ? 30 : 0) + cardColors(o.card.cost).reduce((s, c) => s + Math.max(0, need[c]), 0);
       sorted = [...objs].sort((a, b) => score(a) - score(b));
       break;
     }
     case "reclaim":
-      sorted = [...objs].sort((a, b) => cardScore(b.card) - cardScore(a.card) + (b.tapped ? 1 : 0) - (a.tapped ? 1 : 0));
+      sorted = [...objs].sort(
+        (a, b) => cardScore(b.card) - (hasCrest(b.card) ? 6 : 0) - (cardScore(a.card) - (hasCrest(a.card) ? 6 : 0)) + (b.tapped ? 1 : 0) - (a.tapped ? 1 : 0),
+      );
       break;
     case "erode":
-      sorted = [...objs].sort((a, b) => Number(a.tapped) - Number(b.tapped) || cardColors(b.card.cost).length - cardColors(a.card.cost).length);
+      // 相手の紋章を優先して奪う・壊す
+      sorted = [...objs].sort(
+        (a, b) =>
+          Number(hasCrest(b.card)) - Number(hasCrest(a.card)) ||
+          Number(a.tapped) - Number(b.tapped) ||
+          cardColors(b.card.cost).length - cardColors(a.card.cost).length,
+      );
       break;
     case "sacrifice":
     case "sacCost":

@@ -5,48 +5,36 @@ import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { cardText } from "./lib.mjs";
-import { CORE } from "./sets/core.mjs";
-import { HUMANS } from "./sets/humans.mjs";
-import { ENCHANTMENTS } from "./sets/enchantments.mjs";
-import { THREE } from "./sets/three.mjs";
-import { HIGHLANDER } from "./sets/highlander.mjs";
-import { HOSHIYOMI } from "./sets/hoshiyomi.mjs";
-import { TEKKI } from "./sets/tekki.mjs";
-import { GRAVEYARD } from "./sets/graveyard.mjs";
-import { ARISTOCRATS } from "./sets/aristocrats.mjs";
-import { LIFEGAIN } from "./sets/lifegain.mjs";
-import { COUNTERS } from "./sets/counters.mjs";
-import { SPELLS } from "./sets/spells.mjs";
-import { EQUIPMENT } from "./sets/equipment.mjs";
-import { HEARTBEAT } from "./sets/heartbeat.mjs";
-import { ARMED } from "./sets/armed.mjs";
-import { TRIBAL } from "./sets/tribal.mjs";
-import { MISC } from "./sets/misc.mjs";
-import { ADVANCED } from "./sets/advanced.mjs";
+import { PACKS } from "./packs.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-const SETS = [
-  CORE,
-  HUMANS,
-  ENCHANTMENTS,
-  THREE,
-  HIGHLANDER,
-  HOSHIYOMI,
-  TEKKI,
-  GRAVEYARD,
-  ARISTOCRATS,
-  LIFEGAIN,
-  COUNTERS,
-  SPELLS,
-  EQUIPMENT,
-  HEARTBEAT,
-  ARMED,
-  TRIBAL,
-  MISC,
-  ADVANCED,
-];
-const CARDS = SETS.flat();
+// ---------------------------------------------------------------- パックとカードの所属
+/** カードID → 収録パック(最初に収録したパックが先頭) */
+const packsOf = new Map();
+const CARDS = [];
+for (const pack of PACKS) {
+  for (const c of pack.sets.flat()) {
+    if (packsOf.has(c.id)) throw new Error(`${c.id} が2つのパックに新規収録されています(再録は reprints に書く)`);
+    packsOf.set(c.id, [pack.id]);
+    CARDS.push({ ...c, pack: pack.id });
+  }
+}
+for (const pack of PACKS) {
+  for (const id of pack.reprints ?? []) {
+    const list = packsOf.get(id);
+    if (!list) throw new Error(`${pack.name}:再録するカード ${id} がありません`);
+    if (list[0] === pack.id) throw new Error(`${pack.name}:${id} は同じパックの新規カードです`);
+    if (!list.includes(pack.id)) list.push(pack.id);
+  }
+}
+const PACK_IDS = new Set(PACKS.map((p) => p.id));
+if (PACK_IDS.size !== PACKS.length) throw new Error("パックIDが重複しています");
+PACKS.forEach((p, i) => {
+  if (p.number !== i + 1) throw new Error(`${p.name}:第${p.number}弾の番号が順番になっていません`);
+  if (!["新規展開", "既存カード強化"].includes(p.kind)) throw new Error(`${p.name}:種類は「新規展開」か「既存カード強化」`);
+  if (!Array.isArray(p.words) || p.words.length !== 3) throw new Error(`${p.name}:テーマの単語は3つ`);
+});
 
 // ---------------------------------------------------------------- 共通の計算
 const COLORS = ["W", "U", "B", "R", "G"];
@@ -92,6 +80,13 @@ for (const c of CARDS) {
       if (e.then) effects.push(...e.then);
     }
   }
+  // 強化パックの新規カードは元のカードとの関係を持つ
+  if (c.basedOn) {
+    if (!["強化版", "リメイク", "サポート"].includes(c.basedOn.kind)) throw new Error(`${c.id}: basedOn の種類が不正です`);
+    if (!CARDS.some((x) => x.id === c.basedOn.id)) throw new Error(`${c.id}: 元のカード ${c.basedOn.id} がありません`);
+  }
+  const pack = PACKS.find((p) => p.id === c.pack);
+  if (pack.kind === "既存カード強化" && !c.basedOn) throw new Error(`${c.id}: 強化パックのカードには basedOn で元のカードを書いてください`);
   // 名前を参照するテーマは2つまで
   if (/星詠み/.test(c.name) && !c.tags?.includes("星詠み")) throw new Error(`${c.id}: 「星詠み」のカードは星詠みのセットに入れてください`);
   if (/鉄機/.test(c.name) && !c.tags?.includes("鉄機")) throw new Error(`${c.id}: 「鉄機」のカードは鉄機のセットに入れてください`);
@@ -110,11 +105,26 @@ function autoTags(c) {
 }
 
 const out = CARDS.map((c) => {
-  const { abilities, tags, ...rest } = c;
+  const { abilities, tags, pack, basedOn, ...rest } = c;
   const allTags = autoTags(c);
-  return { ...rest, text: cardText(c), ...(allTags.length ? { tags: allTags } : {}), abilities };
+  return {
+    ...rest,
+    text: cardText(c),
+    ...(allTags.length ? { tags: allTags } : {}),
+    pack,
+    packs: packsOf.get(c.id),
+    ...(basedOn ? { basedOn } : {}),
+    abilities,
+  };
 });
 writeFileSync(join(here, "cards.json"), JSON.stringify(out, null, 2) + "\n");
+
+// パックの一覧(アプリの絞り込みと表示に使う)
+const packsJson = PACKS.map(({ sets, reprints, ...p }) => {
+  const newCards = out.filter((c) => c.pack === p.id).map((c) => c.id);
+  return { ...p, newCards: newCards.length, reprints: reprints ?? [], total: newCards.length + (reprints?.length ?? 0) };
+});
+writeFileSync(join(here, "packs.json"), JSON.stringify(packsJson, null, 2) + "\n");
 
 // ---------------------------------------------------------------- スターターデッキ
 const INTERACTION = new Set(["damage", "destroy", "exile", "bounce", "tuck", "counter", "sacrifice", "fight", "bite", "destroyAll", "damageAll", "tap"]);
@@ -164,7 +174,8 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
     const cs = colorsOf(c.cost);
     const rarity = { コモン: 1, アンコモン: 2, レア: 3, 神話レア: 3.5 }[c.rarity];
     // テーマのカードはレアリティより「テーマに合うか」を優先する
-    if (themed(c)) return (inSet(c) ? 14 : 10) + rarity * 0.5 + (isInteraction(c) ? 1 : 0) + (mv(c.cost) <= 3 ? 0.5 : 0);
+    // 既存カード強化パックのカード(basedOn)は、テーマに合えば元のセットのカードより優先する
+    if (themed(c)) return (c.basedOn ? 15 : inSet(c) ? 14 : 10) + rarity * 0.5 + (isInteraction(c) ? 1 : 0) + (mv(c.cost) <= 3 ? 0.5 : 0);
     let s = rarity;
     if (cs.length >= 2) s += 1.5;
     if (cs.length === 0) s -= 1.5;
@@ -245,6 +256,9 @@ const DECKS = [
   { id: "t-goblin", name: "部族:ゴブリンの大群(赤単)", colors: ["R"], theme: (c) => sub("ゴブリン")(c), archetype: "部族" },
   { id: "t-elf", name: "部族:エルフの森(緑単)", colors: ["G"], theme: (c) => sub("エルフ")(c), archetype: "部族" },
   { id: "t-zombie", name: "部族:ゾンビの行進(黒単)", colors: ["B"], theme: (c) => sub("ゾンビ")(c), archetype: "部族" },
+  // 第4弾
+  { id: "t-crest", set: "aw", name: "紋章:大地の目覚め(緑白)", colors: ["G", "W"], allowColorless: true, theme: tag("紋章"), archetype: "紋章" },
+  { id: "t-manifest", set: "aw", name: "紋章:顕現の潮(緑青)", colors: ["G", "U"], allowColorless: true, theme: tag("紋章"), archetype: "紋章" },
 ];
 
 const decks = DECKS.map(({ theme, set, generic, allowColorless, highlander, themeSpells, ...d }) => ({
@@ -265,3 +279,4 @@ for (const c of out) for (const t of c.tags ?? []) tagCounts[t] = (tagCounts[t] 
 console.log(`カード ${out.length}種類`, counts);
 console.log("アーキタイプ", tagCounts);
 console.log(`スターターデッキ ${decks.length}個`);
+for (const p of packsJson) console.log(`第${p.number}弾「${p.name}」(${p.kind}) 新規${p.newCards} 再録${p.reprints.length}`);

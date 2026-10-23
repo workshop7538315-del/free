@@ -17,6 +17,8 @@ export type FilterState = {
   keyword: string;
   /** アーキタイプ(カードの tags) */
   archetype: string;
+  /** 収録パック(パックID。空ならすべて) */
+  pack: string;
   query: string;
   onlyInDeck: boolean;
   cost: Range;
@@ -34,6 +36,7 @@ export const initialFilters = (): FilterState => ({
   type: "すべて",
   keyword: "",
   archetype: "",
+  pack: "",
   query: "",
   onlyInDeck: false,
   cost: emptyRange(),
@@ -57,6 +60,7 @@ export function isFiltering(f: FilterState): boolean {
     f.type !== "すべて" ||
     !!f.keyword ||
     !!f.archetype ||
+    !!f.pack ||
     !!f.query.trim() ||
     f.onlyInDeck ||
     activeRangeCount(f) > 0
@@ -92,6 +96,7 @@ export function applyFilters(cards: Card[], f: FilterState, deck: DeckCards): Ca
     .filter((c) => f.type === "すべて" || c.type.includes(f.type))
     .filter((c) => !f.keyword || cardKeywords(c).has(f.keyword))
     .filter((c) => !f.archetype || (c.tags ?? []).includes(f.archetype))
+    .filter((c) => !f.pack || (c.packs ?? [c.pack]).includes(f.pack))
     .filter((c) => !f.onlyInDeck || (deck[c.id] ?? 0) > 0)
     .filter((c) => inRange(manaValue(c.cost), f.cost))
     .filter((c) => !rangeActive(f.power) || (c.power !== undefined && inRange(c.power, f.power)))

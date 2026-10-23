@@ -55,7 +55,7 @@ export type Cond =
   /** 指定したパーマネントをN個以上コントロールしている */
   | { control: Filter; n: number };
 
-export type CountKind = "mana" | "creatures" | "graveyard" | "colorsInMana" | "hand" | "oppCreatures" | "burned";
+export type CountKind = "mana" | "creatures" | "graveyard" | "colorsInMana" | "hand" | "oppCreatures" | "burned" | "crests";
 
 /** 数。"X"=唱えたときのX、count=数を数える、perm=条件に合う自分のパーマネントの数 */
 export type Amount = number | "X" | { count: CountKind } | { count: "perm"; filter: Filter };
@@ -130,6 +130,8 @@ export type Effect = Common &
     | { do: "mill"; n: Amount; who: "you" | "opp" }
     /** 略奪:対戦相手のマナゾーンのカードをN枚、自分のマナゾーンに移す */
     | { do: "plunder"; n: number }
+    /** 顕現 N:自分のマナゾーンからマナ総量N以下のクリーチャー・カードを1枚戦場に出す */
+    | { do: "manifest"; maxMV: number; haste?: boolean }
   );
 
 export type TriggerEvent =
@@ -186,8 +188,9 @@ export type Ability = { text?: string } & (
   | { a: "dash"; cost: string }
   | { a: "release"; cost: string }
   | { a: "spell"; targets?: TargetSpec[]; effects: Effect[] }
-  | { a: "trigger"; on: TriggerEvent; targets?: TargetSpec[]; effects: Effect[]; if?: Cond; filter?: Filter }
-  | { a: "static"; st: StaticSpec; if?: Cond }
+  /** from: "mana" は紋章(このカードがマナゾーンにあるあいだだけ働く) */
+  | { a: "trigger"; on: TriggerEvent; targets?: TargetSpec[]; effects: Effect[]; if?: Cond; filter?: Filter; from?: "mana" }
+  | { a: "static"; st: StaticSpec; if?: Cond; from?: "mana" }
   | { a: "activated"; cost: ActivatedCost; targets?: TargetSpec[]; effects: Effect[] }
   /** {T}:マナを加える。produce は選べる候補("any"=好きな色1色) */
   | { a: "mana"; produce: string[] }
