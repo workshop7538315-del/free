@@ -594,30 +594,121 @@ function chooseAttackers(g: Game, p: PlayerId, options: number[]): number[] {
   return out;
 }
 
-function chooseBlocks(g: Game, p: PlayerId, attackerIds: number[], blockerIds: number[]): BlockAnswer {
+/** 攻撃クリーチャーが、このブロッカーたち(この順にダメージを割り振る)のうち倒すもの */
+function killedByAttacker(g: Game, a: Obj, blockers: Obj[]): Obj[] {
+  const deathtouch = g.hasKw(a, "接死");
+  let rem = g.power(a) * (g.hasKw(a, "二段攻撃") ? 2 : 1);
+  const killed: Obj[] = [];
+  for (const b of blockers) {
+    if (rem <= 0) break;
+    const lethal = deathtouch ? 1 : Math.max(1, g.toughness(b) - b.damage);
+    if (rem >= lethal) {
+      if (!g.hasKw(b, "破壊不能") || deathtouch) killed.push(b);
+      rem -= lethal;
+    } else rem = 0;
+  }
+  return killed.filter((b) => !g.hasKw(b, "破壊不能"));
+}
+
+/** ブロッカーたちで攻撃クリーチャーを倒せるか(先制攻撃で先に倒されるものは数えない) */
+function blockersKill(g: Game, a: Obj, blockers: Obj[]): boolean {
+  if (g.hasKw(a, "破壊不能") || !blockers.length) return false;
+  const firstStrike = g.hasKw(a, "先制攻撃") || g.hasKw(a, "二段攻撃");
+  const dead = firstStrike ? killedByAttacker(g, a, blockers) : [];
+  const dealing = blockers.filter((b) => !dead.includes(b) || g.hasKw(b, "先制攻撃") || g.hasKw(b, "二段攻撃"));
+  if (dealing.some((b) => g.hasKw(b, "接死") && g.power(b) > 0)) return true;
+  const total = dealing.reduce((s, b) => s + Math.max(0, g.power(b)) * (g.hasKw(b, "二段攻撃") ? 2 : 1), 0);
+  return total >= g.toughness(a) - a.damage;
+}
+
+/** ブロックされたときに自分に届く戦闘ダメージ */
+function damageThrough(g: Game, a: Obj, blockers: Obj[]): number {
+  const mult = g.hasKw(a, "二段攻撃") ? 2 : 1;
+  const pw = Math.max(0, g.power(a));
+  const blocked = blockers.length > 0 && !(g.hasKw(a, "威迫") && blockers.length < 2);
+  if (!blocked) return pw * mult;
+  if (!g.hasKw(a, "トランプル")) return 0;
+  const deathtouch = g.hasKw(a, "接死");
+  const absorb = blockers.reduce((s, b) => s + (deathtouch ? 1 : Math.max(0, g.toughness(b) - b.damage)), 0);
+  return Math.max(0, pw - absorb) * mult;
+}
+
+/** 組み合わせ(size 個)を列挙する */
+function combos<T>(xs: T[], size: number): T[][] {
+  if (size === 0) return [[]];
+  if (xs.length < size) return [];
+  const [head, ...rest] = xs;
+  return [...combos(rest, size - 1).map((c) => [head, ...c]), ...combos(rest, size)];
+}
+
+export function chooseBlocks(g: Game, p: PlayerId, attackerIds: number[], blockerIds: number[]): BlockAnswer {
   const attackers = attackerIds
     .map((u) => g.find(u))
     .filter((o): o is Obj => !!o)
-    .sort((a, b) => g.power(b) - g.power(a));
+    .sort((a, b) => creatureValue(g, b) - creatureValue(g, a));
   const free = blockerIds.map((u) => g.find(u)).filter((o): o is Obj => !!o);
   const myLife = g.players[p].life;
-  let incoming = attackers.reduce((s, a) => s + g.power(a), 0);
-  const out: BlockAnswer = {};
+  const assign = new Map<Obj, Obj[]>();
+  const value = (o: Obj) => creatureValue(g, o) - (o.token ? 1 : 0);
+  // ブロッカーは価値の低い順に並べる(攻撃側のダメージは前から割り振られる)
+  const ordered = (bs: Obj[]) => [...bs].sort((x, y) => value(x) - value(y));
+  const take = (a: Obj, bs: Obj[]) => {
+    assign.set(a, ordered([...(assign.get(a) ?? []), ...bs]));
+    for (const b of bs) free.splice(free.indexOf(b), 1);
+  };
+  const lost = (a: Obj, bs: Obj[]) => killedByAttacker(g, a, ordered(bs)).reduce((s, b) => s + value(b), 0);
+  const totalThrough = () => attackers.reduce((s, a) => s + damageThrough(g, a, assign.get(a) ?? []), 0);
+
+  // 1) 1体で得をするブロック:一方的に倒す、倒されない、価値の低いもので相打ち
   for (const a of attackers) {
     if (g.hasKw(a, "威迫")) continue;
     const can = free.filter((b) => g.canBlock(b, a));
-    if (!can.length) continue;
-    const byValue = (xs: Obj[]) => [...xs].sort((x, y) => creatureValue(g, x) - creatureValue(g, y));
-    const great = byValue(can.filter((b) => kills(g, b, a) && !kills(g, a, b)));
-    const safe = byValue(can.filter((b) => !kills(g, a, b)));
-    const trade = byValue(can.filter((b) => kills(g, b, a) && creatureValue(g, b) <= creatureValue(g, a) + 0.3));
-    let pick: Obj | undefined = great[0] ?? safe[0] ?? trade[0];
-    if (!pick && incoming >= myLife) pick = byValue(can)[0];
-    if (pick) {
-      out[a.uid] = [pick.uid];
-      free.splice(free.indexOf(pick), 1);
-      if (!g.hasKw(a, "トランプル")) incoming -= g.power(a);
-    }
+    const byValue = (xs: Obj[]) => [...xs].sort((x, y) => value(x) - value(y));
+    const great = byValue(can.filter((b) => blockersKill(g, a, [b]) && !lost(a, [b])));
+    const safe = byValue(can.filter((b) => !lost(a, [b]) && (!g.hasKw(a, "トランプル") || damageThrough(g, a, [b]) < g.power(a))));
+    const trade = byValue(can.filter((b) => blockersKill(g, a, [b]) && value(b) <= value(a) + 0.3));
+    const pick = great[0] ?? safe[0] ?? trade[0];
+    if (pick) take(a, [pick]);
   }
+
+  // 2) 複数体で囲んで倒す:倒せて、失うものより得るものが大きいとき
+  for (const a of attackers) {
+    if (assign.get(a)?.length) continue;
+    const can = free.filter((b) => g.canBlock(b, a)).slice(0, 9);
+    let best: { bs: Obj[]; net: number } | null = null;
+    for (const size of [2, 3]) {
+      for (const bs of combos(can, size)) {
+        if (!blockersKill(g, a, bs)) continue;
+        const net = value(a) - lost(a, bs) + damageThrough(g, a, []) * 0.15 - damageThrough(g, a, bs) * 0.15;
+        if (net > 0.5 && (!best || net > best.net)) best = { bs, net };
+      }
+      if (best) break;
+    }
+    if (best) take(a, best.bs);
+  }
+
+  // 3) このままだと負けるなら、ダメージを一番減らせるように残りのブロッカーを足していく
+  //    (トランプル相手には何体も重ねて受け止める)
+  for (let guard = 0; guard < 20 && totalThrough() >= myLife && free.length; guard++) {
+    let best: { a: Obj; bs: Obj[]; gain: number; cost: number } | null = null;
+    for (const a of attackers) {
+      const cur = assign.get(a) ?? [];
+      const before = damageThrough(g, a, cur);
+      if (before <= 0) continue;
+      const can = free.filter((b) => g.canBlock(b, a));
+      const options = g.hasKw(a, "威迫") && cur.length === 0 ? combos(can.slice(0, 8), 2) : can.map((b) => [b]);
+      for (const bs of options) {
+        const gain = before - damageThrough(g, a, [...cur, ...bs]);
+        if (gain <= 0) continue;
+        const cost = bs.reduce((s, b) => s + value(b), 0);
+        if (!best || gain > best.gain || (gain === best.gain && cost < best.cost)) best = { a, bs, gain, cost };
+      }
+    }
+    if (!best) break;
+    take(best.a, best.bs);
+  }
+
+  const out: BlockAnswer = {};
+  for (const [a, bs] of assign) if (bs.length) out[a.uid] = bs.map((b) => b.uid);
   return out;
 }
