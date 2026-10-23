@@ -7,7 +7,7 @@ function Pip({ s }: { s: ManaSymbol }) {
     case "x":
       return <span className="pip pip-generic">X</span>;
     case "colorless":
-      return <span className="pip pip-C">◇</span>;
+      return <span className="pip pip-C">欠</span>;
     case "color":
       return <span className={`pip pip-${s.c}`} />;
     case "hybrid":
@@ -33,7 +33,7 @@ function spoken(cost: string): string {
         case "x":
           return "X";
         case "colorless":
-          return "無色";
+          return "欠色";
         case "color":
           return SPOKEN[s.c];
         case "hybrid":

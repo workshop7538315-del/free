@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Action, BlockAnswer, Decision, Game, Obj, Player, PlayerId, TargetRef } from "../../game/engine";
-import { STEP_NAMES, abilitiesOf, isCreatureCard, releaseAbility } from "../../game/engine";
+import { STEP_NAMES, abilitiesOf, isCreatureCard, manaColors, releaseAbility } from "../../game/engine";
 import type { HumanAgent } from "../../game/human";
 import { cardColors } from "../../lib/mana";
 import { ManaCost } from "../ManaCost";
@@ -118,7 +118,7 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit }: Props
     <div className="battle">
       <div className="battle-main">
         <PlayerBar g={g} p={cpu} targetable={playerTargetable(CPU)} onClick={() => onPlayer(CPU)} />
-        <ManaRow p={cpu} markOf={markOf} onCard={onCard} />
+        <ManaRow p={cpu} markOf={markOf} onCard={onCard} hidden />
         <Field g={g} p={cpu} markOf={markOf} onCard={onCard} label="相手の場" />
 
         <Center
@@ -204,7 +204,7 @@ function PlayerBar({ g, p, targetable, onClick }: { g: Game; p: Player; targetab
 }
 
 // ---------------------------------------------------------------- マナゾーン
-function ManaRow({ p, markOf, onCard }: { p: Player; markOf: (o: Obj) => string; onCard: (o: Obj) => void }) {
+function ManaRow({ p, markOf, onCard, hidden = false }: { p: Player; markOf: (o: Obj) => string; onCard: (o: Obj) => void; hidden?: boolean }) {
   const untapped = p.mana.filter((o) => !o.tapped).length;
   return (
     <section className="mana-row" aria-label={`${p.name}のマナゾーン`}>
@@ -214,18 +214,21 @@ function ManaRow({ p, markOf, onCard }: { p: Player; markOf: (o: Obj) => string;
       <div className="mana-chips">
         {p.mana.length === 0 && <span className="zone-empty">まだありません</span>}
         {p.mana.map((o) => {
-          const cs = cardColors(o.card.cost);
+          const cs = manaColors(o);
           const bg = cs.length === 0 ? "var(--mana-C)" : cs.length === 1 ? `var(--mana-${cs[0]})` : `linear-gradient(90deg, ${cs.map((c) => `var(--mana-${c})`).join(",")})`;
+          // 裏向きのカード:相手のものは名前を見せない
+          const secret = o.faceDown && hidden;
+          const label = o.faceDown ? (secret ? "裏向き" : `裏:${o.card.name}`) : o.card.name;
           return (
             <button
               key={o.uid}
               type="button"
-              className={`mana-chip ${o.tapped ? "is-tapped" : ""} ${markOf(o)} ${releaseAbility(o.card) ? "has-release" : ""}`}
+              className={`mana-chip ${o.tapped ? "is-tapped" : ""} ${o.faceDown ? "is-facedown" : ""} ${markOf(o)} ${!o.faceDown && releaseAbility(o.card) ? "has-release" : ""}`}
               onClick={() => onCard(o)}
-              title={o.card.name}
+              title={o.faceDown ? `${secret ? "裏向きのカード" : o.card.name}(裏向き:欠色のマナを出す。能力は働かない)` : o.card.name}
             >
               <span className="mana-chip-color" style={{ background: bg }} />
-              <span className="mana-chip-name">{o.card.name}</span>
+              <span className="mana-chip-name">{label}</span>
             </button>
           );
         })}
@@ -564,6 +567,17 @@ function CardDetail({ g, o }: { g: Game; o: Obj | null }) {
   if (!o) return <section className="detail detail-empty">カードを選ぶと、ここに詳しい内容が出ます。</section>;
   const c = o.card;
   const onField = o.zone === "battlefield";
+  if (o.zone === "mana" && o.faceDown) {
+    const mine = o.controller === 0;
+    return (
+      <section className="detail" aria-label="カードの詳細">
+        <header className="detail-head">
+          <h3 className="detail-name">裏向きのカード{mine ? `(${c.name})` : ""}</h3>
+        </header>
+        <p className="detail-text">マナゾーンで裏向きになっているカードです。名前・色・能力を持たない欠色のカードとして扱い、欠色マナを1つ出します。マナゾーンを離れると表向きに戻ります。</p>
+      </section>
+    );
+  }
   return (
     <section className="detail" aria-label="カードの詳細">
       <header className="detail-head">

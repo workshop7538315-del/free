@@ -28,6 +28,7 @@ import { ADVANCED } from "./sets/advanced.mjs";
 import { AWAKENING } from "./sets/p4-awakening.mjs";
 import { REKINDLE, REKINDLE_REPRINTS } from "./sets/p5-rekindle.mjs";
 import { COURT } from "./sets/p6-court.mjs";
+import { VOIDS } from "./sets/p7-void.mjs";
 
 export const PACKS = [
   {
@@ -84,5 +85,14 @@ export const PACKS = [
     words: ["貴族", "陰謀", "決闘"],
     theme: "表では貴族が剣を抜いて決闘し、裏では陰謀が相手の手札と戦力を削る。新キーワード「決闘」(自分と相手のクリーチャーが互いにパワー分のダメージを与え合う)と「陰謀」(このターン相手がカードを捨てたかクリーチャーを失ったなら有効)、新しい種族「貴族」。",
     sets: [COURT],
+  },
+  {
+    id: "p7",
+    number: 7,
+    name: "虚無の胎動",
+    kind: "新規展開",
+    words: ["虚無", "裏向き", "欠色"],
+    theme: "すべて欠色のパック。色を奪い(略奪)、色を捨て(虚化)、何もないところから力を得る(虚空・真空)。新しい種族・呪文の種類「虚無」は、欠色マナでなければ唱えられない。",
+    sets: [VOIDS],
   },
 ];

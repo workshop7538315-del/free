@@ -3,12 +3,14 @@
  */
 import type { Card } from "../types";
 import type { Amount, Effect, TargetSpec } from "./schema";
-import { cardColors, colorPips, manaValue, COLORS, type Color } from "../lib/mana";
+import { cardColors, colorPips, manaValue, parseCost, COLORS, type Color } from "../lib/mana";
 import {
   abilitiesOf,
   burnAbility,
   abilityOf,
   hasCrest,
+  crestActive,
+  manaColors,
   isAura,
   isCreatureCard,
   isEquipment,
@@ -121,14 +123,20 @@ function keepValue(g: Game, p: PlayerId, c: Card): number {
 }
 
 /** まだ足りない色(手札の色マナ記号と、マナゾーンの色の差) */
-function colorNeed(g: Game, p: PlayerId, except?: Obj): Record<Color, number> {
-  const need: Record<Color, number> = { W: 0, U: 0, B: 0, R: 0, G: 0 };
+function colorNeed(g: Game, p: PlayerId, except?: Obj): Record<Color | "C", number> {
+  const need: Record<Color | "C", number> = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
   for (const o of g.players[p].hand) {
     if (o === except) continue;
     const pips = colorPips(o.card.cost);
     for (const c of COLORS) need[c] = Math.max(need[c], pips[c]);
+    // {C}(欠色マナでしか払えない記号)
+    need.C = Math.max(need.C, parseCost(o.card.cost).filter((s) => s.kind === "colorless").length);
   }
-  for (const m of g.players[p].mana) for (const c of cardColors(m.card.cost)) need[c] -= 1;
+  for (const m of g.players[p].mana) {
+    const cs = manaColors(m);
+    for (const c of cs) need[c] -= 1;
+    if (cs.length === 0) need.C -= 1;
+  }
   return need;
 }
 
@@ -173,6 +181,7 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
       const o = me.hand.find((x) => x.uid === a.uid)!;
       let s = keepValue(g, p, o.card);
       for (const c of cardColors(o.card.cost)) if (need[c] > 0) s -= 1.2;
+      if (cardColors(o.card.cost).length === 0 && need.C > 0) s -= 1.2;
       if (cardColors(o.card.cost).length >= 2) s += 0.6; // タップ状態で置かれる
       // 今すぐ唱えたいカードは残す
       if (manaValue(o.card.cost) <= me.mana.length + 1 && manaValue(o.card.cost) >= 1) s += 0.8;
@@ -412,6 +421,12 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
     }
     case "plunder":
       return Math.min(e.n, them.mana.length) * 2.2;
+    case "veil": {
+      // 虚無のカード(欠色が多いと強くなる)があるときだけ得
+      const voidCards = [...me.hand, ...me.battlefield].filter((o) => o.card.tags?.includes("虚無")).length;
+      const colored = me.mana.filter((o) => manaColors(o).length > 0).length;
+      return voidCards ? Math.min(e.n, colored) * 0.6 : 0;
+    }
     case "mill":
       return e.who === "opp" ? n(e.n, 1) * (them.library.length <= n(e.n, 1) ? 20 : 0.35) : n(e.n, 1) * 0.2;
     case "addMana": {
@@ -606,7 +621,7 @@ function chooseCards(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseC
       const need = colorNeed(g, p);
       // 紋章を持つカードはマナゾーンに残す
       const score = (o: Obj) =>
-        (o.tapped ? 0 : 10) + (hasCrest(o.card) ? 30 : 0) + cardColors(o.card.cost).reduce((s, c) => s + Math.max(0, need[c]), 0);
+        (o.tapped ? 0 : 10) + (crestActive(o) ? 30 : 0) + manaColors(o).reduce((s, c) => s + Math.max(0, need[c]), 0);
       sorted = [...objs].sort((a, b) => score(a) - score(b));
       break;
     }
@@ -619,11 +634,22 @@ function chooseCards(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseC
       // 相手の紋章を優先して奪う・壊す
       sorted = [...objs].sort(
         (a, b) =>
-          Number(hasCrest(b.card)) - Number(hasCrest(a.card)) ||
+          Number(crestActive(b)) - Number(crestActive(a)) ||
           Number(a.tapped) - Number(b.tapped) ||
-          cardColors(b.card.cost).length - cardColors(a.card.cost).length,
+          manaColors(b).length - manaColors(a).length,
       );
       break;
+    case "veil": {
+      // 使わない色のカードから裏向きにする。紋章やマナ解放を持つカードは残す
+      const need = colorNeed(g, p);
+      const score = (o: Obj) =>
+        (crestActive(o) ? 30 : 0) +
+        (releaseAbility(o.card) ? 10 : 0) +
+        (manaColors(o).length === 0 ? 5 : 0) +
+        manaColors(o).reduce((s, c) => s + Math.max(0, need[c]) * 3, 0);
+      sorted = [...objs].sort((a, b) => score(a) - score(b));
+      break;
+    }
     case "sacrifice":
     case "sacCost":
       sorted = [...objs].sort((a, b) => creatureValue(g, a) - (a.token ? 2 : 0) - (creatureValue(g, b) - (b.token ? 2 : 0)));

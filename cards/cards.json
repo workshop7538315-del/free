@@ -23138,5 +23138,1366 @@
         ]
       }
     ]
+  },
+  {
+    "id": "vd01",
+    "name": "虚ろの石",
+    "cost": "{2}",
+    "type": "アーティファクト",
+    "rarity": "コモン",
+    "text": [
+      "{T}:{C}を加える。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "mana",
+        "produce": [
+          "{C}"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd02",
+    "name": "裏返しの鏡",
+    "cost": "{2}",
+    "type": "アーティファクト",
+    "rarity": "コモン",
+    "text": [
+      "裏返しの鏡が戦場に出たとき、虚化 2。カードを1枚引く。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "veil",
+            "n": 2
+          },
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd03",
+    "name": "色抜きの儀",
+    "cost": "{1}",
+    "type": "ソーサリー",
+    "rarity": "コモン",
+    "text": [
+      "虚化 2。あなたのライブラリーの一番上のカードを見る。そのカードをライブラリーの一番下に置いてもよい。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "veil",
+            "n": 2
+          },
+          {
+            "do": "lookTop"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd04",
+    "name": "無色の祭壇",
+    "cost": "{3}",
+    "type": "アーティファクト",
+    "rarity": "アンコモン",
+    "text": [
+      "{T}:{C}{C}を加える。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "mana",
+        "produce": [
+          "{C}{C}"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd05",
+    "name": "虚無の呼び声",
+    "cost": "{2}",
+    "type": "ソーサリー",
+    "rarity": "アンコモン",
+    "text": [
+      "あなたのライブラリーから虚無・カードを1枚探し、公開して手札に加える。その後ライブラリーを切り直す。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "tutor",
+            "filter": {
+              "sub": "虚無"
+            },
+            "to": "hand"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd06",
+    "name": "侵蝕の楔",
+    "cost": "{3}",
+    "type": "アーティファクト",
+    "rarity": "アンコモン",
+    "text": [
+      "侵蝕の楔が戦場に出たとき、略奪 1。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "plunder",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd07",
+    "name": "色抜きの番人",
+    "cost": "{2}",
+    "type": "アーティファクト・クリーチャー",
+    "rarity": "コモン",
+    "subtype": "構築物",
+    "power": 1,
+    "toughness": 3,
+    "text": [
+      "{T}:{C}を加える。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "mana",
+        "produce": [
+          "{C}"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd08",
+    "name": "虚無の幼生",
+    "cost": "{C}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "虚無・ドローン",
+    "power": 1,
+    "toughness": 1,
+    "text": [
+      "虚空 ― 虚無の幼生は+1/+0の修整を受ける。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 1,
+          "t": 0
+        },
+        "if": "void"
+      }
+    ]
+  },
+  {
+    "id": "vd09",
+    "name": "虚無の斥候",
+    "cost": "{1}{C}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "虚無・ドローン",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "真空 ― 虚無の斥候は速攻を持つ。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 0,
+          "t": 0,
+          "kw": [
+            "速攻"
+          ]
+        },
+        "if": "vacuum"
+      }
+    ]
+  },
+  {
+    "id": "vd10",
+    "name": "色彩の吸収者",
+    "cost": "{3}{C}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "虚無・ホラー",
+    "power": 2,
+    "toughness": 3,
+    "text": [
+      "色彩の吸収者が戦場に出たとき、略奪 1。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "plunder",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd11",
+    "name": "欠色を喰らうもの",
+    "cost": "{3}{C}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "虚無・ホラー",
+    "power": 0,
+    "toughness": 4,
+    "text": [
+      "欠色を喰らうものは、あなたのマナゾーンにある欠色のカード1枚につき+1/+0の修整を受ける。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "scale",
+          "per": {
+            "count": "colorlessMana"
+          },
+          "p": 1,
+          "t": 0
+        }
+      }
+    ]
+  },
+  {
+    "id": "vd12",
+    "name": "深淵の眼",
+    "cost": "{2}{C}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "虚無・眼",
+    "power": 1,
+    "toughness": 4,
+    "text": [
+      "飛行",
+      "深淵の眼が戦場に出たとき、虚化 1。カードを1枚引く。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "veil",
+            "n": 1
+          },
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd13",
+    "name": "虚無の触手",
+    "cost": "{1}{C}{C}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "虚無・ホラー",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "真空 ― 虚無の触手は威迫を持つ。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 0,
+          "t": 0,
+          "kw": [
+            "威迫"
+          ]
+        },
+        "if": "vacuum"
+      }
+    ]
+  },
+  {
+    "id": "vd14",
+    "name": "裏返る巨人",
+    "cost": "{4}{C}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "虚無・巨人",
+    "power": 5,
+    "toughness": 5,
+    "text": [
+      "裏返る巨人が戦場に出たとき、略奪 1。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "plunder",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd15",
+    "name": "虚無の司祭",
+    "cost": "{2}{C}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "虚無・クレリック",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "あなたが唱える虚無呪文を唱えるためのコストは{1}少なくなる。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "discount",
+          "filter": {
+            "sub": "虚無"
+          },
+          "n": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "vd16",
+    "name": "虚無の大口",
+    "cost": "{5}{C}{C}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "subtype": "虚無・巨獣",
+    "power": 7,
+    "toughness": 7,
+    "text": [
+      "トランプル",
+      "虚無の大口が戦場に出たとき、略奪 1。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "plunder",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd17",
+    "name": "終焉をもたらすもの",
+    "cost": "{7}{C}{C}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "虚無・巨獣",
+    "power": 10,
+    "toughness": 10,
+    "text": [
+      "トランプル",
+      "終焉をもたらすものが戦場に出たとき、略奪 2。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "plunder",
+            "n": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd18",
+    "name": "虚無の群体",
+    "cost": "{3}{C}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "虚無・ドローン",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "虚無の群体が戦場に出たとき、1/1の無色の虚無・ドローン・クリーチャー・トークンを2体生成する。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "token",
+            "n": 2,
+            "p": 1,
+            "t": 1,
+            "color": "C",
+            "sub": "虚無・ドローン"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd19",
+    "name": "静寂の歩哨",
+    "cost": "{2}{C}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "虚無・ドローン",
+    "power": 2,
+    "toughness": 4,
+    "text": [
+      "鉄壁"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "鉄壁"
+      }
+    ]
+  },
+  {
+    "id": "vd20",
+    "name": "虚空の追跡者",
+    "cost": "{3}{C}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "虚無・ホラー",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "虚空 ― 虚空の追跡者は飛行を持つ。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 0,
+          "t": 0,
+          "kw": [
+            "飛行"
+          ]
+        },
+        "if": "void"
+      }
+    ]
+  },
+  {
+    "id": "vd21",
+    "name": "色彩の簒奪者",
+    "cost": "{4}{C}{C}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "subtype": "虚無・ホラー",
+    "power": 4,
+    "toughness": 5,
+    "text": [
+      "真空 ― あなたのアップキープの開始時に、対戦相手は1点のライフを失う。あなたは1点のライフを得る。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "upkeep",
+        "effects": [
+          {
+            "do": "loseLife",
+            "n": 1,
+            "who": "opp"
+          },
+          {
+            "do": "gainLife",
+            "n": 1
+          }
+        ],
+        "if": "vacuum"
+      }
+    ]
+  },
+  {
+    "id": "vd22",
+    "name": "虚無の母体",
+    "cost": "{4}{C}{C}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "subtype": "虚無・母体",
+    "power": 2,
+    "toughness": 6,
+    "text": [
+      "あなたのアップキープの開始時に、1/1の無色の虚無・ドローン・クリーチャー・トークンを1体生成する。真空 ― 代わりに、1/1の無色の虚無・ドローン・クリーチャー・トークンを2体生成する。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "upkeep",
+        "effects": [
+          {
+            "do": "token",
+            "n": 1,
+            "p": 1,
+            "t": 1,
+            "color": "C",
+            "sub": "虚無・ドローン",
+            "unless": "vacuum"
+          },
+          {
+            "do": "token",
+            "n": 2,
+            "p": 1,
+            "t": 1,
+            "color": "C",
+            "sub": "虚無・ドローン",
+            "if": "vacuum"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd23",
+    "name": "無に還すもの",
+    "cost": "{4}{C}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "虚無・ホラー",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "真空 ― 無に還すものが戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。それを追放する。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "exile",
+            "tg": 0,
+            "if": "vacuum"
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd24",
+    "name": "虚ろな巨像",
+    "cost": "{6}{C}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "虚無・巨人",
+    "power": 7,
+    "toughness": 7,
+    "text": [
+      "虚空 ― 虚ろな巨像はトランプルを持つ。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 0,
+          "t": 0,
+          "kw": [
+            "トランプル"
+          ]
+        },
+        "if": "void"
+      }
+    ]
+  },
+  {
+    "id": "vd25",
+    "name": "虚無の一撃",
+    "cost": "{2}{C}",
+    "type": "インスタント",
+    "rarity": "コモン",
+    "subtype": "虚無",
+    "text": [
+      "クリーチャー1体かプレイヤー1人を対象とする。虚無の一撃はそれに2点のダメージを与える。虚空 ― 代わりに、虚無の一撃はそれに3点のダメージを与える。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "damage",
+            "n": 2,
+            "tg": 0,
+            "unless": "void"
+          },
+          {
+            "do": "damage",
+            "n": 3,
+            "tg": 0,
+            "if": "void"
+          }
+        ],
+        "targets": [
+          {
+            "t": "any"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd26",
+    "name": "消去",
+    "cost": "{3}{C}",
+    "type": "インスタント",
+    "rarity": "アンコモン",
+    "subtype": "虚無",
+    "text": [
+      "マナ総量が3以下のクリーチャー1体を対象とする。それを追放する。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "exile",
+            "tg": 0
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "filter": {
+              "maxMV": 3
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd27",
+    "name": "虚無の封印",
+    "cost": "{1}{C}{C}",
+    "type": "インスタント",
+    "rarity": "アンコモン",
+    "subtype": "虚無",
+    "text": [
+      "呪文1つを対象とする。それを打ち消す。真空 ― カードを1枚引く。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "counter",
+            "tg": 0
+          },
+          {
+            "do": "draw",
+            "n": 1,
+            "if": "vacuum"
+          }
+        ],
+        "targets": [
+          {
+            "t": "spell"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd28",
+    "name": "色彩の剥奪",
+    "cost": "{3}{C}",
+    "type": "ソーサリー",
+    "rarity": "アンコモン",
+    "subtype": "虚無",
+    "text": [
+      "略奪 2。カードを1枚引く。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "plunder",
+            "n": 2
+          },
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd29",
+    "name": "虚無の拡散",
+    "cost": "{5}{C}{C}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "subtype": "虚無",
+    "text": [
+      "虚無の拡散は対戦相手がコントロールする各クリーチャーにそれぞれ3点のダメージを与える。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "damageAll",
+            "n": 3,
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd30",
+    "name": "深淵への回帰",
+    "cost": "{2}{C}",
+    "type": "ソーサリー",
+    "rarity": "コモン",
+    "subtype": "虚無",
+    "text": [
+      "あなたの墓地にある虚無・カード1枚を対象とする。それをあなたの手札に戻す。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "returnCard",
+            "tg": 0,
+            "to": "hand"
+          }
+        ],
+        "targets": [
+          {
+            "t": "graveyard",
+            "filter": {
+              "sub": "虚無"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd31",
+    "name": "無の帳",
+    "cost": "{2}{C}",
+    "type": "インスタント",
+    "rarity": "コモン",
+    "subtype": "虚無",
+    "text": [
+      "対戦相手がコントロールするクリーチャー1体を対象とする。それをタップする。それは、そのコントローラーの次のアンタップ・ステップにアンタップしない。カードを1枚引く。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "tap",
+            "tg": 0,
+            "freeze": true
+          },
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd32",
+    "name": "虚無の帰結",
+    "cost": "{5}{C}{C}",
+    "type": "ソーサリー",
+    "rarity": "神話レア",
+    "subtype": "虚無",
+    "text": [
+      "パワーが4以下のクリーチャーをすべて破壊する。1/1の無色の虚無・ドローン・クリーチャー・トークンを3体生成する。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "destroyAll",
+            "maxPower": 4
+          },
+          {
+            "do": "token",
+            "n": 3,
+            "p": 1,
+            "t": 1,
+            "color": "C",
+            "sub": "虚無・ドローン"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd33",
+    "name": "虚無の門",
+    "cost": "{2}{C}",
+    "type": "エンチャント",
+    "rarity": "レア",
+    "subtype": "虚無",
+    "text": [
+      "あなたがコントロールする虚無は+1/+1の修整を受ける。"
+    ],
+    "tags": [
+      "虚無",
+      "エンチャント"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 1,
+          "t": 1,
+          "filter": {
+            "sub": "虚無"
+          },
+          "others": false
+        }
+      }
+    ]
+  },
+  {
+    "id": "vd34",
+    "name": "裏返しの儀式",
+    "cost": "{1}{C}",
+    "type": "エンチャント",
+    "rarity": "アンコモン",
+    "subtype": "虚無",
+    "text": [
+      "あなたのアップキープの開始時に、虚化 1。あなたのライブラリーの一番上のカードを見る。そのカードをライブラリーの一番下に置いてもよい。"
+    ],
+    "tags": [
+      "虚無",
+      "エンチャント"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "upkeep",
+        "effects": [
+          {
+            "do": "veil",
+            "n": 1
+          },
+          {
+            "do": "lookTop"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vd35",
+    "name": "虚無の刻印",
+    "cost": "{1}{C}",
+    "type": "アーティファクト",
+    "rarity": "アンコモン",
+    "subtype": "虚無",
+    "text": [
+      "{T}:{C}を加える。",
+      "紋章 ― あなたが唱える虚無呪文を唱えるためのコストは{1}少なくなる。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "mana",
+        "produce": [
+          "{C}"
+        ]
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "discount",
+          "filter": {
+            "sub": "虚無"
+          },
+          "n": 1
+        },
+        "from": "mana"
+      }
+    ]
+  },
+  {
+    "id": "vd36",
+    "name": "虚ろの残響",
+    "cost": "{1}{C}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "虚無・スピリット",
+    "power": 2,
+    "toughness": 1,
+    "text": [
+      "輪廻"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "輪廻"
+      }
+    ]
+  },
+  {
+    "id": "vd37",
+    "name": "漂う虚無",
+    "cost": "{2}{C}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "虚無・スピリット",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "飛行"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      }
+    ]
+  },
+  {
+    "id": "vd38",
+    "name": "欠片の巨獣",
+    "cost": "{4}{C}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "虚無・巨獣",
+    "power": 4,
+    "toughness": 4,
+    "text": [
+      "真空 ― 欠片の巨獣は+1/+1の修整を受け、トランプルを持つ。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 1,
+          "t": 1,
+          "kw": [
+            "トランプル"
+          ]
+        },
+        "if": "vacuum"
+      }
+    ]
+  },
+  {
+    "id": "vd39",
+    "name": "虚無の祭司長",
+    "cost": "{3}{C}{C}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "subtype": "虚無・クレリック",
+    "power": 3,
+    "toughness": 4,
+    "text": [
+      "真空 ― あなたのアップキープの開始時に、カードを1枚引く。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "upkeep",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "if": "vacuum"
+      }
+    ]
+  },
+  {
+    "id": "vd40",
+    "name": "色を奪う手",
+    "cost": "{2}{C}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "虚無・ホラー",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "威迫",
+      "虚空 ― 色を奪う手が攻撃するたび、対戦相手は1点のライフを失う。あなたは1点のライフを得る。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p7",
+    "packs": [
+      "p7"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "威迫"
+      },
+      {
+        "a": "trigger",
+        "on": "attacks",
+        "effects": [
+          {
+            "do": "loseLife",
+            "n": 1,
+            "who": "opp"
+          },
+          {
+            "do": "gainLife",
+            "n": 1
+          }
+        ],
+        "if": "void"
+      }
+    ]
   }
 ]

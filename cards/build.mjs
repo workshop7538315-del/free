@@ -88,6 +88,9 @@ for (const c of CARDS) {
   const pack = PACKS.find((p) => p.id === c.pack);
   if (pack.kind === "既存カード強化" && !c.basedOn) throw new Error(`${c.id}: 強化パックのカードには basedOn で元のカードを書いてください`);
   // 名前を参照するテーマは2つまで
+  // 虚無は欠色マナでなければ唱えられない:コストに {C} を持ち、色マナ記号を持たない
+  if ((c.subtype ?? "").split("・").includes("虚無") && (!c.cost.includes("{C}") || /[WUBRG]/.test(c.cost)))
+    throw new Error(`${c.id}: 虚無のカードはコストに {C} を持ち、色マナ記号を持たない`);
   if (/星詠み/.test(c.name) && !c.tags?.includes("星詠み")) throw new Error(`${c.id}: 「星詠み」のカードは星詠みのセットに入れてください`);
   if (/鉄機/.test(c.name) && !c.tags?.includes("鉄機")) throw new Error(`${c.id}: 「鉄機」のカードは鉄機のセットに入れてください`);
 }
@@ -160,7 +163,7 @@ function isSymmetricWipe(c) {
   );
 }
 
-function buildDeck({ colors, theme, set, generic = false, allowColorless = false, highlander = false, themeSpells = 8 }) {
+function buildDeck({ colors, theme, set, generic = false, allowColorless = false, highlander = false, themeSpells = 8, themeCreatures = 16, core = {}, restNonTheme = false }) {
   const fits = (c) => {
     if (c.cost.includes("{C}") && !allowColorless) return false;
     if (generic && c.tags?.length) return false;
@@ -210,13 +213,22 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
     }
     return got;
   };
+  // 必ず入れるカード(デッキの軸)
+  for (const [id, n] of Object.entries(core)) {
+    const c = out.find((x) => x.id === id);
+    if (!c) throw new Error(`core のカード ${id} がありません`);
+    add(c, n, true);
+  }
   if (theme) {
-    fill((c) => themed(c) && isCre(c), 16, false);
+    fill((c) => themed(c) && isCre(c), themeCreatures, false);
     fill((c) => themed(c) && !isCre(c), themeSpells, false);
   }
-  fill((c) => !isCre(c) && isInteraction(c), 8, false);
-  fill(isCre, Math.max(0, 22 - Object.entries(deck).filter(([id]) => isCre(out.find((x) => x.id === id))).reduce((s, [, n]) => s + n, 0)), false);
-  fill((c) => !isCre(c), 40 - total, false);
+  // restNonTheme:テーマの枠を埋めたら、残りはテーマ以外のカード(色のカード)で組む
+  const rest = (f) => (c) => (!restNonTheme || !themed(c)) && f(c);
+  fill(rest((c) => !isCre(c) && isInteraction(c)), 8, false);
+  fill(rest(isCre), Math.max(0, 22 - Object.entries(deck).filter(([id]) => isCre(out.find((x) => x.id === id))).reduce((s, [, n]) => s + n, 0)), false);
+  fill(rest((c) => !isCre(c)), 40 - total, false);
+  if (restNonTheme) fill(rest(() => true), 40 - total, false);
   fill(() => true, 40 - total, true);
   if (total !== 40) throw new Error(`デッキ ${colors.join("")} が40枚になりません(${total})`);
   return deck;
@@ -261,11 +273,13 @@ const DECKS = [
   { id: "t-manifest", set: "aw", name: "紋章:顕現の潮(緑青)", colors: ["G", "U"], allowColorless: true, theme: tag("紋章"), archetype: "紋章" },
   { id: "t-duel", set: "ct", name: "決闘:剣と薔薇の作法(赤白)", colors: ["R", "W"], allowColorless: true, theme: tag("決闘"), archetype: "決闘" },
   { id: "t-intrigue", set: "ct", name: "陰謀:影の宮廷(青黒)", colors: ["U", "B"], theme: tag("陰謀"), archetype: "陰謀" },
+  { id: "t-void", set: "vd", name: "虚無:色喰らいの深淵(欠色)", colors: [], allowColorless: true, theme: tag("虚無"), archetype: "虚無" },
+  { id: "t-void-swarm", set: "vd", name: "虚無:群れなす虚無(欠色)", colors: [], allowColorless: true, theme: tag("虚無"), archetype: "虚無", core: { vd08: 4, vd09: 4, vd36: 4, vd13: 4, vd18: 3, vd33: 3, vd37: 3, vd38: 2, vd22: 2 } },
 ];
 
-const decks = DECKS.map(({ theme, set, generic, allowColorless, highlander, themeSpells, ...d }) => ({
+const decks = DECKS.map(({ theme, set, generic, allowColorless, highlander, themeSpells, themeCreatures, core, restNonTheme, ...d }) => ({
   ...d,
-  cards: buildDeck({ colors: d.colors, theme, set, generic, allowColorless, highlander, themeSpells }),
+  cards: buildDeck({ colors: d.colors, theme, set, generic, allowColorless, highlander, themeSpells, themeCreatures, core, restNonTheme }),
 }));
 writeFileSync(join(here, "decks.json"), JSON.stringify(decks, null, 2) + "\n");
 

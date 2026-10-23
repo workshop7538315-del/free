@@ -187,6 +187,8 @@ export const E = {
   tutor: (filter, to = "hand") => ({ do: "tutor", filter, to }),
   mill: (n, who = "opp") => ({ do: "mill", n, who }),
   plunder: (n) => ({ do: "plunder", n }),
+  /** 虚化 N:自分のマナゾーンのカードをN枚裏向きにする */
+  veil: (n) => ({ do: "veil", n }),
   manifest: (maxMV, haste = false) => ({ do: "manifest", maxMV, ...(haste ? { haste } : {}) }),
   /** 決闘:対象は [自分のクリーチャー, 相手のクリーチャー]。win は勝ったときの効果 */
   duel: (win) => ({ do: "duel", tg: [0, 1], ...(win ? { win: [win].flat() } : {}) }),
@@ -236,6 +238,7 @@ const COUNT_TEXT = {
   colorsInMana: "あなたのマナゾーンにあるカードの色の数",
   burned: "燃焼した枚数",
   crests: "あなたのマナゾーンにある紋章を持つカードの枚数",
+  colorlessMana: "あなたのマナゾーンにある欠色のカード(裏向きを含む)の枚数",
 };
 const PER_TEXT = {
   mana: "あなたのマナゾーンにあるカード1枚につき",
@@ -245,6 +248,7 @@ const PER_TEXT = {
   hand: "あなたの手札1枚につき",
   colorsInMana: "あなたのマナゾーンにあるカードの色1色につき",
   crests: "あなたのマナゾーンにある紋章を持つカード1枚につき",
+  colorlessMana: "あなたのマナゾーンにある欠色のカード1枚につき",
 };
 function countText(n) {
   if (n.count === "perm") return `あなたがコントロールする${filterPhrase(n.filter, "permanent")}の数`;
@@ -281,6 +285,8 @@ export function condLabel(c) {
       ferocious: "獰猛",
       oppTurn: "伏兵",
       intrigue: "陰謀",
+      void: "虚空",
+      vacuum: "真空",
     }[c] ?? null
   );
 }
@@ -318,6 +324,8 @@ function condPlain(c) {
     fullBloom: "あなたのマナゾーンにカードが10枚以上ある",
     abyss: "あなたの墓地にカードが12枚以上ある",
     oppTurn: "対戦相手のターンである",
+    void: "あなたのマナゾーンのカードの半分以上が欠色である",
+    vacuum: "あなたのマナゾーンのカードがすべて欠色である",
     intrigue: "このターン、対戦相手がカードを捨てたか、対戦相手のクリーチャーが戦場を離れた",
     threshold: "あなたの墓地にカードが7枚以上ある",
     hellbent: "あなたの手札がない",
@@ -469,6 +477,8 @@ function effectText(e, name, abil, notes) {
     }
     case "plunder":
       return `略奪 ${e.n}。`;
+    case "veil":
+      return `虚化 ${e.n}。`;
     case "manifest":
       return `顕現 ${e.maxMV}。${e.haste ? "ターン終了時まで、そのクリーチャーは速攻を得る。" : ""}`;
     case "mill":

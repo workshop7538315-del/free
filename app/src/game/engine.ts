@@ -30,6 +30,8 @@ type Mod = { p: number; t: number; kw: string[] };
 
 export type Obj = {
   uid: number;
+  /** マナゾーンで裏向き(名前・色・能力を持たない欠色のカードとして扱う) */
+  faceDown?: boolean;
   card: Card;
   owner: PlayerId;
   controller: PlayerId;
@@ -118,7 +120,7 @@ export type Decision =
   | { kind: "target"; prompt: string; spec: TargetSpec; options: TargetRef[]; source: Obj; effects: Effect[]; index: number }
   | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "kicker" | "lookTop" | "mulligan" | "reclaim"; obj?: Obj }
   | { kind: "number"; prompt: string; min: number; max: number; reason?: "x" | "burn"; obj?: Obj }
-  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" }
+  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" }
   | { kind: "attackers"; options: number[] }
   | { kind: "blockers"; attackers: number[]; blockers: number[] };
 
@@ -163,6 +165,10 @@ export const isEquipment = (c: Card) => abilitiesOf(c).some((a) => a.a === "equi
 /** 紋章(マナゾーンで働く能力)か */
 export const isCrestAbility = (a: Ability) => (a.a === "static" || a.a === "trigger") && a.from === "mana";
 export const hasCrest = (c: Card) => abilitiesOf(c).some(isCrestAbility);
+/** マナゾーンのカードの色。裏向きなら欠色 */
+export const manaColors = (o: Obj): Color[] => (o.faceDown ? [] : cardColors(o.card.cost));
+/** マナゾーンで紋章が働くカードか(裏向きなら働かない) */
+export const crestActive = (o: Obj) => !o.faceDown && hasCrest(o.card);
 export function abilityOf<K extends Ability["a"]>(c: Card, kind: K): Extract<Ability, { a: K }> | undefined {
   return abilitiesOf(c).find((a) => a.a === kind) as Extract<Ability, { a: K }> | undefined;
 }
@@ -348,6 +354,8 @@ export class Game {
     }
     if (o.zone === "stack") this.stack = this.stack.filter((s) => s.obj !== o);
     const wasBattlefield = o.zone === "battlefield";
+    // 領域を移ると表向きに戻る
+    o.faceDown = false;
     // 陰謀:戦場を離れたクリーチャーと、手札から墓地に置かれた(捨てた)カードを数える
     if (wasBattlefield && to !== "battlefield" && isCreatureCard(o.card)) this.players[o.controller].lostThisTurn++;
     if (o.zone === "hand" && to === "graveyard") this.players[o.owner].lostThisTurn++;
@@ -407,7 +415,7 @@ export class Game {
   cond(c: Cond, p: PlayerId, burned = false, kicked = false): boolean {
     const pl = this.players[p];
     if (typeof c === "object") {
-      if ("armed" in c) return pl.mana.filter((o) => cardColors(o.card.cost).includes(c.armed)).length >= c.n;
+      if ("armed" in c) return pl.mana.filter((o) => manaColors(o).includes(c.armed)).length >= c.n;
       return pl.battlefield.filter((o) => matchFilter(o.card, c.control, this.colorsOf(o))).length >= c.n;
     }
     switch (c) {
@@ -423,6 +431,10 @@ export class Game {
         return pl.graveyard.length >= 12;
       case "oppTurn":
         return this.active !== p;
+      case "void":
+        return pl.mana.length > 0 && pl.mana.filter((o) => manaColors(o).length === 0).length * 2 >= pl.mana.length;
+      case "vacuum":
+        return pl.mana.length > 0 && pl.mana.every((o) => manaColors(o).length === 0);
       case "intrigue":
         return this.players[this.other(p)].lostThisTurn > 0;
       case "fewerMana":
@@ -459,9 +471,11 @@ export class Game {
       case "burned":
         return burnCount;
       case "crests":
-        return pl.mana.filter((o) => hasCrest(o.card)).length;
+        return pl.mana.filter(crestActive).length;
+      case "colorlessMana":
+        return pl.mana.filter((o) => manaColors(o).length === 0).length;
       case "colorsInMana":
-        return new Set(pl.mana.flatMap((o) => cardColors(o.card.cost))).size;
+        return new Set(pl.mana.flatMap(manaColors)).size;
       case "perm":
         return pl.battlefield.filter((o) => matchFilter(o.card, n.filter, this.colorsOf(o))).length;
     }
@@ -470,6 +484,7 @@ export class Game {
   /** その領域で働いている能力。紋章はマナゾーンでだけ、それ以外は戦場でだけ働く */
   activeAbilities(o: Obj): Ability[] {
     const inMana = o.zone === "mana";
+    if (inMana && o.faceDown) return [];
     return abilitiesOf(o.card).filter((a) => isCrestAbility(a) === inMana);
   }
 
@@ -693,7 +708,7 @@ export class Game {
     pl.pool.forEach((m, i) => units.push({ tapGroup: `pool${i}`, options: [m], priority: 0 }));
     for (const o of pl.mana) {
       if (o.tapped || o === exclude) continue;
-      const cs = cardColors(o.card.cost);
+      const cs = manaColors(o);
       units.push({ tapGroup: `m${o.uid}`, options: cs.length ? cs : ["C"], priority: 1 });
     }
     for (const o of pl.battlefield) {
@@ -771,6 +786,7 @@ export class Game {
     const c = o.card;
     let cost = c.cost;
     if (from === "mana") {
+      if (o.faceDown) return null;
       const rel = releaseAbility(c);
       if (!rel) return null;
       cost = rel.cost;
@@ -834,7 +850,7 @@ export class Game {
       for (const o of pl.hand) out.push({ type: "charge", uid: o.uid });
     }
     for (const o of pl.hand) if (this.canCast(p, o, "hand")) out.push({ type: "cast", uid: o.uid, from: "hand" });
-    for (const o of pl.mana) if (releaseAbility(o.card) && this.canCast(p, o, "mana")) out.push({ type: "cast", uid: o.uid, from: "mana" });
+    for (const o of pl.mana) if (!o.faceDown && releaseAbility(o.card) && this.canCast(p, o, "mana")) out.push({ type: "cast", uid: o.uid, from: "mana" });
     for (const o of pl.graveyard) if (abilityOf(o.card, "flashback") && this.canCast(p, o, "graveyard")) out.push({ type: "cast", uid: o.uid, from: "graveyard" });
     for (const o of pl.hand) if (abilityOf(o.card, "dash") && this.canCast(p, o, "dash")) out.push({ type: "cast", uid: o.uid, from: "dash" });
     for (const o of pl.hand) {
@@ -1509,7 +1525,7 @@ export class Game {
         break;
       }
       case "manifest": {
-        const opts = pl.mana.filter((o) => isCreatureCard(o.card) && manaValue(o.card.cost) <= e.maxMV);
+        const opts = pl.mana.filter((o) => !o.faceDown && isCreatureCard(o.card) && manaValue(o.card.cost) <= e.maxMV);
         if (!opts.length) {
           this.addLog("顕現:マナゾーンに出せるクリーチャーがなかった", p);
           break;
@@ -1524,12 +1540,23 @@ export class Game {
         const zone = this.players[opp].mana;
         const picked = await this.askCards(p, `略奪:相手のマナゾーンから奪うカードを${e.n}枚選んでください`, zone, Math.min(e.n, zone.length), "erode");
         for (const o of picked) {
+          const name = o.faceDown ? "裏向きのカード" : o.card.name;
           zone.splice(zone.indexOf(o), 1);
           o.owner = p;
           o.controller = p;
-          this.putIntoMana(o, p, true);
-          this.addLog(`略奪で${this.players[opp].name}の${o.card.name}を自分のマナゾーンに置いた`, p);
+          // 裏向きにして置く(チャージ時の能力は誘発しない)
+          this.move(o, "mana", { tapped: true });
+          o.faceDown = true;
+          this.addLog(`略奪で${this.players[opp].name}の${name}を裏向きにして自分のマナゾーンに置いた`, p);
         }
+        if (picked.length) this.queueTriggers("manaEnter", this.sources(p));
+        break;
+      }
+      case "veil": {
+        const faceUp = pl.mana.filter((o) => !o.faceDown);
+        const picked = await this.askCards(p, `虚化:裏向きにするマナゾーンのカードを${e.n}枚選んでください`, faceUp, Math.min(e.n, faceUp.length), "veil");
+        for (const o of picked) o.faceDown = true;
+        if (picked.length) this.addLog(`虚化で${picked.map((o) => o.card.name).join("、")}を裏向きにした`, p);
         break;
       }
       case "mill": {

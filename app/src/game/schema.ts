@@ -47,6 +47,10 @@ export type CondName =
   | "abyss"
   /** 伏兵:対戦相手のターンである */
   | "oppTurn"
+  /** 虚空:自分のマナゾーンのカードの半分以上が欠色(裏向きを含む) */
+  | "void"
+  /** 真空:自分のマナゾーンのカードがすべて欠色(1枚以上) */
+  | "vacuum"
   /** 陰謀:このターン、対戦相手がカードを捨てたか、対戦相手のクリーチャーが戦場を離れた */
   | "intrigue";
 
@@ -57,7 +61,7 @@ export type Cond =
   /** 指定したパーマネントをN個以上コントロールしている */
   | { control: Filter; n: number };
 
-export type CountKind = "mana" | "creatures" | "graveyard" | "colorsInMana" | "hand" | "oppCreatures" | "burned" | "crests";
+export type CountKind = "mana" | "creatures" | "graveyard" | "colorsInMana" | "hand" | "oppCreatures" | "burned" | "crests" | "colorlessMana";
 
 /** 数。"X"=唱えたときのX、count=数を数える、perm=条件に合う自分のパーマネントの数 */
 export type Amount = number | "X" | { count: CountKind } | { count: "perm"; filter: Filter };
@@ -130,8 +134,10 @@ export type Effect = Common &
     | { do: "tutor"; filter: Filter; to: "hand" | "battlefield" | "mana" }
     /** ライブラリーの上からN枚を墓地に置く */
     | { do: "mill"; n: Amount; who: "you" | "opp" }
-    /** 略奪:対戦相手のマナゾーンのカードをN枚、自分のマナゾーンに移す */
+    /** 略奪:対戦相手のマナゾーンのカードをN枚、裏向き(欠色)にしてタップ状態で自分のマナゾーンに移す */
     | { do: "plunder"; n: number }
+    /** 虚化:自分のマナゾーンの表向きのカードをN枚、裏向き(欠色)にする */
+    | { do: "veil"; n: number }
     /** 顕現 N:自分のマナゾーンからマナ総量N以下のクリーチャー・カードを1枚戦場に出す */
     | { do: "manifest"; maxMV: number; haste?: boolean }
     /**
