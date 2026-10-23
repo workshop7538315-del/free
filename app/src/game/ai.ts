@@ -138,6 +138,11 @@ function kills(g: Game, a: Obj, b: Obj, extraPower = 0): boolean {
   return g.hasKw(a, "接死") || pw >= g.toughness(b) - b.damage;
 }
 
+/** 決闘で先にダメージを与えられるか */
+function duelFirst(g: Game, o: Obj): boolean {
+  return g.hasKw(o, "先制攻撃") || g.hasKw(o, "二段攻撃");
+}
+
 function findObj(g: Game, r: TargetRef): Obj | undefined {
   return r.kind === "obj" ? g.find(r.uid) : undefined;
 }
@@ -382,6 +387,19 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
         }
       return best;
     }
+    case "duel": {
+      const winValue = (e.win ?? []).reduce((sum, w) => sum + Math.max(0, effectValue(g, p, w, targets, inCombat)), 0);
+      if (e.self) return oppCreatures.filter((t) => !g.hasKw(t, "呪禁")).length ? 1.2 + winValue * 0.5 : 0;
+      let best = 0;
+      for (const mine of myCreatures)
+        for (const t of oppCreatures) {
+          if (g.hasKw(t, "呪禁")) continue;
+          if (!kills(g, mine, t)) continue;
+          const die = kills(g, t, mine) && !(duelFirst(g, mine) && !duelFirst(g, t));
+          best = Math.max(best, creatureValue(g, t) - (die ? creatureValue(g, mine) : 0) + (die ? 0 : winValue));
+        }
+      return best;
+    }
     case "lookTop":
       return 0.3;
     case "untap":
@@ -456,6 +474,8 @@ function harmful(e: Effect | undefined, index: number): boolean {
     case "fight":
     case "bite":
       return index === 1;
+    case "duel":
+      return e.self ? index === 0 : index === 1;
     default:
       return true;
   }
@@ -500,6 +520,21 @@ function chooseTarget(g: Game, p: PlayerId, d: Extract<Decision, { kind: "target
         const killable = theirs.filter((x) => g.toughness(x.o) - x.o.damage <= t);
         if (killable.length) pool = killable;
       }
+      if (effect?.do === "duel" || effect?.do === "fight" || effect?.do === "bite") {
+        // 決闘・格闘:自分のクリーチャーが倒せて、できれば生き残れる相手を選ぶ
+        const fighter =
+          effect.do === "duel" && effect.self
+            ? d.source
+            : [...g.creatures(p)].sort((a, b) => g.power(b) - g.power(a))[0];
+        if (fighter) {
+          const killable = theirs.filter((x) => kills(g, fighter, x.o));
+          const safe = killable.filter(
+            (x) => effect.do === "bite" || !kills(g, x.o, fighter) || (effect.do === "duel" && duelFirst(g, fighter) && !duelFirst(g, x.o)),
+          );
+          if (safe.length) pool = safe;
+          else if (killable.length) pool = killable;
+        }
+      }
       if (effect?.do === "tap") pool = pool.filter((x) => !x.o.tapped).length ? pool.filter((x) => !x.o.tapped) : pool;
       return [...pool].sort((a, b) => creatureValue(g, b.o) - creatureValue(g, a.o))[0].r;
     }
@@ -514,7 +549,7 @@ function chooseTarget(g: Game, p: PlayerId, d: Extract<Decision, { kind: "target
   if (mine.length) {
     const inCombat = (o: Obj) =>
       !!g.combat && (g.combat.attackers.includes(o.uid) || Object.values(g.combat.blocks).some((bs) => bs.includes(o.uid)));
-    if (effect?.do === "fight" || effect?.do === "bite") return [...mine].sort((a, b) => g.power(b.o) - g.power(a.o))[0].r;
+    if (effect?.do === "fight" || effect?.do === "bite" || effect?.do === "duel") return [...mine].sort((a, b) => g.power(b.o) - g.power(a.o))[0].r;
     return [...mine].sort((a, b) => Number(inCombat(b.o)) - Number(inCombat(a.o)) || creatureValue(g, b.o) - creatureValue(g, a.o))[0].r;
   }
   return opts[0];

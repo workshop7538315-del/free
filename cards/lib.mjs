@@ -82,6 +82,8 @@ export const castSpell = trig("castSpell");
 export const allyDies = trig("allyDies");
 export const manaEnter = trig("manaEnter");
 export const lifeGain = trig("lifeGain");
+/** あなたが決闘に勝つたび */
+export const duelWin = trig("duelWin");
 /** filter に合う呪文を唱えるたび */
 export const onCast = (filter) => trig("cast", filter);
 /** filter に合う他のパーマネントがあなたのコントロールで戦場に出るたび */
@@ -186,6 +188,10 @@ export const E = {
   mill: (n, who = "opp") => ({ do: "mill", n, who }),
   plunder: (n) => ({ do: "plunder", n }),
   manifest: (maxMV, haste = false) => ({ do: "manifest", maxMV, ...(haste ? { haste } : {}) }),
+  /** 決闘:対象は [自分のクリーチャー, 相手のクリーチャー]。win は勝ったときの効果 */
+  duel: (win) => ({ do: "duel", tg: [0, 1], ...(win ? { win: [win].flat() } : {}) }),
+  /** このクリーチャー自身が決闘する。対象は [相手のクリーチャー] */
+  duelSelf: (win) => ({ do: "duel", tg: [0], self: true, ...(win ? { win: [win].flat() } : {}) }),
 };
 export const iff = (cond, e) => ({ ...e, if: cond });
 export const unless = (cond, e) => ({ ...e, unless: cond });
@@ -274,6 +280,7 @@ export function condLabel(c) {
       metalcraft: "機巧",
       ferocious: "獰猛",
       oppTurn: "伏兵",
+      intrigue: "陰謀",
     }[c] ?? null
   );
 }
@@ -311,6 +318,7 @@ function condPlain(c) {
     fullBloom: "あなたのマナゾーンにカードが10枚以上ある",
     abyss: "あなたの墓地にカードが12枚以上ある",
     oppTurn: "対戦相手のターンである",
+    intrigue: "このターン、対戦相手がカードを捨てたか、対戦相手のクリーチャーが戦場を離れた",
     threshold: "あなたの墓地にカードが7枚以上ある",
     hellbent: "あなたの手札がない",
     highlander: "あなたのデッキに同じ名前のカードが2枚以上入っていない",
@@ -445,6 +453,12 @@ function effectText(e, name, abil, notes) {
       return "それらはそれぞれ、自身のパワーに等しいダメージを互いに与える。";
     case "bite":
       return "前者は後者に自身のパワーに等しいダメージを与える。";
+    case "duel": {
+      const me = e.self ? name : it(e.tg[0]);
+      const foe = e.self ? it(e.tg[0]) : it(e.tg[1]);
+      const win = (e.win ?? []).map((x) => effectText(x, name, abil, notes)).join("");
+      return `${me}は${foe}と決闘する。${win ? `${me}が勝ったなら、${win}` : ""}`;
+    }
     case "lookTop":
       return "あなたのライブラリーの一番上のカードを見る。そのカードをライブラリーの一番下に置いてもよい。";
     case "addMana":
@@ -510,6 +524,7 @@ const TRIGGER_PREFIX = {
   allyEnter: (n, f) => `他の${filterPhrase(f, "permanent")}があなたのコントロールで戦場に出るたび、`,
   manaEnter: () => "鼓動 ― あなたのマナゾーンにカードが置かれるたび、",
   lifeGain: () => "あなたがライフを得るたび、",
+  duelWin: () => "あなたが決闘に勝つたび、",
 };
 
 function staticText(abil, name, card) {

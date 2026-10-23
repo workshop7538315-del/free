@@ -21480,5 +21480,1663 @@
         "cost": "{R}"
       }
     ]
+  },
+  {
+    "id": "ct01",
+    "name": "宮廷の衛士",
+    "cost": "{1}{W}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "人間・兵士",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "あなたが貴族を1体以上コントロールしているかぎり、宮廷の衛士は+1/+1の修整を受け、警戒を持つ。"
+    ],
+    "tags": [
+      "貴族",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 1,
+          "t": 1,
+          "kw": [
+            "警戒"
+          ]
+        },
+        "if": {
+          "control": {
+            "sub": "貴族"
+          },
+          "n": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "ct02",
+    "name": "白銀の決闘者",
+    "cost": "{1}{W}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・騎士",
+    "power": 2,
+    "toughness": 1,
+    "text": [
+      "先制攻撃",
+      "白銀の決闘者が戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。白銀の決闘者はそれと決闘する。"
+    ],
+    "tags": [
+      "決闘",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "duel",
+            "tg": [
+              0
+            ],
+            "self": true
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct03",
+    "name": "誉れの剣術指南",
+    "cost": "{2}{W}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・騎士",
+    "power": 2,
+    "toughness": 3,
+    "text": [
+      "先制攻撃",
+      "あなたが決闘に勝つたび、1/1の白の人間・兵士・クリーチャー・トークンを1体生成する。"
+    ],
+    "tags": [
+      "決闘",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      },
+      {
+        "a": "trigger",
+        "on": "duelWin",
+        "effects": [
+          {
+            "do": "token",
+            "n": 1,
+            "p": 1,
+            "t": 1,
+            "color": "W",
+            "sub": "人間・兵士"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct04",
+    "name": "公爵夫人の庇護",
+    "cost": "{1}{W}",
+    "type": "インスタント",
+    "rarity": "コモン",
+    "text": [
+      "あなたがコントロールするクリーチャー1体を対象とする。ターン終了時まで、それは+1/+3の修整を受け、先制攻撃を得る。"
+    ],
+    "tags": [
+      "決闘"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "pump",
+            "tg": 0,
+            "p": 1,
+            "t": 3,
+            "kw": [
+              "先制攻撃"
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "you"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct05",
+    "name": "白百合の公爵",
+    "cost": "{3}{W}{W}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "subtype": "人間・貴族",
+    "power": 4,
+    "toughness": 4,
+    "text": [
+      "警戒",
+      "あなたがコントロールする他の貴族は+1/+1の修整を受ける。"
+    ],
+    "tags": [
+      "貴族",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 1,
+          "t": 1,
+          "filter": {
+            "sub": "貴族"
+          },
+          "others": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "ct06",
+    "name": "御前試合",
+    "cost": "{2}{W}",
+    "type": "ソーサリー",
+    "rarity": "アンコモン",
+    "text": [
+      "あなたがコントロールするクリーチャー1体と、対戦相手がコントロールするクリーチャー1体を対象とする。ターン終了時まで、前者は+2/+2の修整を受ける。前者は後者と決闘する。前者が勝ったなら、あなたは3点のライフを得る。"
+    ],
+    "tags": [
+      "決闘"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "pump",
+            "tg": 0,
+            "p": 2,
+            "t": 2
+          },
+          {
+            "do": "duel",
+            "tg": [
+              0,
+              1
+            ],
+            "win": [
+              {
+                "do": "gainLife",
+                "n": 3
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "you"
+          },
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct07",
+    "name": "宮廷の密告者",
+    "cost": "{1}{U}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "人間・ならず者",
+    "power": 1,
+    "toughness": 2,
+    "text": [
+      "陰謀 ― あなたの終了ステップの開始時に、カードを1枚引く。"
+    ],
+    "tags": [
+      "陰謀",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "endStep",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "if": "intrigue"
+      }
+    ]
+  },
+  {
+    "id": "ct08",
+    "name": "影の書簡",
+    "cost": "{3}{U}",
+    "type": "インスタント",
+    "rarity": "コモン",
+    "text": [
+      "対戦相手がコントロールするクリーチャー1体を対象とする。それを持ち主の手札に戻す。カードを1枚引く。"
+    ],
+    "tags": [
+      "陰謀"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "bounce",
+            "tg": 0
+          },
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct09",
+    "name": "宮廷魔術師",
+    "cost": "{2}{U}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・ウィザード・貴族",
+    "power": 2,
+    "toughness": 3,
+    "text": [
+      "陰謀 ― 宮廷魔術師は+1/+1の修整を受け、飛行を持つ。"
+    ],
+    "tags": [
+      "陰謀",
+      "貴族",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 1,
+          "t": 1,
+          "kw": [
+            "飛行"
+          ]
+        },
+        "if": "intrigue"
+      }
+    ]
+  },
+  {
+    "id": "ct10",
+    "name": "影の宰相",
+    "cost": "{3}{U}{U}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "subtype": "人間・貴族",
+    "power": 3,
+    "toughness": 5,
+    "text": [
+      "飛行",
+      "陰謀 ― あなたの終了ステップの開始時に、カードを2枚引く。"
+    ],
+    "tags": [
+      "陰謀",
+      "貴族",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "endStep",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 2
+          }
+        ],
+        "if": "intrigue"
+      }
+    ]
+  },
+  {
+    "id": "ct11",
+    "name": "密談",
+    "cost": "{1}{U}",
+    "type": "インスタント",
+    "rarity": "コモン",
+    "text": [
+      "カードを1枚引く。陰謀 ― 代わりに、カードを2枚引く。"
+    ],
+    "tags": [
+      "陰謀"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1,
+            "unless": "intrigue"
+          },
+          {
+            "do": "draw",
+            "n": 2,
+            "if": "intrigue"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct12",
+    "name": "毒杯の給仕",
+    "cost": "{2}{B}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "人間・ならず者",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "接死"
+    ],
+    "tags": [
+      "陰謀",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "接死"
+      }
+    ]
+  },
+  {
+    "id": "ct13",
+    "name": "暗殺者の契約",
+    "cost": "{1}{B}",
+    "type": "インスタント",
+    "rarity": "コモン",
+    "text": [
+      "対戦相手がコントロールするパワーが3以下のクリーチャー1体を対象とする。それを破壊する。"
+    ],
+    "tags": [
+      "陰謀"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "destroy",
+            "tg": 0
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp",
+            "maxPower": 3
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct14",
+    "name": "夜会の吸血鬼",
+    "cost": "{2}{B}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "吸血鬼・貴族",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "飛行",
+      "陰謀 ― あなたの終了ステップの開始時に、対戦相手は2点のライフを失う。あなたは2点のライフを得る。"
+    ],
+    "tags": [
+      "陰謀",
+      "貴族"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "endStep",
+        "effects": [
+          {
+            "do": "loseLife",
+            "n": 2,
+            "who": "opp"
+          },
+          {
+            "do": "gainLife",
+            "n": 2
+          }
+        ],
+        "if": "intrigue"
+      }
+    ]
+  },
+  {
+    "id": "ct15",
+    "name": "囁く侍従",
+    "cost": "{1}{B}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "人間・ならず者",
+    "power": 1,
+    "toughness": 1,
+    "text": [
+      "囁く侍従が戦場に出たとき、対戦相手は手札を1枚捨てる。"
+    ],
+    "tags": [
+      "陰謀",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "discard",
+            "n": 1,
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct16",
+    "name": "黒薔薇の伯爵",
+    "cost": "{3}{B}{B}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "subtype": "吸血鬼・貴族",
+    "power": 4,
+    "toughness": 4,
+    "text": [
+      "飛行",
+      "陰謀 ― あなたの終了ステップの開始時に、対戦相手はクリーチャー1体を生け贄に捧げる。"
+    ],
+    "tags": [
+      "陰謀",
+      "貴族"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "endStep",
+        "effects": [
+          {
+            "do": "sacrifice"
+          }
+        ],
+        "if": "intrigue"
+      }
+    ]
+  },
+  {
+    "id": "ct17",
+    "name": "葬られた密約",
+    "cost": "{2}{B}",
+    "type": "ソーサリー",
+    "rarity": "アンコモン",
+    "text": [
+      "対戦相手は手札を2枚捨てる。"
+    ],
+    "tags": [
+      "陰謀"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "discard",
+            "n": 2,
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct18",
+    "name": "喧嘩っ早い剣士",
+    "cost": "{R}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "人間・戦士",
+    "power": 2,
+    "toughness": 1,
+    "text": [
+      "速攻",
+      "あなたが決闘に勝つたび、喧嘩っ早い剣士の上に+1/+1カウンターを1個置く。"
+    ],
+    "tags": [
+      "決闘",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "速攻"
+      },
+      {
+        "a": "trigger",
+        "on": "duelWin",
+        "effects": [
+          {
+            "do": "counters",
+            "self": true,
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct19",
+    "name": "果たし状",
+    "cost": "{R}",
+    "type": "ソーサリー",
+    "rarity": "コモン",
+    "text": [
+      "あなたがコントロールするクリーチャー1体と、対戦相手がコントロールするクリーチャー1体を対象とする。前者は後者と決闘する。前者が勝ったなら、果たし状は対戦相手に2点のダメージを与える。"
+    ],
+    "tags": [
+      "決闘"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "duel",
+            "tg": [
+              0,
+              1
+            ],
+            "win": [
+              {
+                "do": "damage",
+                "n": 2,
+                "to": "opp"
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "you"
+          },
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct20",
+    "name": "決闘場の勇者",
+    "cost": "{2}{R}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・戦士",
+    "power": 3,
+    "toughness": 2,
+    "text": [
+      "先制攻撃",
+      "決闘場の勇者が戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。決闘場の勇者はそれと決闘する。"
+    ],
+    "tags": [
+      "決闘",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "duel",
+            "tg": [
+              0
+            ],
+            "self": true
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct21",
+    "name": "挑発の旗",
+    "cost": "{2}{R}",
+    "type": "エンチャント",
+    "rarity": "アンコモン",
+    "text": [
+      "あなたがコントロールするクリーチャーは+1/+0の修整を受ける。",
+      "あなたが決闘に勝つたび、挑発の旗は対戦相手に1点のダメージを与える。"
+    ],
+    "tags": [
+      "決闘",
+      "エンチャント"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 1,
+          "t": 0
+        }
+      },
+      {
+        "a": "trigger",
+        "on": "duelWin",
+        "effects": [
+          {
+            "do": "damage",
+            "n": 1,
+            "to": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct22",
+    "name": "炎剣の侯爵",
+    "cost": "{3}{R}{R}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "subtype": "人間・貴族",
+    "power": 5,
+    "toughness": 4,
+    "text": [
+      "速攻、先制攻撃",
+      "炎剣の侯爵が攻撃するたび、対戦相手がコントロールするクリーチャー1体を対象とする。炎剣の侯爵はそれと決闘する。"
+    ],
+    "tags": [
+      "決闘",
+      "貴族",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "速攻"
+      },
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      },
+      {
+        "a": "trigger",
+        "on": "attacks",
+        "effects": [
+          {
+            "do": "duel",
+            "tg": [
+              0
+            ],
+            "self": true
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct23",
+    "name": "反撃の一閃",
+    "cost": "{1}{R}",
+    "type": "インスタント",
+    "rarity": "コモン",
+    "text": [
+      "あなたがコントロールするクリーチャー1体と、対戦相手がコントロールするクリーチャー1体を対象とする。前者は後者と決闘する。"
+    ],
+    "tags": [
+      "決闘"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "duel",
+            "tg": [
+              0,
+              1
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "you"
+          },
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct24",
+    "name": "森の決闘者",
+    "cost": "{1}{G}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "エルフ・戦士",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "あなたが決闘に勝つたび、あなたのライブラリーの一番上のカードをあなたのマナゾーンに置く。"
+    ],
+    "tags": [
+      "決闘"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "duelWin",
+        "effects": [
+          {
+            "do": "rampTop",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct25",
+    "name": "獣王の挑戦",
+    "cost": "{G}",
+    "type": "ソーサリー",
+    "rarity": "コモン",
+    "text": [
+      "あなたがコントロールするクリーチャー1体と、対戦相手がコントロールするクリーチャー1体を対象とする。前者は後者と決闘する。前者が勝ったなら、前者の上に+1/+1カウンターを1個置く。"
+    ],
+    "tags": [
+      "決闘"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "duel",
+            "tg": [
+              0,
+              1
+            ],
+            "win": [
+              {
+                "do": "counters",
+                "tg": 0,
+                "n": 1
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "you"
+          },
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct26",
+    "name": "角突きの大鹿",
+    "cost": "{3}{G}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "ビースト",
+    "power": 4,
+    "toughness": 4,
+    "text": [
+      "角突きの大鹿が戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。角突きの大鹿はそれと決闘する。"
+    ],
+    "tags": [
+      "決闘"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "duel",
+            "tg": [
+              0
+            ],
+            "self": true
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct27",
+    "name": "エルフの辺境伯",
+    "cost": "{2}{G}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "エルフ・貴族",
+    "power": 2,
+    "toughness": 3,
+    "text": [
+      "{T}:好きな色1色のマナ1つを加える。",
+      "あなたがコントロールする他の貴族は+0/+1の修整を受ける。"
+    ],
+    "tags": [
+      "貴族"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "mana",
+        "produce": [
+          "any"
+        ]
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 0,
+          "t": 1,
+          "filter": {
+            "sub": "貴族"
+          },
+          "others": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "ct28",
+    "name": "大樹の守護騎士",
+    "cost": "{4}{G}{G}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "subtype": "人間・騎士",
+    "power": 6,
+    "toughness": 6,
+    "text": [
+      "トランプル",
+      "大樹の守護騎士が戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。大樹の守護騎士はそれと決闘する。大樹の守護騎士が勝ったなら、カードを1枚引く。"
+    ],
+    "tags": [
+      "決闘",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "duel",
+            "tg": [
+              0
+            ],
+            "self": true,
+            "win": [
+              {
+                "do": "draw",
+                "n": 1
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct29",
+    "name": "縄張り争い",
+    "cost": "{2}{G}",
+    "type": "ソーサリー",
+    "rarity": "アンコモン",
+    "text": [
+      "あなたがコントロールするクリーチャー1体と、対戦相手がコントロールするクリーチャー1体を対象とする。前者の上に+1/+1カウンターを1個置く。前者は後者と決闘する。前者が勝ったなら、カードを1枚引く。"
+    ],
+    "tags": [
+      "決闘"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "counters",
+            "tg": 0,
+            "n": 1
+          },
+          {
+            "do": "duel",
+            "tg": [
+              0,
+              1
+            ],
+            "win": [
+              {
+                "do": "draw",
+                "n": 1
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "you"
+          },
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct30",
+    "name": "宮廷の女王",
+    "cost": "{2}{W}{B}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "人間・貴族",
+    "power": 3,
+    "toughness": 4,
+    "text": [
+      "絆魂",
+      "あなたがコントロールする他の貴族は+1/+1の修整を受ける。"
+    ],
+    "tags": [
+      "貴族",
+      "陰謀",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "絆魂"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 1,
+          "t": 1,
+          "filter": {
+            "sub": "貴族"
+          },
+          "others": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "ct31",
+    "name": "剣と薔薇の騎士",
+    "cost": "{R}{W}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・騎士・貴族",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "先制攻撃",
+      "剣と薔薇の騎士が戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。剣と薔薇の騎士はそれと決闘する。"
+    ],
+    "tags": [
+      "決闘",
+      "貴族",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "duel",
+            "tg": [
+              0
+            ],
+            "self": true
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct32",
+    "name": "毒蛇の大使",
+    "cost": "{U}{B}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・ならず者・貴族",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "毒蛇の大使が戦場に出たとき、対戦相手は手札を1枚捨てる。",
+      "陰謀 ― 毒蛇の大使は+1/+1の修整を受け、飛行を持つ。"
+    ],
+    "tags": [
+      "陰謀",
+      "貴族",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "discard",
+            "n": 1,
+            "who": "opp"
+          }
+        ]
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 1,
+          "t": 1,
+          "kw": [
+            "飛行"
+          ]
+        },
+        "if": "intrigue"
+      }
+    ]
+  },
+  {
+    "id": "ct33",
+    "name": "誓いの決闘場",
+    "cost": "{R}{G}",
+    "type": "エンチャント",
+    "rarity": "アンコモン",
+    "text": [
+      "あなたが決闘に勝つたび、カードを1枚引く。"
+    ],
+    "tags": [
+      "決闘",
+      "エンチャント"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "duelWin",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct34",
+    "name": "陰謀団の首魁",
+    "cost": "{1}{U}{B}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "subtype": "人間・貴族",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "陰謀 ― あなたの終了ステップの開始時に、対戦相手は2点のライフを失う。カードを1枚引く。"
+    ],
+    "tags": [
+      "陰謀",
+      "貴族",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "endStep",
+        "effects": [
+          {
+            "do": "loseLife",
+            "n": 2,
+            "who": "opp"
+          },
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "if": "intrigue"
+      }
+    ]
+  },
+  {
+    "id": "ct35",
+    "name": "断頭台の宣告",
+    "cost": "{B}{R}",
+    "type": "インスタント",
+    "rarity": "アンコモン",
+    "text": [
+      "あなたがコントロールするクリーチャー1体と、対戦相手がコントロールするクリーチャー1体を対象とする。前者は後者と決闘する。前者が勝ったなら、対戦相手は手札を1枚捨てる。"
+    ],
+    "tags": [
+      "決闘",
+      "陰謀"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "duel",
+            "tg": [
+              0,
+              1
+            ],
+            "win": [
+              {
+                "do": "discard",
+                "n": 1,
+                "who": "opp"
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "you"
+          },
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct36",
+    "name": "王家の巡察",
+    "cost": "{1}{G}{W}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・貴族",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "警戒",
+      "王家の巡察が戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。王家の巡察はそれと決闘する。王家の巡察が勝ったなら、あなたは2点のライフを得る。"
+    ],
+    "tags": [
+      "決闘",
+      "貴族",
+      "人間"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "duel",
+            "tg": [
+              0
+            ],
+            "self": true,
+            "win": [
+              {
+                "do": "gainLife",
+                "n": 2
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ct37",
+    "name": "三家の盟約",
+    "cost": "{W}{U}{B}",
+    "type": "エンチャント",
+    "rarity": "レア",
+    "text": [
+      "あなたがコントロールする貴族は+1/+1の修整を受ける。",
+      "陰謀 ― あなたの終了ステップの開始時に、カードを1枚引く。"
+    ],
+    "tags": [
+      "貴族",
+      "陰謀",
+      "エンチャント"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 1,
+          "t": 1,
+          "filter": {
+            "sub": "貴族"
+          },
+          "others": false
+        }
+      },
+      {
+        "a": "trigger",
+        "on": "endStep",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "if": "intrigue"
+      }
+    ]
+  },
+  {
+    "id": "ct38",
+    "name": "決闘用の細剣",
+    "cost": "{1}",
+    "type": "アーティファクト",
+    "rarity": "アンコモン",
+    "subtype": "装備品",
+    "text": [
+      "装備しているクリーチャーは+1/+0の修整を受け、接死を持つ。",
+      "装備 {2}"
+    ],
+    "tags": [
+      "決闘",
+      "装備"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "auraBuff",
+          "p": 1,
+          "t": 0,
+          "kw": [
+            "接死"
+          ]
+        }
+      },
+      {
+        "a": "equip",
+        "cost": "{2}"
+      }
+    ]
+  },
+  {
+    "id": "ct39",
+    "name": "王家の印章",
+    "cost": "{3}",
+    "type": "アーティファクト",
+    "rarity": "アンコモン",
+    "text": [
+      "{T}:好きな色1色のマナ1つを加える。",
+      "あなたが唱える貴族呪文を唱えるためのコストは{1}少なくなる。"
+    ],
+    "tags": [
+      "貴族"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "mana",
+        "produce": [
+          "any"
+        ]
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "discount",
+          "filter": {
+            "sub": "貴族"
+          },
+          "n": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "ct40",
+    "name": "審判の像",
+    "cost": "{4}",
+    "type": "アーティファクト・クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "構築物",
+    "power": 3,
+    "toughness": 4,
+    "text": [
+      "警戒",
+      "審判の像が戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。審判の像はそれと決闘する。"
+    ],
+    "tags": [
+      "決闘"
+    ],
+    "pack": "p6",
+    "packs": [
+      "p6"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "duel",
+            "tg": [
+              0
+            ],
+            "self": true
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
   }
 ]

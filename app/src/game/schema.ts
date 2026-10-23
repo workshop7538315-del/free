@@ -46,7 +46,9 @@ export type CondName =
   /** 奈落(深淵の強化):自分の墓地が12枚以上 */
   | "abyss"
   /** 伏兵:対戦相手のターンである */
-  | "oppTurn";
+  | "oppTurn"
+  /** 陰謀:このターン、対戦相手がカードを捨てたか、対戦相手のクリーチャーが戦場を離れた */
+  | "intrigue";
 
 export type Cond =
   | CondName
@@ -132,6 +134,12 @@ export type Effect = Common &
     | { do: "plunder"; n: number }
     /** 顕現 N:自分のマナゾーンからマナ総量N以下のクリーチャー・カードを1枚戦場に出す */
     | { do: "manifest"; maxMV: number; haste?: boolean }
+    /**
+     * 決闘:自分のクリーチャーと相手のクリーチャーが互いにパワー分のダメージを与え合う。
+     * self なら自分のクリーチャーはこのパーマネント(tg[0] が相手)、そうでなければ tg[0] が自分・tg[1] が相手。
+     * 相手のクリーチャーだけが致死ダメージを負ったら「勝った」とし、win を行う
+     */
+    | { do: "duel"; tg: number[]; self?: boolean; win?: Effect[] }
   );
 
 export type TriggerEvent =
@@ -151,7 +159,9 @@ export type TriggerEvent =
   /** あなたのマナゾーンにカードが置かれるたび(鼓動) */
   | "manaEnter"
   /** あなたがライフを得るたび */
-  | "lifeGain";
+  | "lifeGain"
+  /** あなたが決闘に勝つたび */
+  | "duelWin";
 
 export type StaticSpec =
   /** 自分の(他の)クリーチャー全体の強化。filter で種族などを絞れる */

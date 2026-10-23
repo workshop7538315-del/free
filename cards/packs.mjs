@@ -27,6 +27,7 @@ import { MISC } from "./sets/misc.mjs";
 import { ADVANCED } from "./sets/advanced.mjs";
 import { AWAKENING } from "./sets/p4-awakening.mjs";
 import { REKINDLE, REKINDLE_REPRINTS } from "./sets/p5-rekindle.mjs";
+import { COURT } from "./sets/p6-court.mjs";
 
 export const PACKS = [
   {
@@ -74,5 +75,14 @@ export const PACKS = [
     theme: "消えかけた炎を再び燃やす。総当たり戦で苦戦した赤系・装備・生け贄・呪文・エルフ・鉄機を、再録・強化版・リメイク・サポートで立て直す。",
     sets: [REKINDLE],
     reprints: REKINDLE_REPRINTS,
+  },
+  {
+    id: "p6",
+    number: 6,
+    name: "宮廷の暗闘",
+    kind: "新規展開",
+    words: ["貴族", "陰謀", "決闘"],
+    theme: "表では貴族が剣を抜いて決闘し、裏では陰謀が相手の手札と戦力を削る。新キーワード「決闘」(自分と相手のクリーチャーが互いにパワー分のダメージを与え合う)と「陰謀」(このターン相手がカードを捨てたかクリーチャーを失ったなら有効)、新しい種族「貴族」。",
+    sets: [COURT],
   },
 ];

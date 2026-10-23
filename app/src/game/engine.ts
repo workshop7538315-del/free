@@ -78,6 +78,8 @@ export type Player = {
   drewFromEmpty: boolean;
   /** 孤高:デッキに同名カードが2枚以上入っていない */
   highlander: boolean;
+  /** このターンに捨てたカードと、戦場を離れたクリーチャーの数(陰謀) */
+  lostThisTurn: number;
 };
 
 export type TargetRef =
@@ -254,6 +256,7 @@ export class Game {
       pool: [],
       drewFromEmpty: false,
       highlander: new Set(opts.decks[id].map((c) => c.name)).size === opts.decks[id].length,
+      lostThisTurn: 0,
     });
     this.players = [mk(0), mk(1)];
     this.firstPlayer = opts.first ?? (this.rng() < 0.5 ? 0 : 1);
@@ -345,6 +348,9 @@ export class Game {
     }
     if (o.zone === "stack") this.stack = this.stack.filter((s) => s.obj !== o);
     const wasBattlefield = o.zone === "battlefield";
+    // 陰謀:戦場を離れたクリーチャーと、手札から墓地に置かれた(捨てた)カードを数える
+    if (wasBattlefield && to !== "battlefield" && isCreatureCard(o.card)) this.players[o.controller].lostThisTurn++;
+    if (o.zone === "hand" && to === "graveyard") this.players[o.owner].lostThisTurn++;
     // 領域を移ると新しいオブジェクトとして扱う
     o.tapped = false;
     o.sick = false;
@@ -417,6 +423,8 @@ export class Game {
         return pl.graveyard.length >= 12;
       case "oppTurn":
         return this.active !== p;
+      case "intrigue":
+        return this.players[this.other(p)].lostThisTurn > 0;
       case "fewerMana":
         return pl.mana.length < this.players[this.other(p)].mana.length;
       case "threshold":
@@ -1438,6 +1446,34 @@ export class Game {
         this.addLog(`${a.card.name}と${b.card.name}が${e.do === "fight" ? "格闘した" : "噛みついた"}`, p);
         break;
       }
+      case "duel": {
+        const a = e.self ? src : this.refObj(ctx, e.tg[0]);
+        const b = this.refObj(ctx, e.self ? e.tg[0] : e.tg[1]);
+        if (!a || !b || a.zone !== "battlefield" || b.zone !== "battlefield" || !isCreatureCard(a.card)) break;
+        const lethal = (o: Obj) =>
+          o.zone !== "battlefield" || ((o.damage >= this.toughness(o) || (o.deathtouched && o.damage > 0)) && !this.hasKw(o, "破壊不能"));
+        // 決闘では、先制攻撃(二段攻撃)を持つ側だけが先にダメージを与える。それで倒れた側はダメージを返せない
+        const first = (o: Obj) => this.hasKw(o, "先制攻撃") || this.hasKw(o, "二段攻撃");
+        const pa = this.power(a);
+        const pb = this.power(b);
+        if (first(a) && !first(b)) {
+          this.dealDamage(a, b, pa);
+          if (!lethal(b)) this.dealDamage(b, a, pb);
+        } else if (first(b) && !first(a)) {
+          this.dealDamage(b, a, pb);
+          if (!lethal(a)) this.dealDamage(a, b, pa);
+        } else {
+          this.dealDamage(a, b, pa);
+          this.dealDamage(b, a, pb);
+        }
+        const won = lethal(b) && !lethal(a);
+        this.addLog(`${a.card.name}が${b.card.name}と決闘した${won ? "(勝利)" : ""}`, p);
+        if (won) {
+          await this.runEffects(e.win ?? [], ctx);
+          this.queueTriggers("duelWin", this.sources(p));
+        }
+        break;
+      }
       case "lookTop": {
         const top = pl.library[0];
         if (!top) break;
@@ -1768,6 +1804,7 @@ export class Game {
     for (const o of pl.mana) o.tapped = false;
     pl.chargesUsed = 0;
     pl.extraChargesThisTurn = 0;
+    for (const q of this.players) q.lostThisTurn = 0;
     // アップキープ
     this.step = "upkeep";
     this.queueTriggers("upkeep", this.sources(p));
