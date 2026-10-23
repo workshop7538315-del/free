@@ -46,6 +46,10 @@ export const tagAll = (tag, cards) => cards.map((c) => ({ ...c, tags: [...new Se
 // ---------------------------------------------------------------- 能力
 export const kw = (...k) => k.map((x) => ({ a: "kw", kw: x }));
 export const burn = (n) => ({ a: "burn", n });
+/** 烈燃 N:0〜N枚の好きな枚数を燃焼できる */
+export const fierceBurn = (n) => ({ a: "burn", n, upTo: true });
+/** 疾駆 {コスト} */
+export const dash = (cost) => ({ a: "dash", cost });
 export const release = (cost) => ({ a: "release", cost });
 export const kicker = (cost) => ({ a: "kicker", cost });
 export const flashback = (cost) => ({ a: "flashback", cost });
@@ -176,6 +180,7 @@ export const E = {
   addMana: (m) => ({ do: "addMana", mana: m }),
   tutor: (filter, to = "hand") => ({ do: "tutor", filter, to }),
   mill: (n, who = "opp") => ({ do: "mill", n, who }),
+  plunder: (n) => ({ do: "plunder", n }),
 };
 export const iff = (cond, e) => ({ ...e, if: cond });
 export const unless = (cond, e) => ({ ...e, unless: cond });
@@ -218,6 +223,7 @@ const COUNT_TEXT = {
   graveyard: "あなたの墓地にあるカードの枚数",
   hand: "あなたの手札の枚数",
   colorsInMana: "あなたのマナゾーンにあるカードの色の数",
+  burned: "燃焼した枚数",
 };
 const PER_TEXT = {
   mana: "あなたのマナゾーンにあるカード1枚につき",
@@ -250,7 +256,19 @@ export function condLabel(c) {
     if ("armed" in c) return `マナ武装 ${c.n}(${COLOR_JA[c.armed]})`;
     return null;
   }
-  return { bloom: "開花", threshold: "深淵", hellbent: "背水", highlander: "孤高", metalcraft: "機巧", ferocious: "獰猛" }[c] ?? null;
+  return (
+    {
+      bloom: "開花",
+      fullBloom: "満開",
+      threshold: "深淵",
+      abyss: "奈落",
+      hellbent: "背水",
+      highlander: "孤高",
+      metalcraft: "機巧",
+      ferocious: "獰猛",
+      oppTurn: "伏兵",
+    }[c] ?? null
+  );
 }
 
 /** 条件の前置き(効果に付けるとき) */
@@ -283,6 +301,9 @@ function condPlain(c) {
   }
   return {
     bloom: "あなたのマナゾーンにカードが7枚以上ある",
+    fullBloom: "あなたのマナゾーンにカードが10枚以上ある",
+    abyss: "あなたの墓地にカードが12枚以上ある",
+    oppTurn: "対戦相手のターンである",
     threshold: "あなたの墓地にカードが7枚以上ある",
     hellbent: "あなたの手札がない",
     highlander: "あなたのデッキに同じ名前のカードが2枚以上入っていない",
@@ -425,6 +446,8 @@ function effectText(e, name, abil, notes) {
       const to = { hand: "公開して手札に加える", battlefield: "戦場に出す", mana: "あなたのマナゾーンに置く" }[e.to];
       return `あなたのライブラリーから${filterPhrase(e.filter, "card")}を1枚探し、${to}。その後ライブラリーを切り直す。`;
     }
+    case "plunder":
+      return `略奪 ${e.n}。`;
     case "mill":
       return e.who === "opp"
         ? `対戦相手は自分のライブラリーの一番上から${a(e.n)}枚を墓地に置く。`
@@ -533,7 +556,9 @@ function abilityText(abil, card) {
   if (abil.text) return abil.text;
   switch (abil.a) {
     case "burn":
-      return `燃焼 ${abil.n}`;
+      return abil.upTo ? `烈燃 ${abil.n}` : `燃焼 ${abil.n}`;
+    case "dash":
+      return `疾駆 ${abil.cost}`;
     case "release":
       return `マナ解放 ${abil.cost}`;
     case "kicker":

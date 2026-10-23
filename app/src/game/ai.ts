@@ -37,6 +37,14 @@ const KW_VALUE: Record<string, number> = {
   到達: 0.4,
   瞬速: 0.3,
   防衛: -1.5,
+  天翔: 2.5,
+  大威迫: 1.6,
+  吸血: 1.2,
+  鉄壁: 1,
+  輪廻: 0.8,
+  二段攻撃: 2,
+  破壊不能: 2,
+  不屈: 1,
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -63,7 +71,7 @@ export class CpuAgent implements Agent {
       case "yesno":
         return chooseYesNo(g, p, d);
       case "number":
-        return d.max;
+        return chooseNumber(g, p, d);
       case "chooseCards":
         return chooseCards(g, p, d);
       case "attackers":
@@ -262,7 +270,11 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
   const oppCreatures = g.creatures(opp);
   const myCreatures = g.creatures(p);
   const n = (x: unknown, fallback = 1) =>
-    typeof x === "number" ? x : x === "X" ? g.maxX(p, "{X}") : typeof x === "object" && x ? g.count(x as Amount, p) : fallback;
+    typeof x === "number" ? x : x === "X" ? g.maxX(p, "{X}") : typeof x === "object" && x
+        ? (x as { count: string }).count === "burned"
+          ? Math.max(1, Math.min(5, me.mana.length - 3))
+          : g.count(x as Amount, p)
+        : fallback;
   const bestKillable = (dmg: number) =>
     Math.max(0, ...oppCreatures.filter((o) => !g.hasKw(o, "呪禁") && g.toughness(o) - o.damage <= dmg).map((o) => creatureValue(g, o)));
   const bestOpp = Math.max(0, ...oppCreatures.filter((o) => !g.hasKw(o, "呪禁")).map((o) => creatureValue(g, o)));
@@ -373,6 +385,8 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return e.all ? myCreatures.filter((o) => o.tapped).length * 0.6 : 0.4;
     case "tutor":
       return e.to === "battlefield" ? 3 : e.to === "hand" ? 2 : 1.5;
+    case "plunder":
+      return Math.min(e.n, them.mana.length) * 2.2;
     case "mill":
       return e.who === "opp" ? n(e.n, 1) * (them.library.length <= n(e.n, 1) ? 20 : 0.35) : n(e.n, 1) * 0.2;
     case "addMana": {
@@ -504,6 +518,17 @@ function cardScore(c: Card): number {
 }
 
 // ---------------------------------------------------------------- はい/いいえ
+/** 数を決める(Xの値、烈燃の枚数) */
+function chooseNumber(g: Game, p: PlayerId, d: Extract<Decision, { kind: "number" }>): number {
+  if (d.reason !== "burn") return d.max;
+  const me = g.players[p];
+  const them = g.players[g.other(p)];
+  // 相手のライフを削り切れるなら全部、そうでなければマナを3枚は残す
+  const dealsToPlayer = d.obj && spellAbility(d.obj.card)?.targets?.some((t) => t.t === "any" || t.t === "player");
+  if (dealsToPlayer && them.life <= d.max) return d.max;
+  return Math.max(Math.min(1, d.max), Math.min(d.max, me.mana.length - 4));
+}
+
 function chooseYesNo(g: Game, p: PlayerId, d: Extract<Decision, { kind: "yesno" }>): boolean {
   const me = g.players[p];
   switch (d.reason) {
@@ -578,7 +603,7 @@ function chooseAttackers(g: Game, p: PlayerId, options: number[]): number[] {
   const out: number[] = [];
   for (const a of cands) {
     const can = blockers.filter((b) => g.canBlock(b, a));
-    if (g.hasKw(a, "威迫") && can.length < 2) {
+    if (can.length < g.minBlockers(a)) {
       out.push(a.uid);
       continue;
     }
@@ -625,7 +650,7 @@ function blockersKill(g: Game, a: Obj, blockers: Obj[]): boolean {
 function damageThrough(g: Game, a: Obj, blockers: Obj[]): number {
   const mult = g.hasKw(a, "二段攻撃") ? 2 : 1;
   const pw = Math.max(0, g.power(a));
-  const blocked = blockers.length > 0 && !(g.hasKw(a, "威迫") && blockers.length < 2);
+  const blocked = blockers.length >= g.minBlockers(a);
   if (!blocked) return pw * mult;
   if (!g.hasKw(a, "トランプル")) return 0;
   const deathtouch = g.hasKw(a, "接死");
@@ -654,14 +679,15 @@ export function chooseBlocks(g: Game, p: PlayerId, attackerIds: number[], blocke
   const ordered = (bs: Obj[]) => [...bs].sort((x, y) => value(x) - value(y));
   const take = (a: Obj, bs: Obj[]) => {
     assign.set(a, ordered([...(assign.get(a) ?? []), ...bs]));
-    for (const b of bs) free.splice(free.indexOf(b), 1);
+    // 鉄壁は何体でもブロックできるので、残しておく
+    for (const b of bs) if (!g.hasKw(b, "鉄壁")) free.splice(free.indexOf(b), 1);
   };
   const lost = (a: Obj, bs: Obj[]) => killedByAttacker(g, a, ordered(bs)).reduce((s, b) => s + value(b), 0);
   const totalThrough = () => attackers.reduce((s, a) => s + damageThrough(g, a, assign.get(a) ?? []), 0);
 
   // 1) 1体で得をするブロック:一方的に倒す、倒されない、価値の低いもので相打ち
   for (const a of attackers) {
-    if (g.hasKw(a, "威迫")) continue;
+    if (g.minBlockers(a) > 1) continue;
     const can = free.filter((b) => g.canBlock(b, a));
     const byValue = (xs: Obj[]) => [...xs].sort((x, y) => value(x) - value(y));
     const great = byValue(can.filter((b) => blockersKill(g, a, [b]) && !lost(a, [b])));
@@ -677,6 +703,7 @@ export function chooseBlocks(g: Game, p: PlayerId, attackerIds: number[], blocke
     const can = free.filter((b) => g.canBlock(b, a)).slice(0, 9);
     let best: { bs: Obj[]; net: number } | null = null;
     for (const size of [2, 3]) {
+      if (size < g.minBlockers(a)) continue;
       for (const bs of combos(can, size)) {
         if (!blockersKill(g, a, bs)) continue;
         const net = value(a) - lost(a, bs) + damageThrough(g, a, []) * 0.15 - damageThrough(g, a, bs) * 0.15;
@@ -695,8 +722,9 @@ export function chooseBlocks(g: Game, p: PlayerId, attackerIds: number[], blocke
       const cur = assign.get(a) ?? [];
       const before = damageThrough(g, a, cur);
       if (before <= 0) continue;
-      const can = free.filter((b) => g.canBlock(b, a));
-      const options = g.hasKw(a, "威迫") && cur.length === 0 ? combos(can.slice(0, 8), 2) : can.map((b) => [b]);
+      const can = free.filter((b) => g.canBlock(b, a) && !cur.includes(b));
+      const need = Math.max(1, g.minBlockers(a) - cur.length);
+      const options = need > 1 ? combos(can.slice(0, 8), need) : can.map((b) => [b]);
       for (const bs of options) {
         const gain = before - damageThrough(g, a, [...cur, ...bs]);
         if (gain <= 0) continue;

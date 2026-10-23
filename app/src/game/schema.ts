@@ -40,7 +40,13 @@ export type CondName =
   /** 機巧:自分のアーティファクトが3つ以上 */
   | "metalcraft"
   /** 獰猛:パワー4以上のクリーチャーをコントロールしている */
-  | "ferocious";
+  | "ferocious"
+  /** 満開(開花の強化):自分のマナゾーンが10枚以上 */
+  | "fullBloom"
+  /** 奈落(深淵の強化):自分の墓地が12枚以上 */
+  | "abyss"
+  /** 伏兵:対戦相手のターンである */
+  | "oppTurn";
 
 export type Cond =
   | CondName
@@ -49,7 +55,7 @@ export type Cond =
   /** 指定したパーマネントをN個以上コントロールしている */
   | { control: Filter; n: number };
 
-export type CountKind = "mana" | "creatures" | "graveyard" | "colorsInMana" | "hand" | "oppCreatures";
+export type CountKind = "mana" | "creatures" | "graveyard" | "colorsInMana" | "hand" | "oppCreatures" | "burned";
 
 /** 数。"X"=唱えたときのX、count=数を数える、perm=条件に合う自分のパーマネントの数 */
 export type Amount = number | "X" | { count: CountKind } | { count: "perm"; filter: Filter };
@@ -122,6 +128,8 @@ export type Effect = Common &
     | { do: "tutor"; filter: Filter; to: "hand" | "battlefield" | "mana" }
     /** ライブラリーの上からN枚を墓地に置く */
     | { do: "mill"; n: Amount; who: "you" | "opp" }
+    /** 略奪:対戦相手のマナゾーンのカードをN枚、自分のマナゾーンに移す */
+    | { do: "plunder"; n: number }
   );
 
 export type TriggerEvent =
@@ -172,7 +180,10 @@ export type ActivatedCost = {
 
 export type Ability = { text?: string } & (
   | { a: "kw"; kw: string }
-  | { a: "burn"; n: number }
+  /** 燃焼 N。upTo なら烈燃 N(0〜N枚の好きな枚数を燃焼できる) */
+  | { a: "burn"; n: number; upTo?: boolean }
+  /** 疾駆:このコストで唱えると速攻を得て、終了ステップに手札に戻る */
+  | { a: "dash"; cost: string }
   | { a: "release"; cost: string }
   | { a: "spell"; targets?: TargetSpec[]; effects: Effect[] }
   | { a: "trigger"; on: TriggerEvent; targets?: TargetSpec[]; effects: Effect[]; if?: Cond; filter?: Filter }

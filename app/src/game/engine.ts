@@ -50,7 +50,11 @@ export type Obj = {
   /** オーラがつけられているクリーチャー */
   attachedTo: number | null;
   burned: boolean;
+  /** 燃焼した枚数(烈燃) */
+  burnCount: number;
   kicked: boolean;
+  /** 疾駆で出た(終了ステップに手札に戻る) */
+  dashed: boolean;
   x: number;
   token: boolean;
   /** トークンの色 */
@@ -89,13 +93,15 @@ export type StackItem = {
   ability: Ability | null;
   targets: TargetRef[];
   burned: boolean;
+  burnCount: number;
   kicked: boolean;
+  dashed: boolean;
   /** 再演で墓地から唱えた(解決後に追放される) */
   flashback: boolean;
   x: number;
 };
 
-export type CastFrom = "hand" | "mana" | "graveyard";
+export type CastFrom = "hand" | "mana" | "graveyard" | "dash";
 
 export type Action =
   | { type: "pass" }
@@ -109,7 +115,7 @@ export type Decision =
   | { kind: "action"; options: Action[] }
   | { kind: "target"; prompt: string; spec: TargetSpec; options: TargetRef[]; source: Obj; effects: Effect[]; index: number }
   | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "kicker" | "lookTop" | "mulligan" | "reclaim"; obj?: Obj }
-  | { kind: "number"; prompt: string; min: number; max: number }
+  | { kind: "number"; prompt: string; min: number; max: number; reason?: "x" | "burn"; obj?: Obj }
   | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" }
   | { kind: "attackers"; options: number[] }
   | { kind: "blockers"; attackers: number[]; blockers: number[] };
@@ -268,7 +274,9 @@ export class Game {
       freeze: false,
       attachedTo: null,
       burned: false,
+      burnCount: 0,
       kicked: false,
+      dashed: false,
       x: 0,
       token: false,
     };
@@ -346,7 +354,9 @@ export class Game {
     o.attachedTo = null;
     if (wasBattlefield && to !== "battlefield") {
       o.burned = false;
+      o.burnCount = 0;
       o.kicked = false;
+      o.dashed = false;
       // 装備品は外れる
       for (const q of this.players) for (const e of q.battlefield) if (e.attachedTo === o.uid && isEquipment(e.card)) e.attachedTo = null;
     }
@@ -398,6 +408,12 @@ export class Game {
         return kicked;
       case "bloom":
         return pl.mana.length >= 7;
+      case "fullBloom":
+        return pl.mana.length >= 10;
+      case "abyss":
+        return pl.graveyard.length >= 12;
+      case "oppTurn":
+        return this.active !== p;
       case "fewerMana":
         return pl.mana.length < this.players[this.other(p)].mana.length;
       case "threshold":
@@ -414,7 +430,7 @@ export class Game {
   }
 
   /** 数を数える(自分基準) */
-  count(n: Amount, p: PlayerId, x = 0): number {
+  count(n: Amount, p: PlayerId, x = 0, burnCount = 0): number {
     if (typeof n === "number") return n;
     if (n === "X") return x;
     const pl = this.players[p];
@@ -429,6 +445,8 @@ export class Game {
         return pl.graveyard.length;
       case "hand":
         return pl.hand.length;
+      case "burned":
+        return burnCount;
       case "colorsInMana":
         return new Set(pl.mana.flatMap((o) => cardColors(o.card.cost))).size;
       case "perm":
@@ -514,6 +532,7 @@ export class Game {
   canBlock(blocker: Obj, attacker: Obj): boolean {
     if (blocker.tapped || !isCreatureCard(blocker.card) || this.isPacified(blocker) || this.hasKw(blocker, "ブロックできない")) return false;
     if (this.hasKw(attacker, "飛行") && !this.hasKw(blocker, "飛行") && !this.hasKw(blocker, "到達")) return false;
+    if (this.hasKw(attacker, "天翔") && !this.hasKw(blocker, "天翔")) return false;
     return true;
   }
 
@@ -735,6 +754,10 @@ export class Game {
       const fb = abilityOf(c, "flashback");
       if (!fb) return null;
       cost = fb.cost;
+    } else if (from === "dash") {
+      const d = abilityOf(c, "dash");
+      if (!d) return null;
+      cost = d.cost;
     } else {
       const free = abilityOf(c, "free");
       if (free && this.cond(free.if, p)) return "";
@@ -789,6 +812,7 @@ export class Game {
     for (const o of pl.hand) if (this.canCast(p, o, "hand")) out.push({ type: "cast", uid: o.uid, from: "hand" });
     for (const o of pl.mana) if (releaseAbility(o.card) && this.canCast(p, o, "mana")) out.push({ type: "cast", uid: o.uid, from: "mana" });
     for (const o of pl.graveyard) if (abilityOf(o.card, "flashback") && this.canCast(p, o, "graveyard")) out.push({ type: "cast", uid: o.uid, from: "graveyard" });
+    for (const o of pl.hand) if (abilityOf(o.card, "dash") && this.canCast(p, o, "dash")) out.push({ type: "cast", uid: o.uid, from: "dash" });
     for (const o of pl.hand) {
       const cy = abilityOf(o.card, "cycling");
       if (cy && this.canPay(p, cy.cost)) out.push({ type: "cycle", uid: o.uid });
@@ -816,7 +840,7 @@ export class Game {
       this.putIntoMana(o, p);
     } else if (a.type === "cast") {
       const pl = this.players[p];
-      const zone = a.from === "hand" ? pl.hand : a.from === "mana" ? pl.mana : pl.graveyard;
+      const zone = a.from === "hand" || a.from === "dash" ? pl.hand : a.from === "mana" ? pl.mana : pl.graveyard;
       const o = zone.find((x) => x.uid === a.uid);
       if (o && this.canCast(p, o, a.from)) await this.cast(p, o, a.from);
     } else if (a.type === "cycle") {
@@ -872,12 +896,19 @@ export class Game {
     const specs = isAura(c) ? [AURA_TARGET] : sp?.targets ?? [];
     const targets = await this.chooseTargets(p, specs, o, sp?.effects ?? []);
     if (!targets) return;
-    let burned = false;
+    let burnCount = 0;
     const b = burnAbility(c);
     const manaLeft = this.players[p].mana.filter((m) => m !== o).length;
-    if (b && manaLeft >= b.n) {
-      burned = await this.askYesNo(p, `${c.name}:燃焼 ${b.n}(マナゾーンのカードを${b.n}枚墓地に置く)を行いますか?`, "burn", o);
+    if (b && b.upTo) {
+      const max = Math.min(b.n, manaLeft);
+      if (max > 0) {
+        const n = await this.ask<number>(p, { kind: "number", prompt: `${c.name}:烈燃 何枚燃焼しますか?(マナゾーンのカードを墓地に置く)`, min: 0, max, reason: "burn", obj: o });
+        burnCount = Math.max(0, Math.min(max, Math.floor(n || 0)));
+      }
+    } else if (b && manaLeft >= b.n) {
+      if (await this.askYesNo(p, `${c.name}:燃焼 ${b.n}(マナゾーンのカードを${b.n}枚墓地に置く)を行いますか?`, "burn", o)) burnCount = b.n;
     }
+    const burned = burnCount > 0;
     let kicked = false;
     const k = abilityOf(c, "kicker");
     if (k && this.canPay(p, cost + k.cost, x, exclude)) {
@@ -885,18 +916,31 @@ export class Game {
       if (kicked) cost = cost + k.cost;
     }
     if (!this.pay(p, cost, x, exclude)) return;
-    if (burned && b) {
+    if (burned) {
       const opts = this.players[p].mana.filter((m) => m !== o);
-      const picked = await this.askCards(p, `燃焼:墓地に置くマナゾーンのカードを${b.n}枚選んでください`, opts, b.n, "burn");
+      const picked = await this.askCards(p, `燃焼:墓地に置くマナゾーンのカードを${burnCount}枚選んでください`, opts, burnCount, "burn");
       for (const m of picked) this.move(m, "graveyard");
     }
     this.move(o, "stack");
     this.usedCards.add(c.id);
-    const item: StackItem = { id: this.stackId++, kind: "spell", obj: o, controller: p, ability: sp ?? null, targets, burned, kicked, flashback: from === "graveyard", x };
+    const item: StackItem = {
+      id: this.stackId++,
+      kind: "spell",
+      obj: o,
+      controller: p,
+      ability: sp ?? null,
+      targets,
+      burned,
+      burnCount,
+      kicked,
+      dashed: from === "dash",
+      flashback: from === "graveyard",
+      x,
+    };
     this.stack.push(item);
     const tgt = targets.length ? `(対象:${targets.map((t) => this.describeRef(t)).join("、")})` : "";
-    const how = from === "mana" ? "マナ解放で" : from === "graveyard" ? "再演で" : cost === "" ? "零式で" : "";
-    this.addLog(`${c.name}を${how}唱えた${burned ? "(燃焼)" : ""}${kicked ? "(追加払い)" : ""}${x ? `(X=${x})` : ""}${tgt}`, p);
+    const how = from === "mana" ? "マナ解放で" : from === "graveyard" ? "再演で" : from === "dash" ? "疾駆で" : cost === "" ? "零式で" : "";
+    this.addLog(`${c.name}を${how}唱えた${burned ? `(燃焼${burnCount}枚)` : ""}${kicked ? "(追加払い)" : ""}${x ? `(X=${x})` : ""}${tgt}`, p);
     for (const src of this.players[p].battlefield)
       for (const ab of abilitiesOf(src.card)) {
         if (ab.a !== "trigger") continue;
@@ -927,7 +971,7 @@ export class Game {
       this.die(o);
     }
     this.usedCards.add(o.card.id);
-    this.stack.push({ id: this.stackId++, kind: "activated", obj: o, controller: p, ability: a, targets, burned: false, kicked: false, flashback: false, x: 0 });
+    this.stack.push({ id: this.stackId++, kind: "activated", obj: o, controller: p, ability: a, targets, burned: false, burnCount: 0, kicked: false, dashed: false, flashback: false, x: 0 });
     this.addLog(`${o.card.name}の能力を起動した`, p);
   }
 
@@ -958,7 +1002,9 @@ export class Game {
           ability: ab,
           targets,
           burned: t.obj.burned,
+          burnCount: t.obj.burnCount,
           kicked: t.obj.kicked,
+          dashed: false,
           flashback: false,
           x: 0,
         });
@@ -988,7 +1034,7 @@ export class Game {
           this.entered(item.obj);
           return;
         }
-        this.enterBattlefield(item.obj, item.controller, item.burned, item.x, item.kicked);
+        this.enterBattlefield(item.obj, item.controller, item.burned, item.x, item.kicked, item.burnCount, item.dashed);
         return;
       }
       await this.runAbility(item);
@@ -999,11 +1045,14 @@ export class Game {
     await this.runAbility(item);
   }
 
-  private enterBattlefield(o: Obj, controller: PlayerId, burned = false, x = 0, kicked = false) {
+  private enterBattlefield(o: Obj, controller: PlayerId, burned = false, x = 0, kicked = false, burnCount = 0, dashed = false) {
     this.move(o, "battlefield", { controller });
     o.sick = true;
     o.burned = burned;
+    o.burnCount = burnCount;
     o.kicked = kicked;
+    o.dashed = dashed;
+    if (dashed) o.perm.push({ p: 0, t: 0, kw: ["速攻"] });
     o.x = x;
     this.addLog(`${o.card.name}が戦場に出た`, controller);
     this.entered(o);
@@ -1041,7 +1090,7 @@ export class Game {
   }
 
   private amount(n: Amount, ctx: Ctx): number {
-    return this.count(n, ctx.item.controller, ctx.item.x);
+    return this.count(n, ctx.item.controller, ctx.item.x, ctx.item.burnCount);
   }
 
   private ref(ctx: Ctx, i: number | undefined): TargetRef | null {
@@ -1094,6 +1143,7 @@ export class Game {
       return;
     }
     if (source && source.zone === "battlefield" && this.hasKw(source, "絆魂")) this.gainLife(source.controller, n);
+    if (source && source.zone === "battlefield" && isCreatureCard(source.card) && this.hasKw(source, "吸血")) source.counters += 1;
   }
 
   private destroy(o: Obj) {
@@ -1112,6 +1162,7 @@ export class Game {
     const wasCreature = isCreatureCard(o.card);
     const dyingAbilities = abilitiesOf(o.card);
     const undying = wasCreature && !o.token && o.counters === 0 && this.hasKw(o, "不屈");
+    const rinne = wasCreature && !o.token && this.hasKw(o, "輪廻");
     this.move(o, "graveyard");
     this.addLog(`${o.card.name}が墓地に置かれた`, controller);
     if (wasCreature) {
@@ -1122,6 +1173,9 @@ export class Game {
       this.enterBattlefield(o, o.owner);
       o.counters = 1;
       this.addLog(`${o.card.name}が不屈で戻ってきた`, o.owner);
+    } else if (rinne && (o.zone as Zone) === "graveyard") {
+      this.putIntoMana(o, o.owner);
+      this.addLog(`${o.card.name}が輪廻でマナゾーンに置かれた`, o.owner);
     }
   }
 
@@ -1402,6 +1456,18 @@ export class Game {
         this.shuffle(pl.library);
         break;
       }
+      case "plunder": {
+        const zone = this.players[opp].mana;
+        const picked = await this.askCards(p, `略奪:相手のマナゾーンから奪うカードを${e.n}枚選んでください`, zone, Math.min(e.n, zone.length), "erode");
+        for (const o of picked) {
+          zone.splice(zone.indexOf(o), 1);
+          o.owner = p;
+          o.controller = p;
+          this.putIntoMana(o, p, true);
+          this.addLog(`略奪で${this.players[opp].name}の${o.card.name}を自分のマナゾーンに置いた`, p);
+        }
+        break;
+      }
       case "mill": {
         const who = e.who === "opp" ? opp : p;
         const lib = this.players[who].library;
@@ -1557,14 +1623,19 @@ export class Game {
       .filter((o): o is Obj => !!o && o.zone === "battlefield");
   }
 
+  /** この攻撃クリーチャーをブロックするのに必要な体数(威迫2、大威迫3) */
+  minBlockers(a: Obj): number {
+    return this.hasKw(a, "大威迫") ? 3 : this.hasKw(a, "威迫") ? 2 : 1;
+  }
+
   private validateBlocks(ans: BlockAnswer, attackers: Obj[], blockers: Obj[]): BlockAnswer {
     const out: BlockAnswer = {};
     const used = new Set<number>();
     for (const a of attackers) {
       const bs = (ans[a.uid] ?? [])
         .map((u) => blockers.find((b) => b.uid === u))
-        .filter((b): b is Obj => !!b && !used.has(b.uid) && this.canBlock(b, a));
-      if (this.hasKw(a, "威迫") && bs.length < 2) continue;
+        .filter((b, i, arr): b is Obj => !!b && arr.indexOf(b) === i && (!used.has(b.uid) || this.hasKw(b, "鉄壁")) && this.canBlock(b, a));
+      if (bs.length < this.minBlockers(a)) continue;
       if (bs.length) {
         out[a.uid] = bs.map((b) => b.uid);
         bs.forEach((b) => used.add(b.uid));
@@ -1687,6 +1758,12 @@ export class Game {
     await this.priorityStep();
     // 終了
     this.step = "end";
+    for (const o of [...pl.battlefield]) {
+      if (o.dashed) {
+        this.move(o, "hand");
+        this.addLog(`${o.card.name}は疾駆の効果で手札に戻った`, p);
+      }
+    }
     this.queueTriggers("endStep", pl.battlefield);
     await this.priorityStep();
     // クリンナップ

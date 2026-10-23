@@ -67,8 +67,10 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit }: Props
         if (d.blockers.includes(o.uid)) setBlocker((b) => (b === o.uid ? null : o.uid));
         else if (d.attackers.includes(o.uid) && blocker !== null) {
           const next: BlockAnswer = {};
-          for (const [a, bs] of Object.entries(blocks)) next[Number(a)] = bs.filter((b) => b !== blocker);
-          next[o.uid] = [...(next[o.uid] ?? []), blocker];
+          // 鉄壁を持つクリーチャーは何体でもブロックできる
+          const wall = g.find(blocker) && g.hasKw(g.find(blocker)!, "鉄壁");
+          for (const [a, bs] of Object.entries(blocks)) next[Number(a)] = wall ? bs : bs.filter((b) => b !== blocker);
+          next[o.uid] = [...(next[o.uid] ?? []).filter((b) => b !== blocker), blocker];
           setBlocks(next);
           setBlocker(null);
         }
@@ -499,7 +501,7 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
               {assigned.map(([a, bs]) => (
                 <li key={a}>
                   {g.find(Number(a))?.card.name} ← {bs.map((b) => g.find(b)?.card.name).join("、")}
-                  {g.find(Number(a)) && g.hasKw(g.find(Number(a))!, "威迫") && bs.length < 2 && "(威迫:2体以上必要)"}
+                  {g.find(Number(a)) && bs.length < g.minBlockers(g.find(Number(a))!) && `(${g.minBlockers(g.find(Number(a))!)}体以上必要)`}
                 </li>
               ))}
             </ul>
@@ -525,6 +527,7 @@ function actionLabel(g: Game, a: Action): string {
     case "cast": {
       if (a.from === "mana") return "マナ解放で唱える";
       if (a.from === "graveyard") return "再演で唱える";
+      if (a.from === "dash") return "疾駆で唱える(速攻、終了時に手札へ)";
       const o = g.find(a.uid);
       return o && g.effectiveCost(ME, o, "hand") === "" && o.card.cost !== "" ? "零式で唱える(コストなし)" : "唱える";
     }

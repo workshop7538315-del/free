@@ -22,6 +22,7 @@ import { HEARTBEAT } from "./sets/heartbeat.mjs";
 import { ARMED } from "./sets/armed.mjs";
 import { TRIBAL } from "./sets/tribal.mjs";
 import { MISC } from "./sets/misc.mjs";
+import { ADVANCED } from "./sets/advanced.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -43,6 +44,7 @@ const SETS = [
   ARMED,
   TRIBAL,
   MISC,
+  ADVANCED,
 ];
 const CARDS = SETS.flat();
 
