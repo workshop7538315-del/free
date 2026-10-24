@@ -1440,6 +1440,8 @@ export class Game {
           this.move(o, "graveyard");
           this.addLog(`侵食で${this.players[opp].name}の${o.card.name}を墓地に置いた`, p);
         }
+        if (picked.length < e.n)
+          this.addLog(`侵食 ${e.n}:${this.players[opp].name}のマナゾーンにカードが${picked.length}枚しかなかったので、あるだけ墓地に置いた`, p);
         break;
       }
       case "sacrifice": {
@@ -1550,6 +1552,14 @@ export class Game {
           this.addLog(`略奪で${this.players[opp].name}の${name}を裏向きにして自分のマナゾーンに置いた`, p);
         }
         if (picked.length) this.queueTriggers("manaEnter", this.sources(p));
+        // 相手のマナゾーンのカードが足りないときは、選ばずにあるだけ奪う。そのことをログに残す
+        if (zone.length === 0 && picked.length < e.n)
+          this.addLog(
+            picked.length === 0
+              ? `略奪 ${e.n}:${this.players[opp].name}のマナゾーンにカードがなかったので、何も奪えなかった`
+              : `略奪 ${e.n}:${this.players[opp].name}のマナゾーンにカードが${picked.length}枚しかなかったので、選ばずに${picked.length}枚すべてを奪った`,
+            p,
+          );
         break;
       }
       case "veil": {

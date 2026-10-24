@@ -460,7 +460,7 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
                   aria-pressed={on}
                   onClick={() => setChosen((s) => (s.includes(u) ? s.filter((x) => x !== u) : s.length < d.count ? [...s, u] : s))}
                 >
-                  {o.card.name}
+                  {o.zone === "mana" && o.faceDown ? (o.controller === ME ? `裏:${o.card.name}` : "裏向きのカード") : o.card.name}
                   {o.zone === "mana" && o.tapped ? "(タップ)" : ""}
                 </button>
               );
