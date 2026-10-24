@@ -85,8 +85,10 @@ class Tester extends CpuAgent {
     }
     if (d.kind === "chooseCards" && d.prompt.startsWith("略奪") && this.cast && !this.asked) {
       this.asked = true;
+      // カードが持つ略奪のどれか(唱えたときの略奪 3 と、攻撃時の略奪 1 など)と合っていればよい
+      const ns = [...JSON.stringify(this.card.abilities).matchAll(/"do":"plunder","n":(\d)/g)].map((m) => Number(m[1]));
       const expectCount = Math.min(this.expectN, opp.mana.length);
-      if (d.count !== expectCount) this.rec.problems.push(`選ぶ枚数 ${d.count}(期待 ${expectCount}、相手のマナ ${opp.mana.length})`);
+      if (!ns.some((n) => d.count === Math.min(n, opp.mana.length))) this.rec.problems.push(`選ぶ枚数 ${d.count}(期待 ${expectCount}、相手のマナ ${opp.mana.length})`);
       if (d.options.length !== opp.mana.length) this.rec.problems.push(`選択肢 ${d.options.length} ≠ 相手のマナ ${opp.mana.length}`);
       // 裏向き・タップのカードを優先して選ぶ(おかしくなりやすいところ)
       const order = [...d.options].sort((a, b) => Number(!!g.find(b)?.faceDown) - Number(!!g.find(a)?.faceDown));
