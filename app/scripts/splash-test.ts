@@ -1,3 +1,7 @@
+/**
+ * npm run test:splash … 紋章・チャージ時のカードなどを、別の色のデッキに4枚入れたときの勝率の変化を測る(出張しやすさの確認)
+ *   CANDS=カードID,… HOSTS=デッキID,… で対象を指定できる
+ */
 import cardsJson from "../../cards/cards.json";
 import decksJson from "../../cards/decks.json";
 import type { Card } from "../src/types";

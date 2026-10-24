@@ -20,8 +20,6 @@ export type Filter = {
   maxMV?: number;
   maxPower?: number;
   color?: Color;
-  /** 紋章を持つカード */
-  crest?: boolean;
 };
 
 export type CondName =

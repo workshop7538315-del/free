@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit -p .",
     "simulate": "tsx scripts/simulate.ts",
     "tier": "tsx scripts/tier.ts",
-    "test:plunder": "tsx scripts/test-plunder.ts"
+    "test:plunder": "tsx scripts/test-plunder.ts",
+    "test:splash": "tsx scripts/splash-test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

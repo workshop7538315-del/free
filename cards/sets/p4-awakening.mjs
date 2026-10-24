@@ -9,7 +9,7 @@ const all = { type: "クリーチャー" };
 
 export const AWAKENING = tagAll("紋章", [
   // 白:守りと展開
-  cr("aw01", "刻印の守り手", "{1}{W}", "人間・兵士", 2, 2, "U", [crest(lord(all, 1, 1, undefined, false))]),
+  cr("aw01", "刻印の守り手", "{1}{W}", "人間・兵士", 2, 2, "U", [crest(lord(all, 0, 1, undefined, false))]),
   cr("aw02", "目覚めの聖騎士", "{2}{W}{W}", "人間・騎士", 3, 3, "R", [kw("先制攻撃"), etb(E.manifest(2))]),
   cr("aw03", "大地の祈祷師", "{W}", "人間・クレリック", 1, 2, "C", [crest(upkeep(E.gain(1)))]),
   ins("aw04", "刻印の盾", "{W}", "C", [spell(E.pump(0, 2, ["破壊不能"]), T.you), crest(lord(F.human, 1, 0, undefined, false))]),
