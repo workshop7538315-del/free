@@ -304,7 +304,8 @@ export class Game {
 
   addLog(text: string, player: PlayerId | null = null) {
     this.log.push({ id: this.logId++, turn: this.turn, player, text });
-    if (this.log.length > 400) this.log.splice(0, this.log.length - 400);
+    // 対戦後にログ全体をコピーできるよう、多めに残す
+    if (this.log.length > 5000) this.log.splice(0, this.log.length - 5000);
     this.update();
   }
 

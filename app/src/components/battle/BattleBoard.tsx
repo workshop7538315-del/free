@@ -5,6 +5,7 @@ import type { HumanAgent } from "../../game/human";
 import { cardColors } from "../../lib/mana";
 import { ManaCost } from "../ManaCost";
 import { RulesText } from "../CardTile";
+import { copyText, deckText, logText, resultLine, type DeckInfo } from "../../lib/battleLog";
 
 const ME: PlayerId = 0;
 const CPU: PlayerId = 1;
@@ -15,9 +16,16 @@ type Props = {
   result: PlayerId | null | undefined;
   onRematch: () => void;
   onExit: () => void;
+  /** ログと一緒にコピーするデッキ */
+  decks?: { mine: DeckInfo; cpu: DeckInfo };
 };
 
-export function BattleBoard({ game: g, human, result, onRematch, onExit }: Props) {
+export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }: Props) {
+  // 結果の画面を閉じて、盤面とログを見られるようにする
+  const [showResult, setShowResult] = useState(true);
+  useEffect(() => {
+    if (result !== undefined) setShowResult(true);
+  }, [result]);
   const pending = human.pending;
   const d = pending?.decision ?? null;
   const [selected, setSelected] = useState<number | null>(null);
@@ -152,13 +160,34 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit }: Props
       <aside className="battle-side">
         <CardDetail g={g} o={detail} />
         <Graveyards g={g} onCard={onCard} />
-        <Log g={g} />
-        <button type="button" className="btn btn-quiet" onClick={() => window.confirm("対戦をやめてデッキ選択に戻りますか?") && onExit()}>
-          対戦をやめる
-        </button>
+        <Log g={g} decks={decks} />
+        {result === undefined ? (
+          <button type="button" className="btn btn-quiet" onClick={() => window.confirm("対戦をやめてデッキ選択に戻りますか?") && onExit()}>
+            対戦をやめる
+          </button>
+        ) : (
+          <button type="button" className="btn btn-quiet" onClick={onExit}>
+            デッキを選び直す
+          </button>
+        )}
       </aside>
 
-      {result !== undefined && (
+      {result !== undefined && !showResult && (
+        <div className="result-bar" role="status">
+          <strong className={result === ME ? "is-win" : ""}>{result === ME ? "勝利" : result === CPU ? "敗北" : "引き分け"}</strong>
+          <span>対戦後の盤面を表示しています。カードを選ぶと詳しい内容が出ます。</span>
+          <span className="result-bar-actions">
+            <button type="button" className="btn" onClick={() => setShowResult(true)}>
+              結果を表示
+            </button>
+            <button type="button" className="btn btn-primary" onClick={onRematch}>
+              もう一度対戦する
+            </button>
+          </span>
+        </div>
+      )}
+
+      {result !== undefined && showResult && (
         <div className="result" role="dialog" aria-labelledby="result-title">
           <div className="result-box">
             <h2 id="result-title" className={`result-title ${result === ME ? "is-win" : ""}`}>
@@ -171,10 +200,14 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit }: Props
               <button type="button" className="btn btn-primary" onClick={onRematch}>
                 もう一度対戦する
               </button>
+              <button type="button" className="btn" onClick={() => setShowResult(false)}>
+                盤面とログを見る
+              </button>
               <button type="button" className="btn" onClick={onExit}>
                 デッキを選び直す
               </button>
             </div>
+            <CopyButtons g={g} decks={decks} />
           </div>
         </div>
       )}
@@ -637,7 +670,35 @@ function Graveyards({ g, onCard }: { g: Game; onCard: (o: Obj) => void }) {
   );
 }
 
-function Log({ g }: { g: Game }) {
+/** ログのコピー:ログのみ / ログと双方のデッキ */
+function CopyButtons({ g, decks }: { g: Game; decks?: { mine: DeckInfo; cpu: DeckInfo } }) {
+  const [done, setDone] = useState<string | null>(null);
+  const copy = async (withDecks: boolean) => {
+    const parts = [resultLine(g, ME)];
+    if (withDecks && decks) parts.push(deckText("あなたのデッキ", decks.mine), deckText("CPUのデッキ", decks.cpu));
+    parts.push(`# ログ(${g.log.length}行)\n${logText(g.log)}`);
+    const ok = await copyText(parts.join("\n\n"));
+    setDone(ok ? (withDecks ? "ログとデッキをコピーしました" : "ログをコピーしました") : "コピーできませんでした");
+    window.setTimeout(() => setDone(null), 2500);
+  };
+  return (
+    <div className="log-copy">
+      <button type="button" className="btn btn-small" onClick={() => copy(false)}>
+        ログをコピー
+      </button>
+      {decks && (
+        <button type="button" className="btn btn-small" onClick={() => copy(true)}>
+          ログとデッキをコピー
+        </button>
+      )}
+      <span className="log-copy-status" aria-live="polite">
+        {done}
+      </span>
+    </div>
+  );
+}
+
+function Log({ g, decks }: { g: Game; decks?: { mine: DeckInfo; cpu: DeckInfo } }) {
   const ref = useRef<HTMLOListElement>(null);
   const last = g.log[g.log.length - 1]?.id;
   useEffect(() => {
@@ -647,6 +708,7 @@ function Log({ g }: { g: Game }) {
   return (
     <section className="log" aria-label="ログ">
       <h3 className="zone-label">ログ</h3>
+      <CopyButtons g={g} decks={decks} />
       <ol ref={ref}>
         {g.log.slice(-120).map((l) => (
           <li key={l.id} className={l.player === ME ? "is-me" : l.player === CPU ? "is-cpu" : "is-sys"}>

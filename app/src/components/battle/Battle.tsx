@@ -82,6 +82,7 @@ export function Battle({ byId, starters, saved, draft }: Props) {
         game={running.game}
         human={running.human}
         result={running.result}
+        decks={{ mine: { name: running.myDeck.name, cards: running.myDeck.cards }, cpu: { name: running.cpuDeck.name, cards: running.cpuDeck.cards } }}
         onRematch={() => start(running.myDeck.key, cpu === "random" ? running.cpuDeck.key : cpu)}
         onExit={() => {
           running.game.abort();
