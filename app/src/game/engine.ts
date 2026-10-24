@@ -603,7 +603,9 @@ export class Game {
   }
 
   private async askCards(p: PlayerId, prompt: string, options: Obj[], count: number, reason: Extract<Decision, { kind: "chooseCards" }>["reason"]) {
-    if (options.length <= count) return options;
+    // 選ぶ必要がないときもコピーを返す。元の配列(マナゾーンや手札そのもの)を返すと、
+    // 呼び出し側がカードを移しながら回すときに要素が詰まって、1枚おきに飛ばされてしまう
+    if (options.length <= count) return [...options];
     const uids = await this.ask<number[]>(p, { kind: "chooseCards", prompt, options: options.map((o) => o.uid), count, reason });
     const picked = options.filter((o) => uids.includes(o.uid)).slice(0, count);
     // 足りない分は先頭から補う(不正な答えへの備え)
