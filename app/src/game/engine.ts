@@ -186,6 +186,7 @@ export function matchFilter(c: Card, f: Filter | undefined, colors?: Color[]): b
   if (f.maxMV !== undefined && mv > f.maxMV) return false;
   if (f.maxPower !== undefined && (c.power ?? 99) > f.maxPower) return false;
   if (f.color && !(colors ?? cardColors(c.cost)).includes(f.color)) return false;
+  if (f.crest && !abilitiesOf(c).some((a) => (a as { from?: string }).from === "mana")) return false;
   return true;
 }
 
@@ -490,7 +491,31 @@ export class Game {
   activeAbilities(o: Obj): Ability[] {
     const inMana = o.zone === "mana";
     if (inMana && o.faceDown) return [];
+    if (inMana && hasCrest(o.card) && !this.crestWorks(o)) return [];
     return abilitiesOf(o.card).filter((a) => isCrestAbility(a) === inMana);
+  }
+
+  /** 紋章の色の条件:同じ色のカードが自分のマナゾーンに他にもある(欠色の紋章はいつでもよい) */
+  private crestColorOk(o: Obj): boolean {
+    const cs = cardColors(o.card.cost);
+    if (cs.length === 0) return true;
+    return this.players[o.owner].mana.some((x) => x !== o && !x.faceDown && cardColors(x.card.cost).some((c) => cs.includes(c)));
+  }
+
+  /**
+   * マナゾーンの紋章が働いているか。
+   * - 色のある紋章は、同じ色のカードが自分のマナゾーンに他にもあるときだけ働く(色を問わず「出張」させないため)
+   * - 同じ名前の紋章は、1つしか働かない(重ねがけしない)
+   */
+  static crestColorRule = true;
+  static crestDedupe = true;
+
+  crestWorks(o: Obj): boolean {
+    if (o.zone !== "mana" || o.faceDown || !hasCrest(o.card)) return false;
+    if (Game.crestColorRule && !this.crestColorOk(o)) return false;
+    if (!Game.crestDedupe) return true;
+    const first = this.players[o.owner].mana.find((x) => !x.faceDown && x.card.name === o.card.name && (!Game.crestColorRule || this.crestColorOk(x)));
+    return first === o;
   }
 
   /** 能力を持ちうるパーマネントとマナゾーンのカード */

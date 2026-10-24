@@ -187,6 +187,10 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
       if (manaValue(o.card.cost) <= me.mana.length + 1 && manaValue(o.card.cost) >= 1) s += 0.8;
       if (!best || s < best.s) best = { a, s };
     }
+    // 2回目以降のチャージ(追加チャージ)は、手札を使い切らないように、マナにしてよいカードだけにする
+    const extra = me.chargesUsed >= 1;
+    const maxMV = Math.max(0, ...me.hand.map((o) => manaValue(o.card.cost)));
+    if (best && extra && !(best.s < 2.3 || (me.hand.length >= 5 && me.mana.length < maxMV))) best = null;
     if (best) return best.a;
   }
 

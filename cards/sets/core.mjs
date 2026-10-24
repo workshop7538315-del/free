@@ -1,5 +1,5 @@
 // 最初のセット(基本の166種類)。IDは変えないこと。
-import { cr, acr, ins, sor, ench, art, kw, burn, release, spell, etb, dies, attacks, charge, upkeep, castSpell, allyDies, stat, act, mana, T, E, iff, unless, may } from "../lib.mjs";
+import { cr, acr, ins, sor, ench, art, kw, burn, release, spell, etb, dies, attacks, charge, upkeep, castSpell, allyDies, stat, act, mana, T, E, iff, unless, may, armed } from "../lib.mjs";
 
 export const W = [
   cr("w001", "草原の見張り番", "{W}", "人間・兵士", 1, 2, "C", [kw("警戒"), charge(E.gain(2))]),
@@ -35,7 +35,7 @@ export const W = [
 ];
 
 export const U = [
-  cr("u001", "霧の書記", "{1}{U}", "人間・ウィザード", 1, 3, "C", [charge([E.draw(1), E.discard(1)])]),
+  cr("u001", "霧の書記", "{1}{U}", "人間・ウィザード", 1, 3, "C", [charge([E.draw(1), E.discard(1)], undefined, { if: armed("U", 2) })]),
   cr("u002", "潮読みの賢者", "{2}{U}{U}", "マーフォーク・ウィザード", 2, 4, "U", [kw("飛行"), etb(E.reclaim([E.draw(2)]))]),
   ins("u003", "否認の言葉", "{U}{U}", "C", spell(E.counter(), T.spell)),
   ins("u004", "引き潮", "{1}{U}", "C", spell(E.bounce(), T.cre)),

@@ -234,6 +234,7 @@ export function filterPhrase(f = {}, ctx = "creature") {
   if (f.minMV !== undefined) adj.push(`マナ総量が${f.minMV}以上の`);
   if (f.maxMV !== undefined) adj.push(`マナ総量が${f.maxMV}以下の`);
   if (f.maxPower !== undefined) adj.push(`パワーが${f.maxPower}以下の`);
+  if (f.crest) adj.push("紋章を持つ");
   let noun;
   if (f.sub) noun = ctx === "spell" ? `${f.sub}呪文` : ctx === "card" ? `${f.sub}・カード` : f.sub;
   else if (f.type) noun = ctx === "spell" ? `${f.type}呪文` : ctx === "card" ? `${f.type}・カード` : f.type;
