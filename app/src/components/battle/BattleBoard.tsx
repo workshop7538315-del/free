@@ -218,7 +218,8 @@ function ManaRow({ p, markOf, onCard, hidden = false }: { p: Player; markOf: (o:
           const bg = cs.length === 0 ? "var(--mana-C)" : cs.length === 1 ? `var(--mana-${cs[0]})` : `linear-gradient(90deg, ${cs.map((c) => `var(--mana-${c})`).join(",")})`;
           // 裏向きのカード:相手のものは名前を見せない
           const secret = o.faceDown && hidden;
-          const label = o.faceDown ? (secret ? "裏向き" : `裏:${o.card.name}`) : o.card.name;
+          const secretNo = secret ? p.mana.filter((q) => q.faceDown).indexOf(o) + 1 : 0;
+          const label = o.faceDown ? (secret ? `裏向き${secretNo}` : `裏:${o.card.name}`) : o.card.name;
           return (
             <button
               key={o.uid}
@@ -452,6 +453,11 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
               const o = g.find(u);
               if (!o) return null;
               const on = chosen.includes(u);
+              // 相手の裏向きのカードは名前が見えないので番号で区別する
+              const hiddenNo =
+                o.zone === "mana" && o.faceDown && o.controller !== ME
+                  ? d.options.filter((x) => { const q = g.find(x); return q?.zone === "mana" && q.faceDown && q.controller !== ME; }).indexOf(u) + 1
+                  : 0;
               return (
                 <button
                   key={u}
@@ -460,7 +466,7 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
                   aria-pressed={on}
                   onClick={() => setChosen((s) => (s.includes(u) ? s.filter((x) => x !== u) : s.length < d.count ? [...s, u] : s))}
                 >
-                  {o.zone === "mana" && o.faceDown ? (o.controller === ME ? `裏:${o.card.name}` : "裏向きのカード") : o.card.name}
+                  {o.zone === "mana" && o.faceDown ? (o.controller === ME ? `裏:${o.card.name}` : `裏向きのカード${hiddenNo}`) : o.card.name}
                   {o.zone === "mana" && o.tapped ? "(タップ)" : ""}
                 </button>
               );

@@ -1541,16 +1541,19 @@ export class Game {
       case "plunder": {
         const zone = this.players[opp].mana;
         const picked = await this.askCards(p, `略奪:相手のマナゾーンから奪うカードを${e.n}枚選んでください`, zone, Math.min(e.n, zone.length), "erode");
+        const names: string[] = [];
         for (const o of picked) {
-          const name = o.faceDown ? "裏向きのカード" : o.card.name;
+          names.push(o.faceDown ? "裏向きのカード" : o.card.name);
           zone.splice(zone.indexOf(o), 1);
           o.owner = p;
           o.controller = p;
           // 裏向きにして置く(チャージ時の能力は誘発しない)
           this.move(o, "mana", { tapped: true });
           o.faceDown = true;
-          this.addLog(`略奪で${this.players[opp].name}の${name}を裏向きにして自分のマナゾーンに置いた`, p);
         }
+        // 何枚奪ったかが分かるように、1行にまとめて書く
+        if (picked.length)
+          this.addLog(`略奪 ${e.n}:${this.players[opp].name}のマナゾーンから${picked.length}枚(${names.join("、")})を奪い、裏向きで自分のマナゾーンに置いた`, p);
         if (picked.length) this.queueTriggers("manaEnter", this.sources(p));
         // 相手のマナゾーンのカードが足りないときは、選ばずにあるだけ奪う。そのことをログに残す
         if (zone.length === 0 && picked.length < e.n)
