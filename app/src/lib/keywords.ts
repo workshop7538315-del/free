@@ -22,7 +22,12 @@ const ALL = new RegExp(
 
 /** 文中の一致からキーワード定義を引く(「燃焼 2」→ 燃焼) */
 export function keywordFor(match: string): Keyword | undefined {
-  return KEYWORDS.find((k) => match === k.name || match.startsWith(k.name)) ?? BY_NAME.get(match);
+  return (
+    KEYWORDS.find((k) => match === k.name || match.startsWith(k.name)) ??
+    BY_NAME.get(match) ??
+    // 名前で始まらないもの(《生成されるカード》など)は、パターン全体で照合する
+    KEYWORDS.find((k) => new RegExp(`^(?:${k.pattern})$`).test(match))
+  );
 }
 
 /** 文章をキーワードとそれ以外に分ける */

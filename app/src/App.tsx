@@ -182,7 +182,7 @@ export default function App() {
                   key={card.id}
                   card={card}
                   count={draft.cards[card.id] ?? 0}
-                  onChange={(delta) => changeDraft({ ...draft, cards: addCard(draft.cards, card.id, delta) })}
+                  onChange={(delta) => changeDraft({ ...draft, cards: addCard(draft.cards, card.id, delta, card) })}
                 />
               ))}
             </div>
@@ -211,7 +211,7 @@ export default function App() {
       {mode === "build" && (
       <a className="mobile-bar" href="#deck">
         <span>
-          <strong>{deckCount(draft.cards)}</strong> / {DECK_SIZE}枚
+          <strong>{deckCount(draft.cards, BY_ID)}</strong> / {DECK_SIZE}枚
         </span>
         デッキを見る
       </a>

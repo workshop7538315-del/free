@@ -29,6 +29,8 @@ import { AWAKENING } from "./sets/p4-awakening.mjs";
 import { REKINDLE, REKINDLE_REPRINTS } from "./sets/p5-rekindle.mjs";
 import { COURT } from "./sets/p6-court.mjs";
 import { VOIDS } from "./sets/p7-void.mjs";
+import { BEACON, BEACON_REPRINTS } from "./sets/p8-beacon.mjs";
+import { GATE } from "./sets/p9-gate.mjs";
 
 export const PACKS = [
   {
@@ -94,5 +96,24 @@ export const PACKS = [
     words: ["虚無", "裏向き", "欠色"],
     theme: "すべて欠色のパック。色を奪い(略奪)、色を捨て(虚化)、何もないところから力を得る(虚空・真空)。新しい種族・呪文の種類「虚無」は、欠色マナでなければ唱えられない。",
     sets: [VOIDS],
+  },
+  {
+    id: "p8",
+    number: 8,
+    name: "逆襲の烽火",
+    kind: "既存カード強化",
+    words: ["底力", "継戦", "反撃"],
+    theme: "劣勢のデッキが烽火を上げる。総当たり戦で苦戦した装備・呪文・生け贄・赤白・緑系・エルフ・カウンターに、そのデッキでしか働かない手札補充のエンジンと飛行への答えを配る。新しい条件「強襲」(このターン2体以上で攻撃した)と「連唱」(このターン呪文を2つ以上唱えた)、手札にカードを加える「生成」、効果を選ぶモード呪文。",
+    sets: [BEACON],
+    reprints: BEACON_REPRINTS,
+  },
+  {
+    id: "p9",
+    number: 9,
+    name: "秘蔵の門",
+    kind: "新規展開",
+    words: ["奉納", "リリース", "秘蔵"],
+    theme: "メインのデッキとは別に、8枚の「秘蔵庫」を持つ。軽いエンチャントや「奉納」を持つクリーチャーで手札とマナを整え、それらを生け贄に捧げて(リリース召喚)、秘蔵庫の神獣・祖霊・機神をコストを支払わずに呼び出す。捧げずに残せば、ドローやマナを生み続ける。",
+    sets: [GATE],
   },
 ];

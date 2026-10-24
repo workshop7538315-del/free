@@ -90,6 +90,25 @@ export const onCastSelf = trig("castSelf");
 export const toGraveyard = trig("toGraveyard");
 /** 虚食:マナゾーンの裏向きのカード1枚につきコストが{1}少なくなる */
 export const voidAffinity = () => ({ a: "voidAffinity" });
+/** あなたが(filter に合う)パーマネントを生け贄に捧げるたび */
+export const onSacrifice = (filter) => trig("sacrifice", filter);
+/** 誘発を「1ターンに1回」にする */
+export const once = (ability) => ({ ...ability, oncePerTurn: true });
+/** リリース召喚 N(秘蔵庫のクリーチャー) */
+export const releaseSummon = (n) => ({ a: "releaseSummon", n });
+/** 奉納 N(sub) */
+export const offering = (n, sub) => ({ a: "offering", n, ...(sub ? { sub } : {}) });
+/** モード呪文:modes は [ラベル, 効果, 対象] の配列 */
+export const modal = (modes) => ({
+  a: "spell",
+  effects: [],
+  modes: modes.map(([label, effects, targets]) => ({ label, effects: [effects].flat(), ...(targets ? { targets: [targets].flat() } : {}) })),
+});
+/** 生成されるカード(カードリストには入らない) */
+export const gen = (id, name, cost, type, abilities, extra = {}) => {
+  const c = { id, name, cost, type, rarity: "生成", abilities: [abilities ?? []].flat(2), ...extra };
+  return { ...c, text: cardText(c) };
+};
 /** filter に合う呪文を唱えるたび */
 export const onCast = (filter) => trig("cast", filter);
 /** filter に合う他のパーマネントがあなたのコントロールで戦場に出るたび */
@@ -203,6 +222,8 @@ export const E = {
   /** 落とし子:生け贄に捧げると{C}を出す 0/1 */
   spawn: (n) => ({ do: "token", n, p: 0, t: 1, color: "C", sub: "虚無・落とし子", spawn: true }),
   manifest: (maxMV, haste = false) => ({ do: "manifest", maxMV, ...(haste ? { haste } : {}) }),
+  /** 生成:card(gen で作る)をN枚手札に加える */
+  create: (card, n = 1) => ({ do: "create", card, n }),
   /** 決闘:対象は [自分のクリーチャー, 相手のクリーチャー]。win は勝ったときの効果 */
   duel: (win) => ({ do: "duel", tg: [0, 1], ...(win ? { win: [win].flat() } : {}) }),
   /** このクリーチャー自身が決闘する。対象は [相手のクリーチャー] */
@@ -234,6 +255,7 @@ export function filterPhrase(f = {}, ctx = "creature") {
   if (f.minMV !== undefined) adj.push(`マナ総量が${f.minMV}以上の`);
   if (f.maxMV !== undefined) adj.push(`マナ総量が${f.maxMV}以下の`);
   if (f.maxPower !== undefined) adj.push(`パワーが${f.maxPower}以下の`);
+  if (f.minPower !== undefined) adj.push(`パワーが${f.minPower}以上の`);
   let noun;
   if (f.sub) noun = ctx === "spell" ? `${f.sub}呪文` : ctx === "card" ? `${f.sub}・カード` : f.sub;
   else if (f.type) noun = ctx === "spell" ? `${f.type}呪文` : ctx === "card" ? `${f.type}・カード` : f.type;
@@ -299,6 +321,8 @@ export function condLabel(c) {
       oppTurn: "伏兵",
       intrigue: "陰謀",
       void: "虚空",
+      raid: "強襲",
+      chain: "連唱",
       vacuum: "真空",
     }[c] ?? null
   );
@@ -338,6 +362,8 @@ function condPlain(c) {
     abyss: "あなたの墓地にカードが12枚以上ある",
     oppTurn: "対戦相手のターンである",
     void: "あなたのマナゾーンのカードの半分以上が欠色である",
+    raid: "このターン、あなたがクリーチャー2体以上で攻撃した",
+    chain: "このターン、あなたがインスタントかソーサリーを2つ以上唱えた",
     vacuum: "あなたのマナゾーンのカードがすべて欠色である",
     intrigue: "このターン、対戦相手がカードを捨てたか、対戦相手のクリーチャーが戦場を離れた",
     threshold: "あなたの墓地にカードが7枚以上ある",
@@ -499,6 +525,11 @@ function effectText(e, name, abil, notes) {
     case "veilOpp":
       if (e.all) return "対戦相手のマナゾーンにある表向きのカードをすべて裏向きにする。";
       return `対戦相手のマナゾーンにある${e.crest ? "紋章を持つ" : "表向きの"}カードを${e.n}枚選び、裏向きにする。`;
+    case "create": {
+      const c = e.card;
+      const pt = c.power !== undefined ? ` ${c.power}/${c.toughness}` : "";
+      return `《${c.name}》(${c.cost} ${c.type}${pt}:${c.text.join(" ") || "能力なし"})を${a(e.n)}枚あなたの手札に加える。`;
+    }
     case "shuffleGraveyard":
       return "あなたの墓地にあるカードをすべてライブラリーに加え、ライブラリーを切り直す。";
     case "manifest":
@@ -558,6 +589,7 @@ const TRIGGER_PREFIX = {
   lifeGain: () => "あなたがライフを得るたび、",
   duelWin: () => "あなたが決闘に勝つたび、",
   castSelf: (n) => `あなたが${n}を唱えたとき、`,
+  sacrifice: (n, f) => `あなたが${f ? filterPhrase(f, "permanent") : "パーマネント"}を生け贄に捧げるたび、`,
   toGraveyard: (n) => `${n}がどこからでも墓地に置かれたとき、`,
 };
 
@@ -632,6 +664,10 @@ function abilityTextBody(abil, card) {
       return `循環 ${abil.cost}`;
     case "equip":
       return `装備 ${abil.cost}`;
+    case "releaseSummon":
+      return `リリース召喚 ${abil.n}`;
+    case "offering":
+      return `奉納 ${abil.n}${abil.sub ? `(${abil.sub})` : ""}`;
     case "voidAffinity":
       return "虚食(この呪文を唱えるためのコストは、あなたのマナゾーンにある裏向きのカード1枚につき{1}少なくなる)";
     case "affinity":
@@ -639,15 +675,17 @@ function abilityTextBody(abil, card) {
     case "free":
       return `零式(${condPlain(abil.if)}なら、この呪文をマナを支払わずに唱えてもよい)`;
     case "spell":
+      if (abil.modes) return `次から1つを選ぶ。${abil.modes.map((m, i) => `${"①②③④"[i]}${bodyText(m, name)}`).join("")}`;
       return bodyText(abil, name);
     case "trigger": {
       const pre = TRIGGER_PREFIX[abil.on](name, abil.filter);
       const shared = abil.if ? null : sharedCond(abil);
       const body = bodyText(abil, name, shared);
       const cond = abil.if ?? shared;
-      if (!cond) return pre + body;
+      const onceText = abil.oncePerTurn ? "(この能力は1ターンに1回だけ誘発する)" : "";
+      if (!cond) return pre + body + onceText;
       // 「孤高 ―」のような見出しは前に、「〜なら、」は誘発の後に置く
-      return condLabel(cond) ? condPrefix(cond) + pre + body : pre + condPrefix(cond) + body;
+      return (condLabel(cond) ? condPrefix(cond) + pre + body : pre + condPrefix(cond) + body) + onceText;
     }
     case "static":
       return staticText(abil, name, card);

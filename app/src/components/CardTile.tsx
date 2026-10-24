@@ -1,5 +1,5 @@
 import type { Card } from "../types";
-import { MAX_COPIES } from "../lib/deck";
+import { maxCopies } from "../lib/deck";
 import { cardColors, colorCategory } from "../lib/mana";
 import { ManaCost } from "./ManaCost";
 import { KeywordTip } from "./KeywordTip";
@@ -88,7 +88,7 @@ export function CardTile({ card, count, onChange }: Props) {
           type="button"
           className="step"
           onClick={() => onChange(1)}
-          disabled={count >= MAX_COPIES}
+          disabled={count >= maxCopies(card)}
           aria-label={`${card.name}を1枚入れる`}
         >
           ＋

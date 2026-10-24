@@ -87,6 +87,9 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
         if (d.options.includes(o.uid))
           setChosen((s) => (s.includes(o.uid) ? s.filter((x) => x !== o.uid) : s.length < d.count ? [...s, o.uid] : s));
         break;
+      case "chooseSum":
+        if (d.options.includes(o.uid)) setChosen((s) => (s.includes(o.uid) ? s.filter((x) => x !== o.uid) : [...s, o.uid]));
+        break;
     }
   };
 
@@ -112,6 +115,7 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
         if (d.attackers.includes(o.uid)) return blocker !== null ? "is-targetable" : "";
         return "";
       case "chooseCards":
+      case "chooseSum":
         return chosen.includes(o.uid) ? "is-selected" : d.options.includes(o.uid) ? "is-actionable" : "";
       default:
         return "";
@@ -154,6 +158,18 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
             ))}
           </div>
         </section>
+        {me.extra.length > 0 && (
+          <section className="hand extra-zone" aria-label="あなたの秘蔵庫">
+            <h3 className="zone-label">
+              秘蔵庫 {me.extra.length}枚<span className="zone-hint">(エンチャントや奉納を持つクリーチャーをリリースして出す)</span>
+            </h3>
+            <div className="hand-cards">
+              {me.extra.map((o) => (
+                <MiniCard key={o.uid} g={g} o={o} mark={markOf(o)} onClick={() => onCard(o)} inHand />
+              ))}
+            </div>
+          </section>
+        )}
         <PlayerBar g={g} p={me} targetable={playerTargetable(ME)} onClick={() => onPlayer(ME)} />
       </div>
 
@@ -229,6 +245,7 @@ function PlayerBar({ g, p, targetable, onClick }: { g: Game; p: Player; targetab
         {p.id === CPU && <span>手札 {p.hand.length}</span>}
         <span>山札 {p.library.length}</span>
         <span>墓地 {p.graveyard.length}</span>
+        {p.extra.length > 0 && <span>秘蔵庫 {p.extra.length}</span>}
         {p.pool.length > 0 && <span>浮きマナ {p.pool.join("")}</span>}
       </span>
       {isTurn && <span className="turn-flag">{STEP_NAMES[g.step]}</span>}
@@ -323,6 +340,7 @@ function MiniCard({ g, o, mark, onClick, inHand = false }: { g: Game; o: Obj; ma
           {blocking && <span className="flag-block">ブロック中</span>}
           {o.counters > 0 && <span>+1/+1×{o.counters}</span>}
           {o.token && <span>トークン</span>}
+          {o.generated && <span className="flag-generated">生成</span>}
         </span>
         {creature && (
           <span className={`mini-pt ${buffed ? "is-buffed" : ""} ${o.damage > 0 ? "is-damaged" : ""}`}>
@@ -512,6 +530,52 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
           </div>
         </>
       );
+    case "mode":
+      return (
+        <>
+          <p className="prompt-text">{d.prompt}</p>
+          <div className="prompt-actions">
+            {d.options.map((label, i) => (
+              <button key={i} type="button" className="btn btn-primary" onClick={() => answer(i)}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </>
+      );
+    case "chooseSum": {
+      const sum = d.options.reduce((s, u, i) => s + (chosen.includes(u) ? d.values[i] : 0), 0);
+      return (
+        <>
+          <p className="prompt-text">
+            {d.prompt}(合計 {sum}/{d.min})
+          </p>
+          <div className="prompt-actions">
+            {d.options.map((u, i) => {
+              const o = g.find(u);
+              if (!o) return null;
+              const on = chosen.includes(u);
+              return (
+                <button
+                  key={u}
+                  type="button"
+                  className={`btn ${on ? "btn-on" : ""}`}
+                  aria-pressed={on}
+                  onClick={() => setChosen((s) => (s.includes(u) ? s.filter((x) => x !== u) : [...s, u]))}
+                >
+                  {o.card.name}({d.values[i]})
+                </button>
+              );
+            })}
+          </div>
+          <div className="prompt-actions">
+            <button type="button" className="btn btn-primary" disabled={sum < d.min} onClick={() => answer(chosen)}>
+              リリースして召喚する
+            </button>
+          </div>
+        </>
+      );
+    }
     case "attackers":
       return (
         <>
@@ -578,6 +642,8 @@ function actionLabel(g: Game, a: Action): string {
     }
     case "cycle":
       return "循環(捨てて1枚引く)";
+    case "summon":
+      return "リリース召喚する";
     case "equip":
       return "装備する";
     case "activate": {

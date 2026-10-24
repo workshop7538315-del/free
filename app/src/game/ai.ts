@@ -81,6 +81,10 @@ export class CpuAgent implements Agent {
         return chooseAttackers(g, p, d.options);
       case "blockers":
         return chooseBlocks(g, p, d.attackers, d.blockers);
+      case "mode":
+        return chooseMode(g, p, d);
+      case "chooseSum":
+        return chooseSum(g, p, d);
     }
   }
 }
@@ -202,6 +206,7 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
     else if (a.type === "activate") s = scoreActivate(g, p, a);
     else if (a.type === "equip") s = main && g.step === "main1" && g.find(a.uid)?.attachedTo == null ? 2.2 : -1;
     else if (a.type === "cycle") s = scoreCycle(g, p, a.uid);
+    else if (a.type === "summon") s = scoreSummon(g, p, a.uid);
     if (s > 0 && (!best || s > best.s)) best = { a, s };
   }
   return best?.a ?? pass;
@@ -260,15 +265,21 @@ function scoreCast(g: Game, p: PlayerId, a: Extract<Action, { type: "cast" }>, m
   const sp = spellAbility(c);
   if (!sp) return -1;
   // インスタントは相手の終了ステップや戦闘中に使う方がよいものもある
-  const effects = sp.effects;
-  let v = 0;
-  for (const e of effects) v += effectValue(g, p, e, sp.targets ?? [], inCombat);
-  if (isInstantCard(c) && main && effects.some((e) => e.do === "counter")) return -1;
+  const evalMode = (effects: Effect[], targets: TargetSpec[]) => {
+    let v = 0;
+    for (const e of effects) v += effectValue(g, p, e, targets, inCombat);
+    if (isInstantCard(c) && main && effects.some((e) => e.do === "counter")) return -1;
+    if (effects.some((e) => (e.do === "pump" && (e.p as number) > 0) || e.do === "pumpAll") && !inCombat && !isCombatStart(g, p)) {
+      // 戦闘外の強化は無駄が多い
+      v -= 3;
+    }
+    return v;
+  };
   if (isInstantCard(c) && !main && !oppEnd && !inCombat) return -1;
-  if (effects.some((e) => (e.do === "pump" && (e.p as number) > 0) || e.do === "pumpAll") && !inCombat && !isCombatStart(g, p)) {
-    // 戦闘外の強化は無駄が多い
-    v -= 3;
-  }
+  // モード呪文は、いま選べるモードのうち一番よいもので評価する
+  let v = sp.modes
+    ? Math.max(-1, ...sp.modes.filter((m) => (m.targets ?? []).every((t) => g.targetOptions(t, p).length > 0)).map((m) => evalMode(m.effects, m.targets ?? [])))
+    : evalMode(sp.effects, sp.targets ?? []);
   const b = burnAbility(c);
   if (b) v += 0.3;
   return v > 0.8 ? v : -1;
@@ -425,6 +436,9 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
     }
     case "plunder":
       return Math.min(e.n, them.mana.length) * 2.2;
+    case "create":
+      // 生成したカードの価値(軽い呪文やトークンを想定)
+      return e.n * (0.9 + Math.min(manaValue(e.card.cost), 4) * 0.25);
     case "ingest":
       // 自分のマナが増える(相手の山札も減る)
       return Math.min(e.n, them.library.length) * (me.mana.length < 9 ? 1.4 : 0.5) + (them.library.length <= e.n ? 15 : 0);
@@ -832,4 +846,63 @@ export function chooseBlocks(g: Game, p: PlayerId, attackerIds: number[], blocke
   const out: BlockAnswer = {};
   for (const [a, bs] of assign) if (bs.length) out[a.uid] = bs.map((b) => b.uid);
   return out;
+}
+
+// ---------------------------------------------------------------- モード呪文・リリース召喚
+function chooseMode(g: Game, p: PlayerId, d: Extract<Decision, { kind: "mode" }>): number {
+  let best = 0;
+  let bestV = -Infinity;
+  d.modes.forEach((m, i) => {
+    const inCombat = !!g.combat && g.step === "block";
+    let v = m.effects.reduce((s, e) => s + effectValue(g, p, e, m.targets ?? [], inCombat), 0);
+    if (m.effects.some((e) => (e.do === "pump" && (e.p as number) > 0) || e.do === "pumpAll") && !inCombat && !isCombatStart(g, p)) v -= 3;
+    if (v > bestV) {
+      bestV = v;
+      best = i;
+    }
+  });
+  return best;
+}
+
+/** リリースの素材として失う価値 */
+function fodderWorth(g: Game, _p: PlayerId, o: Obj): number {
+  if (isCreatureCard(o.card)) return creatureValue(g, o);
+  // エンチャント:オーラや全体強化など、場で働いているものは少し高く見る
+  const statics = abilitiesOf(o.card).filter((a) => a.a === "static" || a.a === "trigger").length;
+  return 0.6 + statics * 0.8 + (o.attachedTo != null ? 0.8 : 0);
+}
+
+/** 合計が min 以上になる、失う価値のできるだけ小さい組み合わせ */
+function pickFodder(g: Game, p: PlayerId, items: { o: Obj; value: number }[], min: number): { o: Obj; value: number }[] {
+  // 価値1あたりの損が小さい順に入れ、最後に余分なものを外す
+  const sorted = [...items].sort((a, b) => fodderWorth(g, p, a.o) / Math.max(1, a.value) - fodderWorth(g, p, b.o) / Math.max(1, b.value));
+  const picked: { o: Obj; value: number }[] = [];
+  let sum = 0;
+  for (const x of sorted) {
+    if (sum >= min) break;
+    picked.push(x);
+    sum += x.value;
+  }
+  for (const x of [...picked].sort((a, b) => fodderWorth(g, p, b.o) - fodderWorth(g, p, a.o)))
+    if (sum - x.value >= min) {
+      picked.splice(picked.indexOf(x), 1);
+      sum -= x.value;
+    }
+  return picked;
+}
+
+function chooseSum(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseSum" }>): number[] {
+  const items = d.options.map((uid, i) => ({ o: g.find(uid)!, value: d.values[i] })).filter((x) => x.o);
+  return pickFodder(g, p, items, d.min).map((x) => x.o.uid);
+}
+
+function scoreSummon(g: Game, p: PlayerId, uid: number): number {
+  const o = g.players[p].extra.find((x) => x.uid === uid);
+  if (!o || !(g.step === "main1" || g.step === "main2")) return -1;
+  const r = abilitiesOf(o.card).find((a) => a.a === "releaseSummon") as { n: number } | undefined;
+  if (!r) return -1;
+  const picked = pickFodder(g, p, g.releaseFodder(p, o), r.n);
+  const loss = picked.reduce((s, x) => s + fodderWorth(g, p, x.o), 0);
+  const gain = cardCreatureValue(o.card) + 1;
+  return gain - loss;
 }

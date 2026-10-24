@@ -1508,3 +1508,9 @@ textarea {
   font-size: 0.75rem;
   color: var(--muted);
 }
+
+/* ---------- 秘蔵庫・生成 ---------- */
+.extra-zone .zone-label { display: flex; gap: 0.5rem; align-items: baseline; }
+.zone-hint { font-size: 0.72rem; color: var(--muted); font-weight: 400; }
+.extra-zone .mini { border-style: dashed; }
+.flag-generated { color: var(--accent); }

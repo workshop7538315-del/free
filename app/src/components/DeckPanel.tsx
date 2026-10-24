@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Card, DeckDraft, SavedDeck } from "../types";
-import { DECK_SIZE, addCard, deckCount, deckStats, deckToText, validateDeck } from "../lib/deck";
+import { DECK_SIZE, EXTRA_SIZE, addCard, deckCount, deckStats, deckToText, extraCount, isExtra, validateDeck } from "../lib/deck";
 import { manaValue } from "../lib/mana";
 import { ManaCost } from "./ManaCost";
 import { ManaBalance, ManaCurve } from "./ManaBalance";
@@ -23,6 +23,7 @@ type Props = {
 };
 
 const GROUPS: { label: string; test: (c: Card) => boolean }[] = [
+  { label: "秘蔵庫", test: (c) => isExtra(c) },
   { label: "クリーチャー", test: (c) => c.type.includes("クリーチャー") },
   { label: "呪文", test: (c) => c.type === "インスタント" || c.type === "ソーサリー" },
   { label: "その他", test: () => true },
@@ -30,7 +31,8 @@ const GROUPS: { label: string; test: (c: Card) => boolean }[] = [
 
 export function DeckPanel(p: Props) {
   const { draft, byId } = p;
-  const total = deckCount(draft.cards);
+  const total = deckCount(draft.cards, byId);
+  const extraTotal = extraCount(draft.cards, byId);
   const issues = useMemo(() => validateDeck(draft.cards, byId), [draft.cards, byId]);
   const stats = useMemo(() => deckStats(draft.cards, byId), [draft.cards, byId]);
   const [copied, setCopied] = useState(false);
@@ -72,6 +74,7 @@ export function DeckPanel(p: Props) {
         </label>
         <p className={`deck-total ${total === DECK_SIZE ? "is-ok" : ""}`}>
           <strong>{total}</strong> / {DECK_SIZE}枚
+          {extraTotal > 0 && <span className="deck-extra">秘蔵庫 {extraTotal}/{EXTRA_SIZE}</span>}
         </p>
       </div>
 
@@ -127,7 +130,7 @@ export function DeckPanel(p: Props) {
                           type="button"
                           className="step step-sm"
                           aria-label={`${card.name}を1枚抜く`}
-                          onClick={() => p.onDraftChange({ ...draft, cards: addCard(draft.cards, card.id, -1) })}
+                          onClick={() => p.onDraftChange({ ...draft, cards: addCard(draft.cards, card.id, -1, card) })}
                         >
                           −
                         </button>
@@ -136,7 +139,7 @@ export function DeckPanel(p: Props) {
                           className="step step-sm"
                           aria-label={`${card.name}を1枚入れる`}
                           disabled={n >= 4}
-                          onClick={() => p.onDraftChange({ ...draft, cards: addCard(draft.cards, card.id, 1) })}
+                          onClick={() => p.onDraftChange({ ...draft, cards: addCard(draft.cards, card.id, 1, card) })}
                         >
                           ＋
                         </button>
@@ -176,7 +179,7 @@ export function DeckPanel(p: Props) {
                 <button type="button" className="saved-open" onClick={() => p.onLoad(d)}>
                   <span className="saved-name">{d.name}</span>
                   <span className="saved-meta">
-                    {deckCount(d.cards)}枚、{new Date(d.updatedAt).toLocaleDateString("ja-JP")}更新
+                    {deckCount(d.cards, byId)}枚、{new Date(d.updatedAt).toLocaleDateString("ja-JP")}更新
                   </span>
                 </button>
                 <button type="button" className="btn btn-quiet btn-danger" onClick={() => p.onDelete(d)}>

@@ -19,6 +19,7 @@ export type Filter = {
   minMV?: number;
   maxMV?: number;
   maxPower?: number;
+  minPower?: number;
   color?: Color;
 };
 
@@ -54,7 +55,11 @@ export type CondName =
   /** 真空:自分のマナゾーンのカードがすべて欠色(1枚以上) */
   | "vacuum"
   /** 陰謀:このターン、対戦相手がカードを捨てたか、対戦相手のクリーチャーが戦場を離れた */
-  | "intrigue";
+  | "intrigue"
+  /** 強襲:このターン、自分がクリーチャー2体以上で攻撃した */
+  | "raid"
+  /** 連唱:このターン、自分がインスタントかソーサリーを2つ以上唱えた */
+  | "chain";
 
 export type Cond =
   | CondName
@@ -145,6 +150,8 @@ export type Effect = Common &
     | { do: "veilOpp"; n: number; all?: boolean; crest?: boolean }
     /** 自分の墓地のカードをすべてライブラリーに加えて切り直す */
     | { do: "shuffleGraveyard" }
+    /** 生成:このカードをN枚、手札に加える(チャージできず、手札・スタック・戦場以外に移ると消える) */
+    | { do: "create"; card: GeneratedCard; n: number }
     /** 虚化:自分と対戦相手のマナゾーンの表向きのカードをそれぞれN枚、裏向き(欠色)にする(相手の分も自分が選ぶ) */
     | { do: "veil"; n: number }
     /** 顕現 N:自分のマナゾーンからマナ総量N以下のクリーチャー・カードを1枚戦場に出す */
@@ -180,7 +187,9 @@ export type TriggerEvent =
   /** この呪文を唱えたとき(打ち消されても誘発する) */
   | "castSelf"
   /** このカードがどこからでも墓地に置かれたとき */
-  | "toGraveyard";
+  | "toGraveyard"
+  /** あなたが(filter に合う)パーマネントを生け贄に捧げるたび */
+  | "sacrifice";
 
 export type StaticSpec =
   /** 自分の(他の)クリーチャー全体の強化。filter で種族などを絞れる */
@@ -216,9 +225,14 @@ export type Ability = { text?: string } & (
   /** 疾駆:このコストで唱えると速攻を得て、終了ステップに手札に戻る */
   | { a: "dash"; cost: string }
   | { a: "release"; cost: string }
-  | { a: "spell"; targets?: TargetSpec[]; effects: Effect[] }
+  /** modes があればモード呪文(唱えるときに1つ選ぶ) */
+  | { a: "spell"; targets?: TargetSpec[]; effects: Effect[]; modes?: SpellMode[] }
+  /** リリース召喚 N:秘蔵庫のクリーチャー。エンチャントと奉納を持つクリーチャーをマナ総量の合計がN以上になるようにリリースし、マナを払わずに出す */
+  | { a: "releaseSummon"; n: number }
+  /** 奉納 N(sub):リリース召喚に使うとき、マナ総量を+Nとして数える(sub があれば、その種族のリリース召喚のときだけ) */
+  | { a: "offering"; n: number; sub?: string }
   /** from: "mana" は紋章(このカードがマナゾーンにあるあいだだけ働く) */
-  | { a: "trigger"; on: TriggerEvent; targets?: TargetSpec[]; effects: Effect[]; if?: Cond; filter?: Filter; from?: "mana" }
+  | { a: "trigger"; on: TriggerEvent; targets?: TargetSpec[]; effects: Effect[]; if?: Cond; filter?: Filter; from?: "mana"; oncePerTurn?: boolean }
   | { a: "static"; st: StaticSpec; if?: Cond; from?: "mana" }
   | { a: "activated"; cost: ActivatedCost; targets?: TargetSpec[]; effects: Effect[] }
   /** {T}:マナを加える。produce は選べる候補("any"=好きな色1色) */
@@ -240,3 +254,20 @@ export type Ability = { text?: string } & (
   /** 零式:条件を満たしていれば、マナを払わずに唱えてもよい */
   | { a: "free"; if: Cond }
 );
+
+/** モード呪文の選択肢 */
+export type SpellMode = { label: string; targets?: TargetSpec[]; effects: Effect[] };
+
+/** 生成されるカード(カードリストには入らない) */
+export type GeneratedCard = {
+  id: string;
+  name: string;
+  cost: string;
+  type: string;
+  subtype?: string;
+  power?: number;
+  toughness?: number;
+  rarity: string;
+  text: string[];
+  abilities: Ability[];
+};

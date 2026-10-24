@@ -3,14 +3,27 @@ import { COLORS, cardColors, colorPips, manaValue, type Color } from "./mana";
 
 export const DECK_SIZE = 40;
 export const MAX_COPIES = 4;
+/** 秘蔵庫(外部デッキ)の枚数の上限と、同名の上限 */
+export const EXTRA_SIZE = 8;
+export const EXTRA_COPIES = 2;
 
-export function deckCount(cards: DeckCards): number {
-  return Object.values(cards).reduce((a, b) => a + b, 0);
+/** 秘蔵庫のカード(リリース召喚を持つ) */
+export const isExtra = (c: Card | undefined) => !!c?.abilities?.some((a) => a.a === "releaseSummon");
+export const maxCopies = (c: Card | undefined) => (isExtra(c) ? EXTRA_COPIES : MAX_COPIES);
+
+/** メインデッキの枚数(byId があれば秘蔵庫のカードを除く) */
+export function deckCount(cards: DeckCards, byId?: Map<string, Card>): number {
+  return Object.entries(cards).reduce((a, [id, n]) => a + (byId && isExtra(byId.get(id)) ? 0 : n), 0);
 }
 
-export function addCard(cards: DeckCards, id: string, delta: number): DeckCards {
+/** 秘蔵庫の枚数 */
+export function extraCount(cards: DeckCards, byId: Map<string, Card>): number {
+  return Object.entries(cards).reduce((a, [id, n]) => a + (isExtra(byId.get(id)) ? n : 0), 0);
+}
+
+export function addCard(cards: DeckCards, id: string, delta: number, card?: Card): DeckCards {
   const next = { ...cards };
-  const n = Math.max(0, Math.min(MAX_COPIES, (next[id] ?? 0) + delta));
+  const n = Math.max(0, Math.min(maxCopies(card), (next[id] ?? 0) + delta));
   if (n === 0) delete next[id];
   else next[id] = n;
   return next;
@@ -19,13 +32,15 @@ export function addCard(cards: DeckCards, id: string, delta: number): DeckCards 
 /** デッキのルール違反を文章で返す。空配列なら使えるデッキ */
 export function validateDeck(cards: DeckCards, byId: Map<string, Card>): string[] {
   const issues: string[] = [];
-  const total = deckCount(cards);
+  const total = deckCount(cards, byId);
   if (total < DECK_SIZE) issues.push(`あと${DECK_SIZE - total}枚入れてください(デッキはちょうど${DECK_SIZE}枚)。`);
   if (total > DECK_SIZE) issues.push(`${total - DECK_SIZE}枚多いです(デッキはちょうど${DECK_SIZE}枚)。`);
+  const extra = extraCount(cards, byId);
+  if (extra > EXTRA_SIZE) issues.push(`秘蔵庫が${extra}枚あります(秘蔵庫は${EXTRA_SIZE}枚まで)。`);
   for (const [id, n] of Object.entries(cards)) {
     const card = byId.get(id);
     if (!card) issues.push(`カードID「${id}」はカードリストにありません。`);
-    else if (n > MAX_COPIES) issues.push(`「${card.name}」が${n}枚あります(同名カードは${MAX_COPIES}枚まで)。`);
+    else if (n > maxCopies(card)) issues.push(`「${card.name}」が${n}枚あります(${isExtra(card) ? "秘蔵庫の" : ""}同名カードは${maxCopies(card)}枚まで)。`);
   }
   return issues;
 }
@@ -50,7 +65,7 @@ export function deckStats(cards: DeckCards, byId: Map<string, Card>): DeckStats 
   let colorlessSources = 0;
   for (const [id, n] of Object.entries(cards)) {
     const card = byId.get(id);
-    if (!card) continue;
+    if (!card || isExtra(card)) continue;
     curve[Math.min(CURVE_MAX, manaValue(card.cost))] += n;
     const p = colorPips(card.cost);
     const colors = cardColors(card.cost);

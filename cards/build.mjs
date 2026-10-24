@@ -70,7 +70,7 @@ for (const c of CARDS) {
   if (isCreature !== (c.power !== undefined)) throw new Error(`${c.id}: クリーチャーとP/Tが一致しません`);
   const isSpell = c.type === "インスタント" || c.type === "ソーサリー";
   if (isSpell && !c.abilities.some((a) => a.a === "spell")) throw new Error(`${c.id}: 呪文の効果がありません`);
-  for (const a of c.abilities) {
+  for (const a of [...c.abilities, ...c.abilities.flatMap((x) => x.modes ?? [])]) {
     const effects = [...(a.effects ?? [])];
     for (const e of effects) {
       if (e.tg !== undefined) {
@@ -78,8 +78,12 @@ for (const c of CARDS) {
         if (!a.targets || a.targets.length <= need) throw new Error(`${c.id}: 対象の指定がありません`);
       }
       if (e.then) effects.push(...e.then);
+      if (e.win) effects.push(...e.win);
     }
   }
+  // 秘蔵庫のカードはクリーチャーで、リリース召喚の数値を持つ
+  if (c.abilities.some((a) => a.a === "releaseSummon") && !isCreature) throw new Error(`${c.id}: 秘蔵庫のカードはクリーチャーにしてください`);
+  if (c.abilities.some((a) => a.a === "spell" && a.modes && a.modes.length < 2)) throw new Error(`${c.id}: モード呪文は2つ以上の選択肢が要ります`);
   // 強化パックの新規カードは元のカードとの関係を持つ
   if (c.basedOn) {
     if (!["強化版", "リメイク", "サポート"].includes(c.basedOn.kind)) throw new Error(`${c.id}: basedOn の種類が不正です`);
@@ -163,14 +167,15 @@ function isSymmetricWipe(c) {
   );
 }
 
-function buildDeck({ colors, theme, set, generic = false, allowColorless = false, highlander = false, themeSpells = 8, themeCreatures = 16, core = {}, restNonTheme = false }) {
+function buildDeck({ colors, theme, set, generic = false, allowColorless = false, highlander = false, themeSpells = 8, themeCreatures = 16, core = {}, restNonTheme = false, extra = {} }) {
   const fits = (c) => {
     if (c.cost.includes("{C}") && !allowColorless) return false;
     if (generic && c.tags?.length) return false;
     const cs = colorsOf(c.cost);
     return cs.every((x) => colors.includes(x));
   };
-  const pool = out.filter(fits);
+  // 秘蔵庫のカードはメインには入れない
+  const pool = out.filter((c) => fits(c) && !c.abilities.some((a) => a.a === "releaseSummon"));
   const inSet = (c) => !!set && c.id.startsWith(set);
   const themed = (c) => inSet(c) || (!!theme && theme(c));
   const score = (c) => {
@@ -231,6 +236,16 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
   if (restNonTheme) fill(rest(() => true), 40 - total, false);
   fill(() => true, 40 - total, true);
   if (total !== 40) throw new Error(`デッキ ${colors.join("")} が40枚になりません(${total})`);
+  // 秘蔵庫(メインの40枚とは別。8枚まで・同名2枚まで)
+  let ex = 0;
+  for (const [id, n] of Object.entries(extra)) {
+    const c = out.find((x) => x.id === id);
+    if (!c || !c.abilities.some((a) => a.a === "releaseSummon")) throw new Error(`秘蔵庫のカード ${id} がありません`);
+    if (n > 2) throw new Error(`秘蔵庫の ${id} は2枚まで`);
+    deck[id] = n;
+    ex += n;
+  }
+  if (ex > 8) throw new Error("秘蔵庫は8枚まで");
   return deck;
 }
 
@@ -247,7 +262,7 @@ const DECKS = [
   { id: "wb", name: "白黒:命の天秤", colors: ["W", "B"], generic: true },
   { id: "ur", name: "青赤:嵐の術士", colors: ["U", "R"], generic: true },
   { id: "bg", name: "黒緑:輪廻の園", colors: ["B", "G"], generic: true },
-  { id: "rw", name: "赤白:先陣の旗", colors: ["R", "W"], generic: true },
+  { id: "rw", name: "赤白:先陣の旗", colors: ["R", "W"], generic: true, core: { cb35: 4, cb37: 2, cb36: 3, cb40: 3, cb72: 4, cb76: 2, cb68: 2 } },
   { id: "gu", name: "緑青:満ちる大海", colors: ["G", "U"], generic: true },
   // テーマデッキ
   { id: "t-human", set: "hum", name: "人間:民衆の蜂起(白赤)", colors: ["W", "R"], theme: tag("人間"), archetype: "人間" },
@@ -273,14 +288,17 @@ const DECKS = [
   { id: "t-manifest", set: "aw", name: "紋章:顕現の潮(緑青)", colors: ["G", "U"], allowColorless: true, theme: tag("紋章"), archetype: "紋章" },
   { id: "t-duel", set: "ct", name: "決闘:剣と薔薇の作法(赤白)", colors: ["R", "W"], allowColorless: true, theme: tag("決闘"), archetype: "決闘" },
   { id: "t-intrigue", set: "ct", name: "陰謀:影の宮廷(青黒)", colors: ["U", "B"], theme: tag("陰謀"), archetype: "陰謀" },
+  { id: "t-gate-beast", set: "hz", name: "秘蔵:神獣の森(緑白)", colors: ["G", "W"], theme: tag("秘蔵"), archetype: "秘蔵", core: { hz18: 4, hz21: 4, hz19: 3, hz20: 3, hz24: 3, hz42: 3, hz55: 2, hz23: 2 }, extra: { hz01: 2, hz02: 2, hz03: 2, hz04: 2 } },
+  { id: "t-gate-spirit", set: "hz", name: "秘蔵:灯る祖霊(白黒)", colors: ["W", "B"], theme: tag("秘蔵"), archetype: "秘蔵", core: { hz25: 4, hz28: 4, hz26: 3, hz27: 3, hz31: 3, hz53: 2, hz75: 2, hz30: 2 }, extra: { hz05: 2, hz06: 2, hz07: 2, hz08: 2 } },
+  { id: "t-gate-machine", set: "hz", name: "秘蔵:目覚める機神(青赤)", colors: ["U", "R"], theme: tag("秘蔵"), archetype: "秘蔵", core: { hz32: 4, hz35: 4, hz34: 3, hz33: 3, hz38: 3, hz47: 3, hz76: 2, hz61: 2 }, extra: { hz09: 2, hz10: 2, hz11: 2, hz12: 2 } },
   { id: "t-void", set: "vd", name: "虚無:色喰らいの深淵(欠色)", colors: [], allowColorless: true, theme: tag("虚無"), archetype: "虚無" },
   { id: "t-void-swarm", set: "vd", name: "虚無:群れなす虚無(欠色)", colors: [], allowColorless: true, theme: tag("虚無"), archetype: "虚無", core: { vd08: 4, vd09: 4, vd36: 4, vd13: 4, vd18: 3, vd33: 3, vd37: 3, vd38: 2, vd22: 2 } },
   { id: "t-void-titan", set: "vd", name: "虚無:始祖の目覚め(欠色)", colors: [], allowColorless: true, theme: tag("虚無"), archetype: "虚無", core: { vd06: 4, adv27: 3, vd10: 4, vd28: 3, vd14: 2, vd18: 3, vd01: 3, vd04: 2, vd41: 2, vd42: 2, vd43: 1 } },
 ];
 
-const decks = DECKS.map(({ theme, set, generic, allowColorless, highlander, themeSpells, themeCreatures, core, restNonTheme, ...d }) => ({
+const decks = DECKS.map(({ theme, set, generic, allowColorless, highlander, themeSpells, themeCreatures, core, restNonTheme, extra, ...d }) => ({
   ...d,
-  cards: buildDeck({ colors: d.colors, theme, set, generic, allowColorless, highlander, themeSpells, themeCreatures, core, restNonTheme }),
+  cards: buildDeck({ colors: d.colors, theme, set, generic, allowColorless, highlander, themeSpells, themeCreatures, core, restNonTheme, extra }),
 }));
 writeFileSync(join(here, "decks.json"), JSON.stringify(decks, null, 2) + "\n");
 

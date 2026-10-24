@@ -4,12 +4,12 @@
  * 人間は画面で、CPUは ai.ts で答える。
  */
 import type { Card } from "../types";
-import type { Ability, ActivatedCost, Amount, Cond, Effect, Filter, StaticSpec, TargetSpec, TriggerEvent } from "./schema";
+import type { Ability, ActivatedCost, Amount, Cond, Effect, Filter, StaticSpec, TargetSpec, TriggerEvent, SpellMode } from "./schema";
 import { cardColors, manaValue, parseCost, type Color } from "../lib/mana";
 import { findPayment, type ManaUnit } from "./payment";
 
 export type PlayerId = 0 | 1;
-export type Zone = "library" | "hand" | "mana" | "battlefield" | "graveyard" | "exile" | "stack";
+export type Zone = "library" | "hand" | "mana" | "battlefield" | "graveyard" | "exile" | "stack" | "extra";
 export type Step = "setup" | "untap" | "upkeep" | "draw" | "main1" | "attack" | "block" | "damage" | "main2" | "end" | "cleanup";
 
 export const STEP_NAMES: Record<Step, string> = {
@@ -32,6 +32,8 @@ export type Obj = {
   uid: number;
   /** マナゾーンで裏向き(名前・色・能力を持たない欠色のカードとして扱う) */
   faceDown?: boolean;
+  /** 生成されたカード(チャージできず、手札・スタック・戦場以外に移ると消える) */
+  generated?: boolean;
   card: Card;
   owner: PlayerId;
   controller: PlayerId;
@@ -73,6 +75,8 @@ export type Player = {
   battlefield: Obj[];
   graveyard: Obj[];
   exile: Obj[];
+  /** 秘蔵庫(リリース召喚で出すクリーチャー) */
+  extra: Obj[];
   chargesUsed: number;
   extraChargesThisTurn: number;
   /** 浮いているマナ(W/U/B/R/G/C) */
@@ -82,6 +86,12 @@ export type Player = {
   highlander: boolean;
   /** このターンに捨てたカードと、戦場を離れたクリーチャーの数(陰謀) */
   lostThisTurn: number;
+  /** このターンに一度に攻撃したクリーチャーの最大数(強襲) */
+  attackersThisTurn: number;
+  /** このターンに唱えたインスタントとソーサリーの数(連唱) */
+  spellsThisTurn: number;
+  /** このターンにリリース召喚を行った */
+  releasedThisTurn: boolean;
 };
 
 export type TargetRef =
@@ -113,7 +123,9 @@ export type Action =
   | { type: "charge"; uid: number }
   | { type: "activate"; uid: number; index: number }
   | { type: "cycle"; uid: number }
-  | { type: "equip"; uid: number };
+  | { type: "equip"; uid: number }
+  /** 秘蔵庫からリリース召喚する */
+  | { type: "summon"; uid: number };
 
 export type Decision =
   | { kind: "action"; options: Action[] }
@@ -122,6 +134,10 @@ export type Decision =
   | { kind: "number"; prompt: string; min: number; max: number; reason?: "x" | "burn"; obj?: Obj }
   | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" }
   | { kind: "attackers"; options: number[] }
+  /** モード呪文:選択肢から1つ選ぶ(答えは番号) */
+  | { kind: "mode"; prompt: string; options: string[]; source: Obj; modes: SpellMode[] }
+  /** リリースするカードを選ぶ:values の合計が min 以上になるように選ぶ */
+  | { kind: "chooseSum"; prompt: string; options: number[]; values: number[]; min: number; target: Obj }
   | { kind: "blockers"; attackers: number[]; blockers: number[] };
 
 export type BlockAnswer = Record<number, number[]>;
@@ -162,6 +178,10 @@ export const burnAbility = (c: Card) => abilitiesOf(c).find((a) => a.a === "burn
 export const releaseAbility = (c: Card) => abilitiesOf(c).find((a) => a.a === "release") as Extract<Ability, { a: "release" }> | undefined;
 export const isAura = (c: Card) => abilitiesOf(c).some((a) => a.a === "enchant");
 export const isEquipment = (c: Card) => abilitiesOf(c).some((a) => a.a === "equip");
+/** 秘蔵庫のカード(リリース召喚を持つ) */
+export const isExtraCard = (c: Card) => abilitiesOf(c).some((a) => a.a === "releaseSummon");
+export const releaseOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "releaseSummon") as Extract<Ability, { a: "releaseSummon" }> | undefined;
+export const offeringOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "offering") as Extract<Ability, { a: "offering" }> | undefined;
 /** 紋章(マナゾーンで働く能力)か */
 export const isCrestAbility = (a: Ability) => (a.a === "static" || a.a === "trigger") && a.from === "mana";
 export const hasCrest = (c: Card) => abilitiesOf(c).some(isCrestAbility);
@@ -185,6 +205,7 @@ export function matchFilter(c: Card, f: Filter | undefined, colors?: Color[]): b
   if (f.minMV !== undefined && mv < f.minMV) return false;
   if (f.maxMV !== undefined && mv > f.maxMV) return false;
   if (f.maxPower !== undefined && (c.power ?? 99) > f.maxPower) return false;
+  if (f.minPower !== undefined && (c.power ?? -1) < f.minPower) return false;
   if (f.color && !(colors ?? cardColors(c.cost)).includes(f.color)) return false;
   return true;
 }
@@ -251,18 +272,25 @@ export class Game {
       id,
       name: opts.names[id],
       life: 20,
-      library: opts.decks[id].map((card) => this.newObj(card, id, "library")),
+      library: opts.decks[id].filter((card) => !isExtraCard(card)).map((card) => this.newObj(card, id, "library")),
       hand: [],
       mana: [],
       battlefield: [],
       graveyard: [],
       exile: [],
+      extra: opts.decks[id].filter(isExtraCard).map((card) => this.newObj(card, id, "extra")),
       chargesUsed: 0,
       extraChargesThisTurn: 0,
       pool: [],
       drewFromEmpty: false,
-      highlander: new Set(opts.decks[id].map((c) => c.name)).size === opts.decks[id].length,
+      highlander: (() => {
+        const main = opts.decks[id].filter((c) => !isExtraCard(c));
+        return new Set(main.map((c) => c.name)).size === main.length;
+      })(),
       lostThisTurn: 0,
+      attackersThisTurn: 0,
+      spellsThisTurn: 0,
+      releasedThisTurn: false,
     });
     this.players = [mk(0), mk(1)];
     this.firstPlayer = opts.first ?? (this.rng() < 0.5 ? 0 : 1);
@@ -318,7 +346,7 @@ export class Game {
 
   find(uid: number): Obj | undefined {
     for (const p of this.players) {
-      for (const z of [p.battlefield, p.hand, p.mana, p.graveyard, p.library, p.exile]) {
+      for (const z of [p.battlefield, p.hand, p.mana, p.graveyard, p.library, p.exile, p.extra]) {
         const o = z.find((x) => x.uid === uid);
         if (o) return o;
       }
@@ -341,6 +369,8 @@ export class Game {
         return p.library;
       case "exile":
         return p.exile;
+      case "extra":
+        return p.extra;
       default:
         return null;
     }
@@ -378,9 +408,17 @@ export class Game {
       // 装備品は外れる
       for (const q of this.players) for (const e of q.battlefield) if (e.attachedTo === o.uid && isEquipment(e.card)) e.attachedTo = null;
     }
+    // 秘蔵庫のカードは、戦場を離れたら(どこへ行く場合も)秘蔵庫に戻る
+    if (isExtraCard(o.card) && to !== "battlefield" && to !== "extra") {
+      to = "extra";
+      o.faceDown = false;
+      this.addLog(`${o.card.name}は秘蔵庫に戻った`, o.owner);
+    }
     o.controller = opts.controller ?? o.owner;
     o.zone = to;
     if (o.token && to !== "battlefield") return;
+    // 生成されたカードは、手札・スタック・戦場以外に移ると消える
+    if (o.generated && to !== "hand" && to !== "stack" && to !== "battlefield") return;
     const p = this.players[to === "battlefield" ? o.controller : o.owner];
     switch (to) {
       case "battlefield":
@@ -404,6 +442,9 @@ export class Game {
         break;
       case "exile":
         p.exile.push(o);
+        break;
+      case "extra":
+        p.extra.push(o);
         break;
       case "stack":
         break;
@@ -438,6 +479,10 @@ export class Game {
         return pl.mana.length > 0 && pl.mana.filter((o) => manaColors(o).length === 0).length * 2 >= pl.mana.length;
       case "vacuum":
         return pl.mana.length > 0 && pl.mana.every((o) => manaColors(o).length === 0);
+      case "raid":
+        return pl.attackersThisTurn >= 2;
+      case "chain":
+        return pl.spellsThisTurn >= 2;
       case "intrigue":
         return this.players[this.other(p)].lostThisTurn > 0;
       case "fewerMana":
@@ -828,7 +873,9 @@ export class Game {
     if (cost === null) return false;
     if (!this.canPay(p, cost, 0, from === "mana" ? o : undefined)) return false;
     const sp = spellAbility(c);
-    if (sp?.targets) for (const t of sp.targets) if (this.targetOptions(t, p).length === 0) return false;
+    if (sp?.modes) {
+      if (!sp.modes.some((m) => (m.targets ?? []).every((t) => this.targetOptions(t, p).length > 0))) return false;
+    } else if (sp?.targets) for (const t of sp.targets) if (this.targetOptions(t, p).length === 0) return false;
     if (isAura(c) && this.targetOptions(AURA_TARGET, p).length === 0) return false;
     return true;
   }
@@ -855,7 +902,7 @@ export class Game {
     const out: Action[] = [{ type: "pass" }];
     if (this.winner !== undefined) return out;
     if (this.sorcerySpeed(p) && pl.chargesUsed < this.chargesAllowed(p)) {
-      for (const o of pl.hand) out.push({ type: "charge", uid: o.uid });
+      for (const o of pl.hand) if (!o.generated) out.push({ type: "charge", uid: o.uid });
     }
     for (const o of pl.hand) if (this.canCast(p, o, "hand")) out.push({ type: "cast", uid: o.uid, from: "hand" });
     for (const o of pl.mana) if (!o.faceDown && releaseAbility(o.card) && this.canCast(p, o, "mana")) out.push({ type: "cast", uid: o.uid, from: "mana" });
@@ -874,6 +921,8 @@ export class Game {
       abilitiesOf(o.card).forEach((a, i) => {
         if (a.a === "activated" && this.canActivate(p, o, i)) out.push({ type: "activate", uid: o.uid, index: i });
       });
+    if (this.sorcerySpeed(p) && !pl.releasedThisTurn)
+      for (const o of pl.extra) if (this.canRelease(p, o)) out.push({ type: "summon", uid: o.uid });
     return out;
   }
 
@@ -891,6 +940,8 @@ export class Game {
       const zone = a.from === "hand" || a.from === "dash" ? pl.hand : a.from === "mana" ? pl.mana : pl.graveyard;
       const o = zone.find((x) => x.uid === a.uid);
       if (o && this.canCast(p, o, a.from)) await this.cast(p, o, a.from);
+    } else if (a.type === "summon") {
+      await this.releaseSummon(p, a.uid);
     } else if (a.type === "cycle") {
       const o = this.players[p].hand.find((x) => x.uid === a.uid);
       const cy = o && abilityOf(o.card, "cycling");
@@ -942,7 +993,19 @@ export class Game {
       x = max === 0 ? 0 : await this.ask<number>(p, { kind: "number", prompt: `${c.name}:Xの値を決めてください`, min: 0, max });
       x = Math.max(0, Math.min(max, Math.floor(x)));
     }
-    const sp = spellAbility(c);
+    let sp = spellAbility(c);
+    // モード呪文:使えるモードから1つ選ぶ
+    if (sp?.modes) {
+      const usable = sp.modes.filter((m) => (m.targets ?? []).every((t) => this.targetOptions(t, p).length > 0));
+      if (!usable.length) return;
+      const idx =
+        usable.length === 1
+          ? 0
+          : await this.ask<number>(p, { kind: "mode", prompt: `${c.name}:モードを1つ選んでください`, options: usable.map((m) => m.label), source: o, modes: usable });
+      const mode = usable[Math.max(0, Math.min(usable.length - 1, Math.floor(idx ?? 0)))];
+      this.addLog(`${c.name}:「${mode.label}」を選んだ`, p);
+      sp = { a: "spell", effects: mode.effects, ...(mode.targets ? { targets: mode.targets } : {}) };
+    }
     const specs = isAura(c) ? [AURA_TARGET] : sp?.targets ?? [];
     const targets = await this.chooseTargets(p, specs, o, sp?.effects ?? []);
     if (!targets) return;
@@ -973,6 +1036,7 @@ export class Game {
     }
     this.move(o, "stack");
     this.usedCards.add(c.id);
+    if (isInstantCard(c) || isSorceryCard(c)) this.players[p].spellsThisTurn++;
     // 「唱えたとき」(呪文より先に解決する。打ち消されても失われない)
     for (const ab of abilitiesOf(c)) if (ab.a === "trigger" && ab.on === "castSelf") this.pendingTriggers.push({ obj: o, ability: ab, controller: p });
     const item: StackItem = {
@@ -1013,15 +1077,9 @@ export class Game {
     }
     if (a.cost.sac) {
       const [victim] = await this.askCards(p, "生け贄に捧げるクリーチャーを選んでください", this.sacOptions(p, a.cost), 1, "sacCost");
-      if (victim) {
-        this.addLog(`${victim.card.name}を生け贄に捧げた`, p);
-        this.die(victim);
-      }
+      if (victim) this.sacrifice(victim, p);
     }
-    if (a.cost.sacSelf) {
-      this.addLog(`${o.card.name}を生け贄に捧げた`, p);
-      this.die(o);
-    }
+    if (a.cost.sacSelf) this.sacrifice(o, p);
     this.usedCards.add(o.card.id);
     this.stack.push({ id: this.stackId++, kind: "activated", obj: o, controller: p, ability: a, targets, burned: false, burnCount: 0, kicked: false, dashed: false, flashback: false, x: 0 });
     this.addLog(`${o.card.name}の能力を起動した`, p);
@@ -1041,6 +1099,12 @@ export class Game {
       for (const t of list) {
         const ab = t.ability;
         if (ab.if && !this.cond(ab.if, t.controller, t.obj.burned, t.obj.kicked)) continue;
+        // 「1ターンに1回」の誘発
+        if (ab.oncePerTurn) {
+          const key = `${t.obj.uid}:${abilitiesOf(t.obj.card).indexOf(ab)}`;
+          if (this.onceUsed.has(key)) continue;
+          this.onceUsed.add(key);
+        }
         // 燃焼・追加払いしたときだけの効果しかない誘発は、していなければ置かない
         if (ab.effects.every((e) => e.if === "burned") && !t.obj.burned) continue;
         if (ab.effects.every((e) => e.if === "kicked") && !t.obj.kicked) continue;
@@ -1129,6 +1193,9 @@ export class Game {
   }
 
   /** チャージ時の能力を解決している最中か(その能力でマナゾーンに置かれたカードのチャージ時は誘発しない) */
+  /** このターンに使った「1ターンに1回」の誘発 */
+  private onceUsed = new Set<string>();
+
   private inChargeTrigger = false;
 
   private async runAbility(item: StackItem) {
@@ -1221,6 +1288,66 @@ export class Game {
       return;
     }
     this.die(o);
+  }
+
+  /** 生け贄に捧げる(「生け贄に捧げるたび」が誘発する) */
+  private sacrifice(o: Obj, p: PlayerId) {
+    if (o.zone !== "battlefield") return;
+    this.addLog(`${o.card.name}を生け贄に捧げた`, p);
+    const card = o.card;
+    const colors = this.colorsOf(o);
+    for (const src of this.sources(p))
+      for (const ab of this.activeAbilities(src))
+        if (ab.a === "trigger" && ab.on === "sacrifice" && src !== o && matchFilter(card, ab.filter, colors))
+          this.pendingTriggers.push({ obj: src, ability: ab, controller: p });
+    this.die(o);
+  }
+
+  // ------------------------------------------------------------ リリース召喚(秘蔵庫)
+  /** リリースに使えるカードと、そのとき数えるマナ総量(奉納を足す) */
+  releaseFodder(p: PlayerId, target: Obj): { o: Obj; value: number }[] {
+    const subs = (target.card.subtype ?? "").split("・");
+    return this.players[p].battlefield
+      .filter((o) => !o.token && (o.card.type.includes("エンチャント") || !!offeringOf(o.card)))
+      .map((o) => {
+        const off = offeringOf(o.card);
+        const bonus = off && (!off.sub || subs.includes(off.sub)) ? off.n : 0;
+        return { o, value: manaValue(o.card.cost) + bonus };
+      });
+  }
+
+  canRelease(p: PlayerId, o: Obj): boolean {
+    const r = releaseOf(o.card);
+    if (!r || o.zone !== "extra") return false;
+    return this.releaseFodder(p, o).reduce((s, x) => s + x.value, 0) >= r.n;
+  }
+
+  private async releaseSummon(p: PlayerId, uid: number) {
+    const pl = this.players[p];
+    const o = pl.extra.find((x) => x.uid === uid);
+    if (!o || !this.sorcerySpeed(p) || pl.releasedThisTurn || !this.canRelease(p, o)) return;
+    const r = releaseOf(o.card)!;
+    const fodder = this.releaseFodder(p, o);
+    const ans = await this.ask<number[]>(p, {
+      kind: "chooseSum",
+      prompt: `${o.card.name}をリリース召喚します。リリースするカードを、マナ総量の合計が${r.n}以上になるように選んでください`,
+      options: fodder.map((x) => x.o.uid),
+      values: fodder.map((x) => x.value),
+      min: r.n,
+      target: o,
+    });
+    let picked = fodder.filter((x) => (ans ?? []).includes(x.o.uid));
+    // 足りなければ、価値の低い順に補う(不正な答えへの備え)
+    if (picked.reduce((s, x) => s + x.value, 0) < r.n)
+      for (const x of [...fodder].sort((a, b) => a.value - b.value)) {
+        if (picked.reduce((s, y) => s + y.value, 0) >= r.n) break;
+        if (!picked.includes(x)) picked.push(x);
+      }
+    pl.releasedThisTurn = true;
+    this.addLog(`${picked.map((x) => x.o.card.name).join("、")}をリリースし、${o.card.name}をリリース召喚した`, p);
+    for (const x of picked) this.sacrifice(x.o, p);
+    this.usedCards.add(o.card.id);
+    this.enterBattlefield(o, p);
   }
 
   /** 戦場から墓地へ(死亡) */
@@ -1479,8 +1606,7 @@ export class Game {
         const cs = this.creatures(opp);
         if (cs.length === 0) break;
         const [o] = await this.askCards(opp, "生け贄に捧げるクリーチャーを選んでください", cs, 1, "sacrifice");
-        this.addLog(`${o.card.name}を生け贄に捧げた`, opp);
-        this.die(o);
+        this.sacrifice(o, opp);
         break;
       }
       case "fight":
@@ -1594,6 +1720,15 @@ export class Game {
               : `略奪 ${e.n}:${this.players[opp].name}のマナゾーンにカードが${picked.length}枚しかなかったので、選ばずに${picked.length}枚すべてを奪った`,
             p,
           );
+        break;
+      }
+      case "create": {
+        for (let i = 0; i < e.n; i++) {
+          const o = this.newObj(e.card as Card, p, "hand");
+          o.generated = true;
+          pl.hand.push(o);
+        }
+        this.addLog(`《${e.card.name}》を${e.n}枚手札に加えた(生成)`, p);
         break;
       }
       case "ingest": {
@@ -1757,6 +1892,7 @@ export class Game {
     if (attackers.length === 0) return;
     for (const o of attackers) if (!this.hasKw(o, "警戒")) o.tapped = true;
     this.combat = { attackers: attackers.map((o) => o.uid), blocks: {} };
+    this.players[p].attackersThisTurn = Math.max(this.players[p].attackersThisTurn, attackers.length);
     this.addLog(`${attackers.map((o) => o.card.name).join("、")}で攻撃した`, p);
     this.queueTriggers("attacks", attackers);
     await this.priorityStep();
@@ -1914,7 +2050,13 @@ export class Game {
     for (const o of pl.mana) o.tapped = false;
     pl.chargesUsed = 0;
     pl.extraChargesThisTurn = 0;
-    for (const q of this.players) q.lostThisTurn = 0;
+    for (const q of this.players) {
+      q.lostThisTurn = 0;
+      q.attackersThisTurn = 0;
+      q.spellsThisTurn = 0;
+      q.releasedThisTurn = false;
+    }
+    this.onceUsed.clear();
     // アップキープ
     this.step = "upkeep";
     this.queueTriggers("upkeep", this.sources(p));
