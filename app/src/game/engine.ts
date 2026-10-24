@@ -394,6 +394,8 @@ export class Game {
         break;
       case "graveyard":
         p.graveyard.push(o);
+        // 「どこからでも墓地に置かれたとき」
+        for (const ab of abilitiesOf(o.card)) if (ab.a === "trigger" && ab.on === "toGraveyard") this.pendingTriggers.push({ obj: o, ability: ab, controller: o.owner });
         break;
       case "library":
         if (opts.top) p.library.unshift(o);
@@ -439,6 +441,8 @@ export class Game {
         return this.players[this.other(p)].lostThisTurn > 0;
       case "fewerMana":
         return pl.mana.length < this.players[this.other(p)].mana.length;
+      case "notMoreMana":
+        return pl.mana.length <= this.players[this.other(p)].mana.length;
       case "threshold":
         return pl.graveyard.length >= 7;
       case "hellbent":
@@ -807,6 +811,7 @@ export class Game {
     let discount = 0;
     const aff = abilityOf(c, "affinity");
     if (aff) discount += this.players[p].battlefield.filter((x) => matchFilter(x.card, aff.filter, this.colorsOf(x))).length;
+    if (abilityOf(c, "voidAffinity")) discount += this.players[p].mana.filter((x) => x.faceDown).length;
     for (const src of this.sources(p))
       for (const a of this.activeAbilities(src))
         if (a.a === "static" && a.st.s === "discount" && matchFilter(c, a.st.filter) && (!a.if || this.cond(a.if, p))) discount += a.st.n;
@@ -918,9 +923,11 @@ export class Game {
   /** マナゾーンに置く(チャージや効果)。チャージ時能力が誘発する */
   private putIntoMana(o: Obj, p: PlayerId, tapped?: boolean) {
     this.move(o, "mana", { tapped: tapped || undefined });
-    for (const ab of abilitiesOf(o.card)) {
-      if (ab.a === "trigger" && ab.on === "charge") this.pendingTriggers.push({ obj: o, ability: ab, controller: p });
-    }
+    // チャージ時の能力でマナゾーンに置かれたカードのチャージ時は誘発しない(連鎖しない)
+    if (!this.inChargeTrigger)
+      for (const ab of abilitiesOf(o.card)) {
+        if (ab.a === "trigger" && ab.on === "charge") this.pendingTriggers.push({ obj: o, ability: ab, controller: p });
+      }
     this.queueTriggers("manaEnter", this.sources(p));
   }
 
@@ -965,6 +972,8 @@ export class Game {
     }
     this.move(o, "stack");
     this.usedCards.add(c.id);
+    // 「唱えたとき」(呪文より先に解決する。打ち消されても失われない)
+    for (const ab of abilitiesOf(c)) if (ab.a === "trigger" && ab.on === "castSelf") this.pendingTriggers.push({ obj: o, ability: ab, controller: p });
     const item: StackItem = {
       id: this.stackId++,
       kind: "spell",
@@ -1118,9 +1127,25 @@ export class Game {
     this.queueTriggers("lifeGain", this.sources(p));
   }
 
+  /** チャージ時の能力を解決している最中か(その能力でマナゾーンに置かれたカードのチャージ時は誘発しない) */
+  private inChargeTrigger = false;
+
   private async runAbility(item: StackItem) {
     const ab = item.ability;
     if (!ab || !("effects" in ab)) return;
+    if (ab.a === "trigger" && ab.on === "charge") {
+      this.inChargeTrigger = true;
+      try {
+        await this.runAbilityBody(item, ab);
+      } finally {
+        this.inChargeTrigger = false;
+      }
+      return;
+    }
+    await this.runAbilityBody(item, ab);
+  }
+
+  private async runAbilityBody(item: StackItem, ab: Extract<Ability, { effects: Effect[] }>) {
     const specs = "targets" in ab && ab.targets ? ab.targets : [];
     const legal = item.targets.map((t, i) => this.stillLegal(t, specs[i], item.controller));
     if (specs.length && legal.every((l) => !l)) {
@@ -1373,8 +1398,11 @@ export class Game {
             power: pp,
             toughness: tt,
             rarity: "トークン",
-            text: e.kw?.length ? [e.kw.join("、")] : [],
-            abilities: (e.kw ?? []).map((k) => ({ a: "kw" as const, kw: k })),
+            text: [...(e.kw?.length ? [e.kw.join("、")] : []), ...(e.spawn ? ["このクリーチャーを生け贄に捧げる:{C}を加える。"] : [])],
+            abilities: [
+              ...(e.kw ?? []).map((k) => ({ a: "kw" as const, kw: k })),
+              ...(e.spawn ? [{ a: "activated" as const, cost: { sacSelf: true }, effects: [{ do: "addMana" as const, mana: "{C}" }] }] : []),
+            ],
           };
           const o = this.newObj(card, p, "battlefield");
           o.token = true;
@@ -1565,6 +1593,40 @@ export class Game {
               : `略奪 ${e.n}:${this.players[opp].name}のマナゾーンにカードが${picked.length}枚しかなかったので、選ばずに${picked.length}枚すべてを奪った`,
             p,
           );
+        break;
+      }
+      case "ingest": {
+        const lib = this.players[opp].library;
+        const taken: Obj[] = [];
+        for (let i = 0; i < e.n && lib.length; i++) {
+          const o = lib[0];
+          lib.shift();
+          o.owner = p;
+          o.controller = p;
+          this.move(o, "mana", { tapped: true });
+          o.faceDown = true;
+          taken.push(o);
+        }
+        if (taken.length) {
+          this.addLog(`嚥下 ${e.n}:${this.players[opp].name}のライブラリーの上から${taken.length}枚を裏向きで自分のマナゾーンに置いた`, p);
+          this.queueTriggers("manaEnter", this.sources(p));
+        }
+        break;
+      }
+      case "veilOpp": {
+        let cands = this.players[opp].mana.filter((o) => !o.faceDown);
+        if (e.crest) cands = cands.filter(crestActive);
+        const picked = e.all ? cands : await this.askCards(p, `裏向きにする相手のマナゾーンのカードを${e.n}枚選んでください`, cands, Math.min(e.n, cands.length), "erode");
+        for (const o of picked) o.faceDown = true;
+        if (picked.length) this.addLog(`${this.players[opp].name}のマナゾーンの${picked.length}枚を裏向きにした`, p);
+        break;
+      }
+      case "shuffleGraveyard": {
+        const owner = this.players[src.owner];
+        const n = owner.graveyard.length;
+        for (const o of [...owner.graveyard]) this.move(o, "library");
+        this.shuffle(owner.library);
+        this.addLog(`${owner.name}の墓地のカード${n}枚をライブラリーに加えて切り直した`, src.owner);
         break;
       }
       case "veil": {

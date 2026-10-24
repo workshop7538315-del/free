@@ -421,6 +421,15 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
     }
     case "plunder":
       return Math.min(e.n, them.mana.length) * 2.2;
+    case "ingest":
+      // 自分のマナが増える(相手の山札も減る)
+      return Math.min(e.n, them.library.length) * (me.mana.length < 9 ? 1.4 : 0.5) + (them.library.length <= e.n ? 15 : 0);
+    case "veilOpp": {
+      const cands = them.mana.filter((o) => !o.faceDown && (!e.crest || crestActive(o)) && (manaColors(o).length > 0 || crestActive(o)));
+      return (e.all ? cands.length : Math.min(e.n, cands.length)) * 0.8;
+    }
+    case "shuffleGraveyard":
+      return 0;
     case "veil": {
       // 虚無のカード(欠色が多いと強くなる)があるときだけ得
       const voidCards = [...me.hand, ...me.battlefield].filter((o) => o.card.tags?.includes("虚無")).length;

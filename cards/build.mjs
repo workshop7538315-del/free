@@ -275,6 +275,7 @@ const DECKS = [
   { id: "t-intrigue", set: "ct", name: "陰謀:影の宮廷(青黒)", colors: ["U", "B"], theme: tag("陰謀"), archetype: "陰謀" },
   { id: "t-void", set: "vd", name: "虚無:色喰らいの深淵(欠色)", colors: [], allowColorless: true, theme: tag("虚無"), archetype: "虚無" },
   { id: "t-void-swarm", set: "vd", name: "虚無:群れなす虚無(欠色)", colors: [], allowColorless: true, theme: tag("虚無"), archetype: "虚無", core: { vd08: 4, vd09: 4, vd36: 4, vd13: 4, vd18: 3, vd33: 3, vd37: 3, vd38: 2, vd22: 2 } },
+  { id: "t-void-titan", set: "vd", name: "虚無:始祖の目覚め(欠色)", colors: [], allowColorless: true, theme: tag("虚無"), archetype: "虚無", core: { vd06: 4, adv27: 3, vd10: 4, vd28: 3, vd14: 2, vd18: 3, vd01: 3, vd04: 2, vd41: 2, vd42: 2, vd43: 1 } },
 ];
 
 const decks = DECKS.map(({ theme, set, generic, allowColorless, highlander, themeSpells, themeCreatures, core, restNonTheme, ...d }) => ({

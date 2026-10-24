@@ -31,6 +31,8 @@ export type CondName =
   | "bloom"
   /** 自分のマナゾーンが相手より少ない */
   | "fewerMana"
+  /** 自分のマナゾーンが相手以下 */
+  | "notMoreMana"
   /** 深淵:自分の墓地が7枚以上 */
   | "threshold"
   /** 背水:自分の手札が0枚 */
@@ -118,7 +120,8 @@ export type Effect = Common &
     | { do: "discard"; n: number; who: "you" | "opp" }
     | { do: "gainLife"; n: Amount }
     | { do: "loseLife"; n: Amount; who: "you" | "opp" }
-    | { do: "token"; n: Amount; p: Amount; t: Amount; color: Color | "C"; sub: string; kw?: string[]; artifact?: boolean }
+    /** spawn:落とし子(「このクリーチャーを生け贄に捧げる:{C}を加える」を持つ) */
+    | { do: "token"; n: Amount; p: Amount; t: Amount; color: Color | "C"; sub: string; kw?: string[]; artifact?: boolean; spawn?: boolean }
     | { do: "counter"; tg: number }
     | { do: "returnCard"; tg: number; to: "hand" | "battlefield" | "mana" }
     | { do: "rampTop"; n: number; tapped?: boolean }
@@ -136,6 +139,12 @@ export type Effect = Common &
     | { do: "mill"; n: Amount; who: "you" | "opp" }
     /** 略奪:対戦相手のマナゾーンのカードをN枚、裏向き(欠色)にしてタップ状態で自分のマナゾーンに移す */
     | { do: "plunder"; n: number }
+    /** 嚥下 N:対戦相手のライブラリーの一番上からN枚を、裏向き(欠色)でタップ状態のまま自分のマナゾーンに置く */
+    | { do: "ingest"; n: number }
+    /** 対戦相手のマナゾーンの表向きのカードを裏向きにする。all ならすべて、crest なら紋章を持つものだけ */
+    | { do: "veilOpp"; n: number; all?: boolean; crest?: boolean }
+    /** 自分の墓地のカードをすべてライブラリーに加えて切り直す */
+    | { do: "shuffleGraveyard" }
     /** 虚化:自分と対戦相手のマナゾーンの表向きのカードをそれぞれN枚、裏向き(欠色)にする(相手の分も自分が選ぶ) */
     | { do: "veil"; n: number }
     /** 顕現 N:自分のマナゾーンからマナ総量N以下のクリーチャー・カードを1枚戦場に出す */
@@ -167,7 +176,11 @@ export type TriggerEvent =
   /** あなたがライフを得るたび */
   | "lifeGain"
   /** あなたが決闘に勝つたび */
-  | "duelWin";
+  | "duelWin"
+  /** この呪文を唱えたとき(打ち消されても誘発する) */
+  | "castSelf"
+  /** このカードがどこからでも墓地に置かれたとき */
+  | "toGraveyard";
 
 export type StaticSpec =
   /** 自分の(他の)クリーチャー全体の強化。filter で種族などを絞れる */
@@ -220,6 +233,8 @@ export type Ability = { text?: string } & (
   | { a: "cycling"; cost: string }
   /** 装備:このコストを払って自分のクリーチャーにつける(ソーサリーのタイミング) */
   | { a: "equip"; cost: string }
+  /** 虚食:自分のマナゾーンの裏向きのカード1枚につき、唱えるコストが{1}少なくなる */
+  | { a: "voidAffinity" }
   /** 共鳴:filter に合う自分のパーマネント1つにつき、唱えるコストが{1}少なくなる */
   | { a: "affinity"; filter: Filter }
   /** 零式:条件を満たしていれば、マナを払わずに唱えてもよい */

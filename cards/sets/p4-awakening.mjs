@@ -28,7 +28,7 @@ export const AWAKENING = tagAll("紋章", [
   cr("aw15", "目覚める屍", "{3}{B}", "ゾンビ", 3, 3, "U", [kw("輪廻"), etb(E.manifest(2))]),
   cr("aw16", "冥刻の王", "{4}{B}{B}", "デーモン", 5, 5, "R", [kw("飛行"), crest(allyDies([E.draw(1), E.lose(1, "you")]))]),
   sor("aw17", "墓所の目覚め", "{2}{B}", "U", spell([E.ret("mana"), E.draw(1)], T.gy)),
-  cr("aw18", "紋章喰らい", "{2}{B}", "ホラー", 2, 3, "U", [etb(E.plunder(1))]),
+  cr("aw18", "紋章喰らい", "{2}{B}", "ホラー", 2, 3, "U", [etb(E.veilOpp(1, { crest: true }))]),
   // 赤:速さと炎
   cr("aw19", "刻印の火花", "{R}", "ゴブリン", 1, 1, "C", [kw("速攻"), crest(castSpell(E.dmgOpp(1)))]),
   ins("aw20", "灼刻の一撃", "{1}{R}", "C", spell(E.dmg(3), T.cre)),

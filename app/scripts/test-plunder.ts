@@ -100,6 +100,8 @@ class Tester extends CpuAgent {
         this.checked = true;
         const expected = Math.min(this.expectN, this.oppBefore.length);
         const moved = this.oppBefore.filter((o) => o.zone === "mana" && o.controller === p && me.mana.includes(o));
+        // 相手に打ち消された・出る前に除去されたときは、略奪が起きないのが正しい
+        if (g.log.some((l) => l.text === `${this.card.name}が打ち消された`)) { this.rec.problems = []; this.rec.scenario += "(打ち消されたので対象外)"; return super.decide(g, p, d); }
         if (!this.asked && this.oppBefore.length > this.expectN) this.rec.problems.push("略奪の質問が来なかった");
         if (moved.length !== expected) this.rec.problems.push(`移った枚数 ${moved.length}(期待 ${expected}) 選んだ ${this.answer.length}`);
         for (const u of this.answer) { const o = g.find(u); if (!o || o.zone !== "mana" || !me.mana.includes(o)) this.rec.problems.push(`選んだカード uid${u} が自分のマナにない(${o?.zone}, 持ち主${o?.owner})`); }
@@ -138,5 +140,7 @@ for (const card of plunderCards) {
   }
 }
 const bad = results.filter((r) => r.problems.length);
+const skipped = results.filter((r) => r.scenario.includes("対象外")).length;
+if (skipped) console.log(`打ち消されたので対象外: ${skipped}回`);
 console.log(`試した回数 ${results.length}(カード ${plunderCards.length}種類 × 盤面 ${scenarios.length}通り × 4) / 問題あり ${bad.length}`);
 for (const r of bad.slice(0, 25)) console.log(`- ${r.card} [${r.scenario}] ${r.problems.join(" / ")}`);

@@ -84,6 +84,12 @@ export const manaEnter = trig("manaEnter");
 export const lifeGain = trig("lifeGain");
 /** あなたが決闘に勝つたび */
 export const duelWin = trig("duelWin");
+/** この呪文を唱えたとき(打ち消されても誘発する) */
+export const onCastSelf = trig("castSelf");
+/** どこからでも墓地に置かれたとき */
+export const toGraveyard = trig("toGraveyard");
+/** 虚食:マナゾーンの裏向きのカード1枚につきコストが{1}少なくなる */
+export const voidAffinity = () => ({ a: "voidAffinity" });
 /** filter に合う呪文を唱えるたび */
 export const onCast = (filter) => trig("cast", filter);
 /** filter に合う他のパーマネントがあなたのコントロールで戦場に出るたび */
@@ -189,6 +195,13 @@ export const E = {
   plunder: (n) => ({ do: "plunder", n }),
   /** 虚化 N:自分のマナゾーンのカードをN枚裏向きにする */
   veil: (n) => ({ do: "veil", n }),
+  /** 嚥下 N:相手のライブラリーの上からN枚を裏向きで自分のマナゾーンに置く */
+  ingest: (n) => ({ do: "ingest", n }),
+  /** 相手のマナゾーンのカードを裏向きにする */
+  veilOpp: (n, opts = {}) => ({ do: "veilOpp", n, ...opts }),
+  shuffleGy: () => ({ do: "shuffleGraveyard" }),
+  /** 落とし子:生け贄に捧げると{C}を出す 0/1 */
+  spawn: (n) => ({ do: "token", n, p: 0, t: 1, color: "C", sub: "虚無・落とし子", spawn: true }),
   manifest: (maxMV, haste = false) => ({ do: "manifest", maxMV, ...(haste ? { haste } : {}) }),
   /** 決闘:対象は [自分のクリーチャー, 相手のクリーチャー]。win は勝ったときの効果 */
   duel: (win) => ({ do: "duel", tg: [0, 1], ...(win ? { win: [win].flat() } : {}) }),
@@ -302,7 +315,7 @@ function condPrefix(c) {
   const label = condLabel(c);
   if (label) return `${label} ― `;
   if (typeof c === "object") return `あなたが${filterPhrase(c.control, "permanent")}を${c.n}${unitOf(c.control)}以上コントロールしているなら、`;
-  return { burned: "燃焼したなら、", kicked: "追加払いしたなら、", fewerMana: "あなたのマナゾーンのカードが対戦相手より少ないなら、" }[c];
+  return { burned: "燃焼したなら、", kicked: "追加払いしたなら、", fewerMana: "あなたのマナゾーンのカードが対戦相手より少ないなら、", notMoreMana: "あなたのマナゾーンのカードが対戦相手の枚数以下なら、" }[c];
 }
 
 /** 条件の前置き(常在能力に付けるとき) */
@@ -333,6 +346,7 @@ function condPlain(c) {
     metalcraft: "あなたがアーティファクトを3つ以上コントロールしている",
     ferocious: "あなたがパワー4以上のクリーチャーをコントロールしている",
     fewerMana: "あなたのマナゾーンのカードが対戦相手より少ない",
+    notMoreMana: "あなたのマナゾーンのカードが対戦相手の枚数以下である",
   }[c];
 }
 
@@ -374,7 +388,8 @@ function tokenText(e, notes) {
   if (typeof e.p === "object") amountText(e.p, notes);
   const n = amountText(e.n, notes);
   const kind = e.artifact ? "アーティファクト・クリーチャー" : "クリーチャー";
-  return `${kws}${pt}の${COLOR_JA[e.color]}の${e.sub}・${kind}・トークンを${n}体生成する。`;
+  const spawn = e.spawn ? "それは「このクリーチャーを生け贄に捧げる:{C}を加える。」を持つ。" : "";
+  return `${kws}${pt}の${COLOR_JA[e.color]}の${e.sub}・${kind}・トークンを${n}体生成する。${spawn}`;
 }
 
 /** 効果1つの文章 */
@@ -479,6 +494,13 @@ function effectText(e, name, abil, notes) {
       return `略奪 ${e.n}。`;
     case "veil":
       return `虚化 ${e.n}。`;
+    case "ingest":
+      return `嚥下 ${e.n}。`;
+    case "veilOpp":
+      if (e.all) return "対戦相手のマナゾーンにある表向きのカードをすべて裏向きにする。";
+      return `対戦相手のマナゾーンにある${e.crest ? "紋章を持つ" : "表向きの"}カードを${e.n}枚選び、裏向きにする。`;
+    case "shuffleGraveyard":
+      return "あなたの墓地にあるカードをすべてライブラリーに加え、ライブラリーを切り直す。";
     case "manifest":
       return `顕現 ${e.maxMV}。${e.haste ? "ターン終了時まで、そのクリーチャーは速攻を得る。" : ""}`;
     case "mill":
@@ -535,6 +557,8 @@ const TRIGGER_PREFIX = {
   manaEnter: () => "鼓動 ― あなたのマナゾーンにカードが置かれるたび、",
   lifeGain: () => "あなたがライフを得るたび、",
   duelWin: () => "あなたが決闘に勝つたび、",
+  castSelf: (n) => `あなたが${n}を唱えたとき、`,
+  toGraveyard: (n) => `${n}がどこからでも墓地に置かれたとき、`,
 };
 
 function staticText(abil, name, card) {
@@ -608,6 +632,8 @@ function abilityTextBody(abil, card) {
       return `循環 ${abil.cost}`;
     case "equip":
       return `装備 ${abil.cost}`;
+    case "voidAffinity":
+      return "虚食(この呪文を唱えるためのコストは、あなたのマナゾーンにある裏向きのカード1枚につき{1}少なくなる)";
     case "affinity":
       return `共鳴(${filterPhrase(abil.filter, "permanent")})(この呪文を唱えるためのコストは、あなたがコントロールする${filterPhrase(abil.filter, "permanent")}1つにつき{1}少なくなる)`;
     case "free":

@@ -8,7 +8,7 @@
 | `build.mjs` | 全パックをまとめて検証し、`cards.json`・`decks.json`・`packs.json` を作る |
 | `packs.json` | `build.mjs` が作るパックの一覧(アプリの絞り込みで使う) |
 | `cards.json` | `build.mjs` が作る全カードのデータ(手で編集しない) |
-| `decks.json` | `build.mjs` が作るスターターデッキ(2色の汎用10種類+アーキタイプ24種類) |
+| `decks.json` | `build.mjs` が作るスターターデッキ(2色の汎用10種類+アーキタイプ25種類) |
 | `keywords.json` | キーワードの説明(ツールチップと絞り込みで使う) |
 
 ## カードを追加・変更する

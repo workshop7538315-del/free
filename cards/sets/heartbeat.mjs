@@ -1,5 +1,5 @@
 // 鼓動:マナゾーンにカードが置かれるたびに得をする(上陸に相当)。マナゾーンの色の数を数える能力も(緑赤中心)。
-import { cr, ins, sor, ench, art, kw, spell, etb, charge, manaEnter, upkeep, mana, scale, T, E, count, tagAll } from "../lib.mjs";
+import { cr, ins, sor, ench, art, kw, spell, etb, charge, manaEnter, upkeep, mana, scale, T, E, count, tagAll, iff } from "../lib.mjs";
 
 const colors = count("colorsInMana");
 
@@ -20,7 +20,7 @@ export const HEARTBEAT = tagAll("鼓動", [
   cr("hrt14", "地脈の聖騎士", "{1}{G}{W}", "人間・騎士", 2, 2, "R", [manaEnter(E.token(1, 1, 1, "W", "人間・兵士"))]),
   ench("hrt15", "虹の架け橋", "{1}{G}{U}", "R", [upkeep(E.ramp(1))]),
   cr("hrt16", "豊穣の精霊", "{3}{G}", "エレメンタル", 3, 3, "C", [etb(E.ramp(1, true))]),
-  cr("hrt17", "地脈の探索者", "{G}", "エルフ・スカウト", 1, 1, "C", [etb(E.lookTop()), charge(E.ramp(1))]),
+  cr("hrt17", "地脈の探索者", "{G}", "エルフ・スカウト", 1, 1, "C", [etb(E.lookTop()), charge(iff("notMoreMana", E.ramp(1)))]),
   art("hrt18", "七色の水晶", "{3}", "C", [mana("any"), etb(E.draw(1))]),
   cr("hrt19", "大地の化身竜", "{5}{G}{G}", "ドラゴン", 6, 6, "R", [kw("飛行"), etb(E.ramp(2))]),
   cr("hrt20", "火口の小鬼", "{R}", "ゴブリン", 1, 1, "C", [charge(E.dmg(2), T.cre)]),
