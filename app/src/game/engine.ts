@@ -990,7 +990,7 @@ export class Game {
     };
     this.stack.push(item);
     const tgt = targets.length ? `(対象:${targets.map((t) => this.describeRef(t)).join("、")})` : "";
-    const how = from === "mana" ? "マナ解放で" : from === "graveyard" ? "再演で" : from === "dash" ? "疾駆で" : cost === "" ? "零式で" : "";
+    const how = from === "mana" ? "マナ解放で" : from === "graveyard" ? "再演で" : from === "dash" ? "疾駆で" : cost === "" && c.cost !== "" ? (abilityOf(c, "free") && this.cond(abilityOf(c, "free")!.if, p) ? "零式で" : "コスト0で") : "";
     this.addLog(`${c.name}を${how}唱えた${burned ? `(燃焼${burnCount}枚)` : ""}${kicked ? "(追加払い)" : ""}${x ? `(X=${x})` : ""}${tgt}`, p);
     for (const src of this.sources(p))
       for (const ab of this.activeAbilities(src)) {

@@ -538,7 +538,10 @@ function actionLabel(g: Game, a: Action): string {
       if (a.from === "graveyard") return "再演で唱える";
       if (a.from === "dash") return "疾駆で唱える(速攻、終了時に手札へ)";
       const o = g.find(a.uid);
-      return o && g.effectiveCost(ME, o, "hand") === "" && o.card.cost !== "" ? "零式で唱える(コストなし)" : "唱える";
+      if (!o || o.card.cost === "" || g.effectiveCost(ME, o, "hand") !== "") return "唱える";
+      // 零式を持ち、その条件を満たしているときだけ「零式」。コスト軽減で0になっただけなら「コスト0」
+      const free = abilitiesOf(o.card).find((ab) => ab.a === "free");
+      return free && free.a === "free" && g.cond(free.if, ME) ? "零式で唱える(コストなし)" : "唱える(コスト0)";
     }
     case "cycle":
       return "循環(捨てて1枚引く)";
