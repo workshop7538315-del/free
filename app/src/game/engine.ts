@@ -82,10 +82,6 @@ export type Player = {
   highlander: boolean;
   /** このターンに捨てたカードと、戦場を離れたクリーチャーの数(陰謀) */
   lostThisTurn: number;
-  /** 追いつきのチャージ:このターンは追加で1回チャージできる */
-  catchUpThisTurn: boolean;
-  /** 前の自分のターンのあとに、相手の効果でマナゾーンから失ったカードの枚数 */
-  manaLostToOpp: number;
 };
 
 export type TargetRef =
@@ -267,8 +263,6 @@ export class Game {
       drewFromEmpty: false,
       highlander: new Set(opts.decks[id].map((c) => c.name)).size === opts.decks[id].length,
       lostThisTurn: 0,
-      catchUpThisTurn: false,
-      manaLostToOpp: 0,
     });
     this.players = [mk(0), mk(1)];
     this.firstPlayer = opts.first ?? (this.rng() < 0.5 ? 0 : 1);
@@ -586,15 +580,8 @@ export class Game {
     return true;
   }
 
-  /**
-   * 追いつきのチャージ。mode = "loss":相手の効果でマナゾーンのカードを失ったら、次の自分のターンに追加で1回チャージできる。
-   * mode = "gap":ターンの開始時に自分のマナが相手より catchUpGap 枚以上少なければ追加で1回。"off" なら無効
-   */
-  static catchUpMode: "loss" | "gap" | "off" = "loss";
-  static catchUpGap = 3;
-
   chargesAllowed(p: PlayerId): number {
-    let n = 1 + this.players[p].extraChargesThisTurn + (this.players[p].catchUpThisTurn ? 1 : 0);
+    let n = 1 + this.players[p].extraChargesThisTurn;
     for (const o of this.sources(p))
       for (const a of this.activeAbilities(o)) if (a.a === "static" && a.st.s === "extraCharge" && (!a.if || this.cond(a.if, p))) n += a.st.n;
     return n;
@@ -1482,7 +1469,6 @@ export class Game {
         const picked = await this.askCards(p, `侵食:相手のマナゾーンから墓地に置くカードを${e.n}枚選んでください`, zone, Math.min(e.n, zone.length), "erode");
         for (const o of picked) {
           this.move(o, "graveyard");
-          this.players[opp].manaLostToOpp++;
           this.addLog(`侵食で${this.players[opp].name}の${o.card.name}を墓地に置いた`, p);
         }
         if (picked.length < e.n)
@@ -1589,7 +1575,6 @@ export class Game {
         const names: string[] = [];
         for (const o of picked) {
           names.push(o.faceDown ? "裏向きのカード" : o.card.name);
-          this.players[opp].manaLostToOpp++;
           zone.splice(zone.indexOf(o), 1);
           o.owner = p;
           o.controller = p;
@@ -1929,18 +1914,6 @@ export class Game {
     for (const o of pl.mana) o.tapped = false;
     pl.chargesUsed = 0;
     pl.extraChargesThisTurn = 0;
-    pl.catchUpThisTurn =
-      Game.catchUpMode === "loss"
-        ? pl.manaLostToOpp > 0
-        : Game.catchUpMode === "gap" && this.players[this.other(p)].mana.length - pl.mana.length >= Game.catchUpGap;
-    if (pl.catchUpThisTurn)
-      this.addLog(
-        Game.catchUpMode === "loss"
-          ? `${pl.name}は相手の効果でマナを失ったので、このターンは追加で1回チャージできる`
-          : `${pl.name}はマナが${Game.catchUpGap}枚以上少ないので、このターンは追加で1回チャージできる`,
-        p,
-      );
-    pl.manaLostToOpp = 0;
     for (const q of this.players) q.lostThisTurn = 0;
     // アップキープ
     this.step = "upkeep";
