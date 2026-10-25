@@ -1307,8 +1307,10 @@ export class Game {
   /** リリースに使えるカードと、そのとき数えるマナ総量(奉納を足す) */
   releaseFodder(p: PlayerId, target: Obj): { o: Obj; value: number }[] {
     const subs = (target.card.subtype ?? "").split("・");
+    // 素材にできるもの:カードごとの指定(なければエンチャント)。奉納を持つものはいつでも使える
+    const from = releaseOf(target.card)?.from ?? [{ type: "エンチャント" }];
     return this.players[p].battlefield
-      .filter((o) => !o.token && (o.card.type.includes("エンチャント") || !!offeringOf(o.card)))
+      .filter((o) => !o.token && (!!offeringOf(o.card) || from.some((f) => matchFilter(o.card, f, this.colorsOf(o)))))
       .map((o) => {
         const off = offeringOf(o.card);
         const bonus = off && (!off.sub || subs.includes(off.sub)) ? off.n : 0;

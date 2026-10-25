@@ -1,12 +1,13 @@
 // 第9弾「秘蔵の門」(新規展開) 3つの単語:奉納・リリース・秘蔵
 //   秘蔵庫:メインのデッキとは別に、8枚まで(同名2枚まで)用意する。手札には来ない。
-//   リリース召喚 N:あなたのエンチャントか「奉納」を持つクリーチャーを、マナ総量の合計がN以上になるように生け贄に捧げ、
-//                  秘蔵庫からこのクリーチャーをコストを支払わずに戦場に出す(ソーサリーのタイミングで、1ターンに1回)。
+//   リリース召喚 N(素材):素材に指定されたパーマネント(トークンを除く)か「奉納」を持つものを、マナ総量の合計がN以上に
+//                  なるように生け贄に捧げ、秘蔵庫からこのクリーチャーをコストを支払わずに戦場に出す(ソーサリーのタイミングで、1ターンに1回)。
+//                  素材は種類ごとに違う:神獣=エンチャントかクリーチャー、祖霊=エンチャント、機神=アーティファクト、種類なし=パーマネント。
 //                  戦場を離れると秘蔵庫に戻る。
 //   奉納 N(種類):リリース召喚のために生け贄に捧げるとき、マナ総量に+Nして数える(種類があれば、その種類のときだけ)。
 //   軽いエンチャントは、それ自体がドローやマナを生む。残しておくか、捧げて秘蔵庫を開くかを選ぶ。
 import {
-  cr, acr, ins, sor, ench, kw, spell, etb, dies, attacks, endStep, upkeep, act, mana, once, onSacrifice,
+  cr, acr, ins, sor, ench, art, kw, spell, etb, dies, attacks, endStep, upkeep, act, mana, once, onSacrifice,
   releaseSummon, offering, modal, gen, T, E, F,
 } from "../lib.mjs";
 
@@ -14,18 +15,23 @@ const g = (c) => ({ ...c, tags: [...new Set([...(c.tags ?? []), "秘蔵"])] });
 const BEAST = "神獣";
 const SPIRIT = "祖霊";
 const MACHINE = "機神";
+const BEAST_FROM = [{ type: "エンチャント" }, { type: "クリーチャー", minPower: 3 }];
+const MACHINE_FROM = [{ type: "アーティファクト" }];
+const ANY = [{}];
 const soldier = (n) => E.token(n, 1, 1, "W", "人間・兵士");
 
 // ---------------------------------------------------------------- 生成されるカード
 /** 供物の灯:{1} のエンチャント、奉納 1(リリースでは2として数える) */
 const LAMP = gen("tk-kumotsu", "供物の灯", "{1}", "エンチャント", [offering(1)]);
+/** 予備の歯車:{1} のアーティファクト、奉納 1(機神の素材) */
+const GEAR = gen("tk-haguruma", "予備の歯車", "{1}", "アーティファクト", [offering(1)]);
 
 export const GATE = [
   // ================================================================ 秘蔵庫:神獣(緑白)
-  g(cr("hz01", "若葉の神獣", "{2}{G}{G}", "神獣", 4, 4, "U", [releaseSummon(6), kw("到達"), etb(E.ramp(1))])),
-  g(cr("hz02", "白鬣の神獣", "{3}{W}{W}", "神獣", 4, 5, "R", [releaseSummon(7), kw("警戒", "絆魂"), etb(soldier(2))])),
-  g(cr("hz03", "天翔ける神獣", "{3}{G}{W}", "神獣", 5, 5, "R", [releaseSummon(8), kw("飛行", "警戒"), attacks(E.countersAll(1))])),
-  g(cr("hz04", "大樹の神獣", "{5}{G}{G}", "神獣", 7, 7, "M", [releaseSummon(10), kw("トランプル"), attacks(E.countersAll(1))])),
+  g(cr("hz01", "若葉の神獣", "{2}{G}{G}", "神獣", 4, 4, "U", [releaseSummon(7, BEAST_FROM), kw("到達"), etb(E.ramp(1))])),
+  g(cr("hz02", "白鬣の神獣", "{3}{W}{W}", "神獣", 4, 5, "R", [releaseSummon(8, BEAST_FROM), kw("警戒", "絆魂"), etb(soldier(2))])),
+  g(cr("hz03", "天翔ける神獣", "{3}{G}{W}", "神獣", 5, 5, "R", [releaseSummon(9, BEAST_FROM), kw("飛行", "警戒"), attacks(E.countersAll(1))])),
+  g(cr("hz04", "大樹の神獣", "{5}{G}{G}", "神獣", 7, 7, "M", [releaseSummon(11, BEAST_FROM), kw("トランプル"), attacks(E.countersAll(1))])),
 
   // ================================================================ 秘蔵庫:祖霊(白黒)
   g(cr("hz05", "灯守の祖霊", "{2}{W}{B}", "スピリット・祖霊", 3, 3, "U", [releaseSummon(6), kw("飛行"), etb(E.lookTop()), dies(E.draw(1))])),
@@ -34,17 +40,17 @@ export const GATE = [
   g(cr("hz08", "万霊の祖", "{5}{W}{B}", "スピリット・祖霊", 6, 6, "M", [releaseSummon(11), kw("飛行", "絆魂"), etb([E.lose(3), E.gain(3)])])),
 
   // ================================================================ 秘蔵庫:機神(青赤・アーティファクト)
-  g(acr("hz09", "歯車の機神", "{4}", "構築物・機神", 3, 3, "U", [releaseSummon(6), etb(E.draw(1)), dies(E.draw(1))])),
-  g(acr("hz10", "雷鳴の機神", "{3}{R}", "構築物・機神", 4, 3, "U", [releaseSummon(8), kw("速攻"), etb(E.dmg(2), T.any)])),
-  g(acr("hz11", "蒼穹の機神", "{4}{U}", "構築物・機神", 4, 4, "R", [releaseSummon(8), kw("飛行"), etb(E.draw(1))])),
-  g(acr("hz12", "終焉の機神", "{8}", "構築物・機神", 8, 8, "M", [releaseSummon(12), kw("トランプル"), etb(E.dmgAllOpp(3))])),
+  g(acr("hz09", "歯車の機神", "{4}", "構築物・機神", 3, 3, "U", [releaseSummon(7, MACHINE_FROM), etb(E.draw(1)), dies(E.draw(1))])),
+  g(acr("hz10", "雷鳴の機神", "{3}{R}", "構築物・機神", 4, 3, "U", [releaseSummon(8, MACHINE_FROM), kw("速攻"), etb(E.dmg(2), T.any)])),
+  g(acr("hz11", "蒼穹の機神", "{4}{U}", "構築物・機神", 4, 4, "R", [releaseSummon(8, MACHINE_FROM), kw("飛行"), etb(E.draw(1))])),
+  g(acr("hz12", "終焉の機神", "{8}", "構築物・機神", 8, 8, "M", [releaseSummon(12, MACHINE_FROM), kw("トランプル"), etb(E.dmgAllOpp(3))])),
 
   // ================================================================ 秘蔵庫:種類なし
-  g(cr("hz13", "門の守護者", "{1}{W}", "スピリット", 3, 3, "C", [releaseSummon(4), kw("先制攻撃")])),
-  g(cr("hz14", "黄泉の門番", "{3}{B}", "デーモン", 4, 4, "U", [releaseSummon(7), kw("威迫"), etb(E.discard(1, "opp")), dies([E.lose(2), E.gain(2)])])),
-  g(cr("hz15", "深海の守り神", "{3}{U}", "リバイアサン", 3, 5, "U", [releaseSummon(7), kw("呪禁"), etb([E.draw(2), E.discard(1)])])),
-  g(cr("hz16", "獄炎の鬼神", "{3}{B}{R}", "デーモン", 5, 4, "R", [releaseSummon(8), kw("速攻", "威迫"), attacks(E.lose(1))])),
-  g(cr("hz17", "秘蔵の竜", "{4}{R}{R}", "ドラゴン", 6, 5, "M", [releaseSummon(9), kw("飛行", "速攻"), etb(E.dmg(3), T.any)])),
+  g(cr("hz13", "門の守護者", "{1}{W}", "スピリット", 3, 3, "C", [releaseSummon(4, ANY), kw("先制攻撃")])),
+  g(cr("hz14", "黄泉の門番", "{3}{B}", "デーモン", 4, 4, "U", [releaseSummon(7, ANY), kw("威迫"), etb(E.discard(1, "opp")), dies([E.lose(2), E.gain(2)])])),
+  g(cr("hz15", "深海の守り神", "{3}{U}", "リバイアサン", 3, 5, "U", [releaseSummon(7, ANY), kw("呪禁"), etb([E.draw(2), E.discard(1)])])),
+  g(cr("hz16", "獄炎の鬼神", "{3}{B}{R}", "デーモン", 5, 4, "R", [releaseSummon(8, ANY), kw("速攻", "威迫"), attacks(E.lose(1))])),
+  g(cr("hz17", "秘蔵の竜", "{4}{R}{R}", "ドラゴン", 6, 5, "M", [releaseSummon(9, ANY), kw("飛行", "速攻"), etb(E.dmg(3), T.any)])),
 
   // ================================================================ 奉納:神獣(緑白)
   g(ench("hz18", "神獣の祭壇", "{G}", "C", [offering(1, BEAST), etb(E.lookTop())])),
@@ -65,13 +71,13 @@ export const GATE = [
   g(cr("hz31", "祖霊を呼ぶ者", "{1}{W}{B}", "人間・シャーマン", 2, 3, "U", [kw("絆魂"), once(onSacrifice()(E.create(LAMP)))])),
 
   // ================================================================ 奉納:機神(青赤)
-  g(ench("hz32", "機神の設計図", "{U}", "C", [offering(1, MACHINE), etb(E.lookTop())])),
-  g(ench("hz33", "歯車の祭壇", "{1}{R}", "C", [offering(1, MACHINE), act({ sacSelf: true }, E.dmg(2), T.cre)])),
-  g(ench("hz34", "機神の起動式", "{1}{U}", "U", [offering(1, MACHINE), etb(E.draw(1))])),
+  g(art("hz32", "機神の設計図", "{U}", "C", [offering(1, MACHINE), etb(E.lookTop())])),
+  g(art("hz33", "歯車の祭壇", "{1}{R}", "C", [offering(1, MACHINE), act({ sacSelf: true }, E.dmg(2), T.cre)])),
+  g(art("hz34", "機神の起動式", "{1}{U}", "U", [offering(1, MACHINE), etb(E.draw(1))])),
   g(acr("hz35", "機械仕掛けの職工", "{1}{U}", "構築物", 1, 2, "C", [offering(1, MACHINE), etb(E.lookTop())])),
   g(cr("hz36", "火花の技師", "{R}", "人間・職人", 1, 1, "C", [offering(1, MACHINE), dies(E.dmg(1), T.any)])),
   g(cr("hz37", "炉の番人", "{2}{R}", "人間・職人", 3, 2, "C", [offering(1, MACHINE), kw("速攻")])),
-  g(cr("hz38", "機神の操者", "{1}{U}{R}", "人間・ウィザード", 2, 2, "U", [etb(E.create(LAMP)), once(onSacrifice()(E.draw(1)))])),
+  g(cr("hz38", "機神の操者", "{1}{U}{R}", "人間・ウィザード", 2, 2, "U", [etb(E.create(GEAR)), once(onSacrifice()(E.draw(1)))])),
 
   // ================================================================ 奉納:種類なし(どの秘蔵庫にも)
   g(ench("hz39", "奉納の札", "{1}", "C", [offering(1), etb(E.lookTop())])),
@@ -99,7 +105,7 @@ export const GATE = [
   g(ins("hz57", "神獣の咆哮", "{2}{G}", "C", modal([["あなたのクリーチャーと相手のクリーチャーが格闘する", E.fight(), [T.you, T.opp]], ["クリーチャー1体に+1/+1カウンターを2個", E.counters(2), T.you]]))),
   g(sor("hz58", "祖霊の裁き", "{2}{W}", "U", spell([E.destroy(), E.gain(2)], T.creF({ minPower: 4 }, "opp")))),
   g(ins("hz59", "祖霊の呪い", "{1}{B}", "C", modal([["クリーチャー1体は-3/-3", E.pump(-3, -3), T.cre], ["墓地のクリーチャー・カードを手札に戻す", E.ret("hand"), T.gyCre]]))),
-  g(ins("hz60", "機神の閃光", "{1}{R}", "C", modal([["クリーチャー1体に3点", E.dmg(3), T.cre], ["対戦相手に2点、供物の灯を生成", [E.dmgOpp(2), E.create(LAMP)]]]))),
+  g(ins("hz60", "機神の閃光", "{1}{R}", "C", modal([["クリーチャー1体に3点", E.dmg(3), T.cre], ["対戦相手に2点、予備の歯車を生成", [E.dmgOpp(2), E.create(GEAR)]]]))),
   g(ins("hz61", "機神の解析", "{1}{U}", "C", modal([["マナ総量3以下の呪文を打ち消す", E.counter(0), { t: "spell", maxMV: 3 }], ["一番上を見て、1枚引く", [E.lookTop(), E.draw(1)]]]))),
   g(sor("hz62", "秘蔵の目録", "{2}{U}", "U", spell([E.draw(2), E.create(LAMP)]))),
   g(sor("hz63", "黄泉の招き", "{2}{B}", "C", spell([E.ret("hand"), E.create(LAMP)], T.gyCre))),
@@ -117,7 +123,7 @@ export const GATE = [
   g(cr("hz73", "炎門の巨人", "{4}{R}", "巨人", 5, 4, "U", [kw("トランプル"), etb(E.dmg(2), T.opp)])),
   g(cr("hz74", "森門の巨獣", "{4}{G}", "ビースト", 5, 5, "U", [kw("到達"), etb(E.ramp(1))])),
   g(cr("hz75", "秘蔵庫の主", "{2}{W}{B}", "スピリット・祖霊", 3, 3, "R", [kw("飛行"), offering(2, SPIRIT), once(onSacrifice()(E.draw(1)))])),
-  g(cr("hz76", "門を統べる者", "{2}{U}{R}", "人間・ウィザード", 3, 3, "M", [kw("飛行"), etb(E.create(LAMP, 2)), once(onSacrifice()(E.dmg(2), T.any))])),
+  g(cr("hz76", "門を統べる者", "{2}{U}{R}", "人間・ウィザード", 3, 3, "M", [kw("飛行"), etb(E.create(GEAR, 2)), once(onSacrifice()(E.dmg(2), T.any))])),
 ];
 
 void sor;

@@ -228,7 +228,7 @@ export type Ability = { text?: string } & (
   /** modes があればモード呪文(唱えるときに1つ選ぶ) */
   | { a: "spell"; targets?: TargetSpec[]; effects: Effect[]; modes?: SpellMode[] }
   /** リリース召喚 N:秘蔵庫のクリーチャー。エンチャントと奉納を持つクリーチャーをマナ総量の合計がN以上になるようにリリースし、マナを払わずに出す */
-  | { a: "releaseSummon"; n: number }
+  | { a: "releaseSummon"; n: number; from?: Filter[] }
   /** 奉納 N(sub):リリース召喚に使うとき、マナ総量を+Nとして数える(sub があれば、その種族のリリース召喚のときだけ) */
   | { a: "offering"; n: number; sub?: string }
   /** from: "mana" は紋章(このカードがマナゾーンにあるあいだだけ働く) */

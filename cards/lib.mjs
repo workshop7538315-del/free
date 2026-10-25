@@ -95,7 +95,8 @@ export const onSacrifice = (filter) => trig("sacrifice", filter);
 /** 誘発を「1ターンに1回」にする */
 export const once = (ability) => ({ ...ability, oncePerTurn: true });
 /** リリース召喚 N(秘蔵庫のクリーチャー) */
-export const releaseSummon = (n) => ({ a: "releaseSummon", n });
+/** リリース召喚 N:from は素材にできるパーマネントの条件の一覧(省略するとエンチャント)。{} はトークン以外のすべて */
+export const releaseSummon = (n, from) => ({ a: "releaseSummon", n, ...(from ? { from } : {}) });
 /** 奉納 N(sub) */
 export const offering = (n, sub) => ({ a: "offering", n, ...(sub ? { sub } : {}) });
 /** モード呪文:modes は [ラベル, 効果, 対象] の配列 */
@@ -665,7 +666,7 @@ function abilityTextBody(abil, card) {
     case "equip":
       return `装備 ${abil.cost}`;
     case "releaseSummon":
-      return `リリース召喚 ${abil.n}`;
+      return `リリース召喚 ${abil.n}(${(abil.from ?? [{ type: "エンチャント" }]).map((f) => (Object.keys(f).length ? filterPhrase(f, "permanent") : "パーマネント")).join("か")})`;
     case "offering":
       return `奉納 ${abil.n}${abil.sub ? `(${abil.sub})` : ""}`;
     case "voidAffinity":

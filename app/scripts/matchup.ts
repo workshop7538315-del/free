@@ -11,6 +11,8 @@ const expand = (l: Record<string, number>) => Object.entries(l).flatMap(([id, n]
 const A = process.env.A!.split(",");
 const B = (process.env.B ?? decks.map((d) => d.id).join(",")).split(",");
 const SEEDS = Number(process.env.SEEDS ?? 6);
+// ADD=カードID:枚数,… … Aのデッキに足す(秘蔵庫を試すとき)
+const ADD = (process.env.ADD ?? "").split(",").filter(Boolean).flatMap((x) => { const [id, n] = x.split(":"); return Array.from({ length: Number(n ?? 1) }, () => byId.get(id)!); });
 for (const a of A) {
   let w = 0, n = 0;
   const per: string[] = [];
@@ -18,7 +20,7 @@ for (const a of A) {
     if (a === b) continue;
     let ww = 0;
     for (let i = 0; i < SEEDS; i++) {
-      const g = new Game({ decks: [expand(decks.find((d) => d.id === a)!.cards).filter((c) => !process.env.NOEXTRA || !c.abilities.some((x) => x.a === "releaseSummon")), expand(decks.find((d) => d.id === b)!.cards)], names: ["A", "B"], agents: [new CpuAgent(), new CpuAgent()], seed: i * 97 + 5, first: (i % 2) as PlayerId, maxTurns: 80 });
+      const g = new Game({ decks: [expand(decks.find((d) => d.id === a)!.cards).filter((c) => !process.env.NOEXTRA || !c.abilities.some((x) => x.a === "releaseSummon")).concat(ADD), expand(decks.find((d) => d.id === b)!.cards)], names: ["A", "B"], agents: [new CpuAgent(), new CpuAgent()], seed: i * 97 + 5, first: (i % 2) as PlayerId, maxTurns: 80 });
       if ((await g.run()) === 0) ww++;
     }
     w += ww; n += SEEDS;
