@@ -103,6 +103,8 @@ export const entrata = (n, cat) => ({ a: "entrata", n, cat });
 export const pioneer = (n, color, grand = false) => ({ a: "pioneer", n, color, ...(grand ? { grand } : {}) });
 /** 組み立て【color】:秘蔵庫の発明品。partner(ID と名前)に武装進化する */
 export const assemble = (color, partner, partnerName, cond = "attacked") => ({ a: "assemble", color, partner, partnerName, cond });
+/** 紋章 ― 埋蔵 N:マナゾーンから開拓進化で墓地に置くとき、マナ総量に+N */
+export const buried = (n) => ({ a: "buried", n, from: "mana" });
 /** 武装進化でのみ戦場に出る */
 export const evolveOnly = () => ({ a: "evolveOnly" });
 /** ウシータ(退場):秘蔵庫に戻るとき */
@@ -703,6 +705,8 @@ function abilityTextBody(abil, card) {
       const cond = abil.cond === "attacked" ? "このターン、装備しているクリーチャーが攻撃したなら" : "装備しているクリーチャーに装備品が2つ以上ついているなら";
       return `組み立て【${COLOR_JA[abil.color]}】 / 武装進化 ― ${cond}、そのクリーチャーと${name}を《${abil.partnerName}》に武装進化してもよい。`;
     }
+    case "buried":
+      return `埋蔵 ${abil.n}(マナゾーンにあるこのカードを開拓進化で墓地に置くとき、マナ総量に+${abil.n}して数える)`;
     case "evolveOnly":
       return `${name}は武装進化でのみ戦場に出る。`;
     case "releaseSummon":

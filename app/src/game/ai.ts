@@ -905,7 +905,9 @@ function fodderWorth(g: Game, p: PlayerId, o: Obj): number {
   // マナゾーンのカード:マナが育っているほど手放しやすい
   if (o.zone === "mana") {
     const n = g.players[p].mana.length;
-    return n >= 10 ? 0.4 : n >= 8 ? 1.0 : n >= 6 ? 2.0 : 3.5;
+    const base = n >= 10 ? 0.4 : n >= 8 ? 1.0 : n >= 6 ? 2.0 : 3.5;
+    // 埋蔵を持つカードは、開拓に使うために置いてある
+    return abilitiesOf(o.card).some((a) => a.a === "buried") ? base * 0.5 : base;
   }
   if (o.token && !isCreatureCard(o.card)) return 0.3;
   if (isCreatureCard(o.card)) return creatureValue(g, o);

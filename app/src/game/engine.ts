@@ -211,7 +211,7 @@ export const applauseCatsOf = (c: Card): Applause[] => [...new Set([...JSON.stri
 export const releaseOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "releaseSummon") as Extract<Ability, { a: "releaseSummon" }> | undefined;
 export const offeringOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "offering") as Extract<Ability, { a: "offering" }> | undefined;
 /** 紋章(マナゾーンで働く能力)か */
-export const isCrestAbility = (a: Ability) => (a.a === "static" || a.a === "trigger") && a.from === "mana";
+export const isCrestAbility = (a: Ability) => (a.a === "static" || a.a === "trigger" || a.a === "buried") && a.from === "mana";
 export const hasCrest = (c: Card) => abilitiesOf(c).some(isCrestAbility);
 /** マナゾーンのカードの色。裏向きなら欠色 */
 export const manaColors = (o: Obj): Color[] => (o.faceDown ? [] : cardColors(o.card.cost));
@@ -1497,13 +1497,13 @@ export class Game {
     );
   }
 
-  /** 開拓進化で墓地に置けるカード(戦場とマナゾーン)と、そのマナ総量 */
-  pioneerFodder(p: PlayerId, base: Obj | undefined): { o: Obj; value: number }[] {
-    const pl = this.players[p];
-    return [
-      ...pl.battlefield.filter((o) => o !== base && !o.merged).map((o) => ({ o, value: o.token ? 0 : manaValue(o.card.cost) })),
-      ...pl.mana.map((o) => ({ o, value: o.faceDown ? 0 : manaValue(o.card.cost) })),
-    ];
+  /** 開拓進化で墓地に置けるカード(マナゾーンだけ)と、そのマナ総量(紋章 ― 埋蔵 N を足す) */
+  pioneerFodder(p: PlayerId, _base?: Obj): { o: Obj; value: number }[] {
+    return this.players[p].mana.map((o) => {
+      if (o.faceDown) return { o, value: 0 };
+      const buried = abilitiesOf(o.card).find((a) => a.a === "buried") as { n: number } | undefined;
+      return { o, value: manaValue(o.card.cost) + (buried?.n ?? 0) };
+    });
   }
 
   private canMillPioneer(p: PlayerId, n: number, minCount: number) {
@@ -1540,7 +1540,7 @@ export class Game {
     const canBoard = fodder.length >= minCount && fodder.reduce((s, x) => s + x.value, 0) >= pi.n;
     let mill = false;
     if (this.canMillPioneer(p, pi.n, minCount))
-      mill = !canBoard || (await this.ask<boolean>(p, { kind: "yesno", prompt: `加護《${BLESSING_ELDORADO}》:戦場とマナゾーンの代わりに、ライブラリーの上からマナ総量の合計が${pi.n}以上になるまで墓地に置きますか?`, reason: "blessing", obj: o }));
+      mill = !canBoard || (await this.ask<boolean>(p, { kind: "yesno", prompt: `加護《${BLESSING_ELDORADO}》:マナゾーンの代わりに、ライブラリーの上からマナ総量の合計が${pi.n}以上になるまで墓地に置きますか?`, reason: "blessing", obj: o }));
     pl.pioneeredThisTurn = true;
     if (mill) {
       let sum = 0;
@@ -1561,7 +1561,7 @@ export class Game {
     } else {
       const ans = await this.ask<number[]>(p, {
         kind: "chooseSum",
-        prompt: `${o.card.name}を${word}します。墓地に置く戦場かマナゾーンのカードを、マナ総量の合計が${pi.n}以上${minCount > 1 ? `(${minCount}枚以上)` : ""}になるように選んでください`,
+        prompt: `${o.card.name}を${word}します。墓地に置くマナゾーンのカードを、マナ総量(埋蔵を含む)の合計が${pi.n}以上${minCount > 1 ? `(${minCount}枚以上)` : ""}になるように選んでください`,
         options: fodder.map((x) => x.o.uid),
         values: fodder.map((x) => x.value),
         min: pi.n,

@@ -261,6 +261,8 @@ export type Ability = { text?: string } & (
   | { a: "assemble"; color: Color; partner: string; partnerName?: string; cond: "attacked" | "twoEquip" }
   /** 武装進化でのみ戦場に出る(秘蔵庫の合体先) */
   | { a: "evolveOnly" }
+  /** 紋章 ― 埋蔵 N:マナゾーンにあるこのカードを開拓進化で墓地に置くとき、マナ総量に+Nして数える */
+  | { a: "buried"; n: number; from?: "mana" }
   /** オーラ:クリーチャーにつける */
   | { a: "enchant" }
   /** 追加払い:唱えるときに追加でこのコストを払ってもよい(払ったら条件 kicked) */
