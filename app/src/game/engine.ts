@@ -63,6 +63,10 @@ export type Obj = {
   token: boolean;
   /** トークンの色 */
   tokenColors?: Color[];
+  /** このターンに攻撃した */
+  attackedThisTurn?: boolean;
+  /** 武装進化で合体している発明品(付け替えられない。合体先が離れると一緒に秘蔵庫に戻る) */
+  merged?: boolean;
 };
 
 export type Player = {
@@ -98,6 +102,11 @@ export type Player = {
   applauseThisTurn: Partial<Record<Applause, number>>;
   /** このターンにエントラータしたカード */
   enteredThisTurn: Set<number>;
+  /** 加護(第9.5弾)。喝采と同じ加護の枠を使う */
+  blessings: string[];
+  pioneeredThisTurn: boolean;
+  assembledThisTurn: boolean;
+  evolvedThisTurn: boolean;
 };
 
 export type TargetRef =
@@ -131,19 +140,19 @@ export type Action =
   | { type: "cycle"; uid: number }
   | { type: "equip"; uid: number }
   /** 秘蔵庫からリリース召喚する(via: "entrata" ならエントラータ) */
-  | { type: "summon"; uid: number; via?: "entrata" };
+  | { type: "summon"; uid: number; via?: "entrata" | "pioneer" | "assemble" | "evolve" };
 
 export type Decision =
   | { kind: "action"; options: Action[] }
   | { kind: "target"; prompt: string; spec: TargetSpec; options: TargetRef[]; source: Obj; effects: Effect[]; index: number }
-  | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "kicker" | "lookTop" | "mulligan" | "reclaim"; obj?: Obj }
+  | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "kicker" | "lookTop" | "mulligan" | "reclaim" | "blessing"; obj?: Obj }
   | { kind: "number"; prompt: string; min: number; max: number; reason?: "x" | "burn"; obj?: Obj }
-  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" }
+  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" | "pioneerBase" }
   | { kind: "attackers"; options: number[] }
   /** モード呪文:選択肢から1つ選ぶ(答えは番号) */
   | { kind: "mode"; prompt: string; options: string[]; source: Obj; modes: SpellMode[] }
   /** リリースするカードを選ぶ:values の合計が min 以上になるように選ぶ */
-  | { kind: "chooseSum"; prompt: string; options: number[]; values: number[]; min: number; target: Obj }
+  | { kind: "chooseSum"; prompt: string; options: number[]; values: number[]; min: number; target: Obj; minCount?: number; confirm?: string }
   | { kind: "blockers"; attackers: number[]; blockers: number[] };
 
 export type BlockAnswer = Record<number, number[]>;
@@ -185,7 +194,11 @@ export const releaseAbility = (c: Card) => abilitiesOf(c).find((a) => a.a === "r
 export const isAura = (c: Card) => abilitiesOf(c).some((a) => a.a === "enchant");
 export const isEquipment = (c: Card) => abilitiesOf(c).some((a) => a.a === "equip");
 /** 秘蔵庫のカード(リリース召喚を持つ) */
-export const isExtraCard = (c: Card) => abilitiesOf(c).some((a) => a.a === "releaseSummon" || a.a === "entrata");
+export const isExtraCard = (c: Card) => abilitiesOf(c).some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly");
+export const pioneerOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "pioneer") as Extract<Ability, { a: "pioneer" }> | undefined;
+export const assembleOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "assemble") as Extract<Ability, { a: "assemble" }> | undefined;
+/** 加護《黄金郷への道》:開拓進化で、戦場とマナゾーンの代わりにライブラリーの上から墓地に置いてよい */
+export const BLESSING_ELDORADO = "黄金郷への道";
 export const entrataOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "entrata") as Extract<Ability, { a: "entrata" }> | undefined;
 /** 喝采の枠は加護の枠(5つ)を使う */
 export const BLESSING_SLOTS = 5;
@@ -308,6 +321,10 @@ export class Game {
       applause: Object.fromEntries([...new Set(opts.decks[id].flatMap(applauseCatsOf))].slice(0, BLESSING_SLOTS).map((c) => [c, 0])),
       applauseThisTurn: {},
       enteredThisTurn: new Set(),
+      blessings: [],
+      pioneeredThisTurn: false,
+      assembledThisTurn: false,
+      evolvedThisTurn: false,
     });
     this.players = [mk(0), mk(1)];
     this.firstPlayer = opts.first ?? (this.rng() < 0.5 ? 0 : 1);
@@ -417,13 +434,25 @@ export class Game {
     o.perm = [];
     o.freeze = false;
     o.attachedTo = null;
+    o.merged = false;
+    o.attackedThisTurn = false;
     if (wasBattlefield && to !== "battlefield") {
       o.burned = false;
       o.burnCount = 0;
       o.kicked = false;
       o.dashed = false;
-      // 装備品は外れる
-      for (const q of this.players) for (const e of q.battlefield) if (e.attachedTo === o.uid && isEquipment(e.card)) e.attachedTo = null;
+      // 装備品は外れる(武装進化で合体している発明品は、一緒に秘蔵庫に戻る)
+      const mergedWith: Obj[] = [];
+      for (const q of this.players)
+        for (const e of q.battlefield)
+          if (e.attachedTo === o.uid && isEquipment(e.card)) {
+            e.attachedTo = null;
+            if (e.merged) mergedWith.push(e);
+          }
+      for (const e of mergedWith) {
+        e.merged = false;
+        this.move(e, "extra");
+      }
     }
     // 秘蔵庫のカードは、戦場を離れたら(どこへ行く場合も)秘蔵庫に戻る
     if (isExtraCard(o.card) && to !== "battlefield" && to !== "extra") {
@@ -792,6 +821,11 @@ export class Game {
       if (isCreatureCard(o.card) && o.sick) continue;
       for (const a of abilitiesOf(o.card)) {
         if (a.a !== "mana") continue;
+        // 生け贄に捧げて出すマナ(《黄金》)は最後に使う
+        if (a.sacSelf) {
+          units.push({ tapGroup: `s${o.uid}`, options: a.produce[0] === "any" ? ["W", "U", "B", "R", "G"] : a.produce.map((s) => s.replace(/[{}]/g, "")), priority: 3 });
+          continue;
+        }
         if (a.produce[0] === "any") units.push({ tapGroup: `b${o.uid}`, options: ["W", "U", "B", "R", "G"], priority: 2 });
         else if (a.produce.length > 1) {
           // 「{G}か{U}」
@@ -831,6 +865,9 @@ export class Game {
       if (g.startsWith("m")) {
         const o = pl.mana.find((m) => m.uid === Number(g.slice(1)));
         if (o) o.tapped = true;
+      } else if (g.startsWith("s")) {
+        const o = pl.battlefield.find((m) => m.uid === Number(g.slice(1)));
+        if (o) this.sacrifice(o, p);
       } else if (g.startsWith("b")) {
         const o = pl.battlefield.find((m) => m.uid === Number(g.slice(1)));
         if (o) o.tapped = true;
@@ -940,7 +977,7 @@ export class Game {
     if (this.sorcerySpeed(p))
       for (const o of pl.battlefield) {
         const eq = abilityOf(o.card, "equip");
-        if (eq && this.creatures(p).some((c) => c.uid !== o.attachedTo) && this.canPay(p, eq.cost)) out.push({ type: "equip", uid: o.uid });
+        if (eq && !o.merged && this.creatures(p).some((c) => c.uid !== o.attachedTo) && this.canPay(p, eq.cost)) out.push({ type: "equip", uid: o.uid });
       }
     for (const o of pl.battlefield)
       abilitiesOf(o.card).forEach((a, i) => {
@@ -949,6 +986,11 @@ export class Game {
     if (this.sorcerySpeed(p) && !pl.releasedThisTurn)
       for (const o of pl.extra) if (this.canRelease(p, o)) out.push({ type: "summon", uid: o.uid });
     if (this.sorcerySpeed(p)) for (const o of pl.extra) if (this.canEntrata(p, o)) out.push({ type: "summon", uid: o.uid, via: "entrata" });
+    if (this.sorcerySpeed(p)) {
+      for (const o of pl.extra) if (this.canPioneer(p, o)) out.push({ type: "summon", uid: o.uid, via: "pioneer" });
+      for (const o of pl.extra) if (this.canAssemble(p, o)) out.push({ type: "summon", uid: o.uid, via: "assemble" });
+      for (const o of pl.battlefield) if (this.canEvolve(p, o)) out.push({ type: "summon", uid: o.uid, via: "evolve" });
+    }
     return out;
   }
 
@@ -968,6 +1010,9 @@ export class Game {
       if (o && this.canCast(p, o, a.from)) await this.cast(p, o, a.from);
     } else if (a.type === "summon") {
       if (a.via === "entrata") this.entrata(p, a.uid);
+      else if (a.via === "pioneer") await this.pioneer(p, a.uid);
+      else if (a.via === "assemble") await this.assemble(p, a.uid);
+      else if (a.via === "evolve") this.evolve(p, a.uid);
       else await this.releaseSummon(p, a.uid);
     } else if (a.type === "cycle") {
       const o = this.players[p].hand.find((x) => x.uid === a.uid);
@@ -1425,6 +1470,173 @@ export class Game {
     this.enterBattlefield(o, p);
   }
 
+  // ------------------------------------------------------------ 加護・開拓進化・組み立て・武装進化(第9.5弾)
+  /** 加護の枠(喝采と共通、5つ)の空き */
+  blessingSlotsUsed(p: PlayerId) {
+    const pl = this.players[p];
+    return Object.keys(pl.applause).length + pl.blessings.length;
+  }
+
+  gainBlessing(p: PlayerId, id: string) {
+    const pl = this.players[p];
+    if (pl.blessings.includes(id) || this.blessingSlotsUsed(p) >= BLESSING_SLOTS) return;
+    pl.blessings.push(id);
+    this.addLog(`加護《${id}》を得た`, p);
+  }
+
+  /** 開拓進化の素材にできるクリーチャー */
+  pioneerBases(p: PlayerId, target: Obj): Obj[] {
+    const pi = pioneerOf(target.card);
+    if (!pi) return [];
+    return this.creatures(p).filter((o) =>
+      pi.grand ? isExtraCard(o.card) && !!pioneerOf(o.card) && !pioneerOf(o.card)!.grand : this.colorsOf(o).includes(pi.color),
+    );
+  }
+
+  /** 開拓進化で墓地に置けるカード(戦場とマナゾーン)と、そのマナ総量 */
+  pioneerFodder(p: PlayerId, base: Obj | undefined): { o: Obj; value: number }[] {
+    const pl = this.players[p];
+    return [
+      ...pl.battlefield.filter((o) => o !== base && !o.merged).map((o) => ({ o, value: o.token ? 0 : manaValue(o.card.cost) })),
+      ...pl.mana.map((o) => ({ o, value: o.faceDown ? 0 : manaValue(o.card.cost) })),
+    ];
+  }
+
+  private canMillPioneer(p: PlayerId, n: number, minCount: number) {
+    const pl = this.players[p];
+    return pl.blessings.includes(BLESSING_ELDORADO) && pl.library.length >= minCount && pl.library.reduce((s, o) => s + manaValue(o.card.cost), 0) >= n;
+  }
+
+  canPioneer(p: PlayerId, o: Obj): boolean {
+    const pi = pioneerOf(o.card);
+    const pl = this.players[p];
+    if (!pi || o.zone !== "extra" || pl.pioneeredThisTurn) return false;
+    const minCount = pi.grand ? 3 : 1;
+    return this.pioneerBases(p, o).some((b) => {
+      const f = this.pioneerFodder(p, b);
+      return (f.length >= minCount && f.reduce((s, x) => s + x.value, 0) >= pi.n) || this.canMillPioneer(p, pi.n, minCount);
+    });
+  }
+
+  private async pioneer(p: PlayerId, uid: number) {
+    const pl = this.players[p];
+    const o = pl.extra.find((x) => x.uid === uid);
+    if (!o || !this.sorcerySpeed(p) || !this.canPioneer(p, o)) return;
+    const pi = pioneerOf(o.card)!;
+    const minCount = pi.grand ? 3 : 1;
+    const word = pi.grand ? "大開拓進化" : "開拓進化";
+    const okBase = (b: Obj) => {
+      const f = this.pioneerFodder(p, b);
+      return (f.length >= minCount && f.reduce((s, x) => s + x.value, 0) >= pi.n) || this.canMillPioneer(p, pi.n, minCount);
+    };
+    const bases = this.pioneerBases(p, o).filter(okBase);
+    const [base] = bases.length === 1 ? bases : await this.askCards(p, `${o.card.name}の${word}の素材にするクリーチャーを選んでください`, bases, 1, "pioneerBase");
+    if (!base) return;
+    const fodder = this.pioneerFodder(p, base);
+    const canBoard = fodder.length >= minCount && fodder.reduce((s, x) => s + x.value, 0) >= pi.n;
+    let mill = false;
+    if (this.canMillPioneer(p, pi.n, minCount))
+      mill = !canBoard || (await this.ask<boolean>(p, { kind: "yesno", prompt: `加護《${BLESSING_ELDORADO}》:戦場とマナゾーンの代わりに、ライブラリーの上からマナ総量の合計が${pi.n}以上になるまで墓地に置きますか?`, reason: "blessing", obj: o }));
+    pl.pioneeredThisTurn = true;
+    if (mill) {
+      let sum = 0;
+      let count = 0;
+      const milled: string[] = [];
+      while ((sum < pi.n || count < minCount) && pl.library.length) {
+        const top = pl.library[0];
+        sum += manaValue(top.card.cost);
+        count++;
+        milled.push(top.card.name);
+        this.move(top, "graveyard");
+      }
+      this.addLog(`加護《${BLESSING_ELDORADO}》:ライブラリーの上から${count}枚(マナ総量${sum})を墓地に置いた(${milled.join("、")})`, p);
+      if (sum < pi.n || count < minCount) {
+        this.addLog(`ライブラリーが足りず、${word}できなかった`, p);
+        return;
+      }
+    } else {
+      const ans = await this.ask<number[]>(p, {
+        kind: "chooseSum",
+        prompt: `${o.card.name}を${word}します。墓地に置く戦場かマナゾーンのカードを、マナ総量の合計が${pi.n}以上${minCount > 1 ? `(${minCount}枚以上)` : ""}になるように選んでください`,
+        options: fodder.map((x) => x.o.uid),
+        values: fodder.map((x) => x.value),
+        min: pi.n,
+        minCount,
+        confirm: `墓地に置いて${word}する`,
+        target: o,
+      });
+      const picked = fodder.filter((x) => (ans ?? []).includes(x.o.uid));
+      // 足りなければ、価値の低い順に補う(不正な答えへの備え)
+      for (const x of [...fodder].sort((a, b) => b.value - a.value)) {
+        if (picked.reduce((s, y) => s + y.value, 0) >= pi.n && picked.length >= minCount) break;
+        if (!picked.includes(x)) picked.push(x);
+      }
+      this.addLog(`${picked.map((x) => x.o.card.name).join("、")}を墓地に置いた(マナ総量${picked.reduce((s, x) => s + x.value, 0)})`, p);
+      for (const x of picked) {
+        if (x.o.zone === "battlefield") this.die(x.o);
+        else this.move(x.o, "graveyard");
+      }
+    }
+    this.addLog(`${base.card.name}を素材に、${o.card.name}が${word}した`, p);
+    this.die(base);
+    this.usedCards.add(o.card.id);
+    this.enterBattlefield(o, p);
+  }
+
+  canAssemble(p: PlayerId, o: Obj): boolean {
+    const as = assembleOf(o.card);
+    const pl = this.players[p];
+    if (!as || o.zone !== "extra" || pl.assembledThisTurn) return false;
+    if (!this.canPay(p, o.card.cost)) return false;
+    return this.creatures(p).some((c) => !c.tapped && this.colorsOf(c).includes(as.color));
+  }
+
+  private async assemble(p: PlayerId, uid: number) {
+    const pl = this.players[p];
+    const o = pl.extra.find((x) => x.uid === uid);
+    if (!o || !this.sorcerySpeed(p) || !this.canAssemble(p, o)) return;
+    const as = assembleOf(o.card)!;
+    const makers = this.creatures(p).filter((c) => !c.tapped && this.colorsOf(c).includes(as.color));
+    const [maker] = makers.length === 1 ? makers : await this.askCards(p, `${o.card.name}を組み立てるクリーチャー(タップして、それにつける)を選んでください`, makers, 1, "pioneerBase");
+    if (!maker || !this.pay(p, o.card.cost, 0)) return;
+    pl.assembledThisTurn = true;
+    maker.tapped = true;
+    this.addLog(`${maker.card.name}をタップし、${o.card.name}を組み立てた`, p);
+    this.usedCards.add(o.card.id);
+    this.enterBattlefield(o, p);
+    if (maker.zone === "battlefield") o.attachedTo = maker.uid;
+  }
+
+  /** 武装進化できる発明品か(o は戦場の発明品) */
+  canEvolve(p: PlayerId, o: Obj): boolean {
+    const as = assembleOf(o.card);
+    const pl = this.players[p];
+    if (!as || o.zone !== "battlefield" || o.controller !== p || o.merged || o.attachedTo == null || pl.evolvedThisTurn) return false;
+    const holder = pl.battlefield.find((x) => x.uid === o.attachedTo);
+    if (!holder || !pl.extra.some((x) => x.card.id === as.partner)) return false;
+    if (as.cond === "attacked") return !!holder.attackedThisTurn;
+    return pl.battlefield.filter((e) => e.attachedTo === holder.uid && isEquipment(e.card)).length >= 2;
+  }
+
+  private evolve(p: PlayerId, uid: number) {
+    const pl = this.players[p];
+    const inv = pl.battlefield.find((x) => x.uid === uid);
+    if (!inv || !this.sorcerySpeed(p) || !this.canEvolve(p, inv)) return;
+    const as = assembleOf(inv.card)!;
+    const holder = pl.battlefield.find((x) => x.uid === inv.attachedTo)!;
+    const partner = pl.extra.find((x) => x.card.id === as.partner)!;
+    pl.evolvedThisTurn = true;
+    this.addLog(`${holder.card.name}と${inv.card.name}が武装進化し、${partner.card.name}になった`, p);
+    // 素材のクリーチャーを墓地に置く(発明品は外れるが、戦場に残る)
+    this.die(holder);
+    this.usedCards.add(partner.card.id);
+    this.enterBattlefield(partner, p);
+    if (inv.zone === "battlefield" && partner.zone === "battlefield") {
+      inv.attachedTo = partner.uid;
+      inv.merged = true;
+    }
+  }
+
   /** 戦場から墓地へ(死亡) */
   private die(o: Obj) {
     if (o.zone !== "battlefield") return;
@@ -1802,6 +2014,9 @@ export class Game {
       case "applause":
         this.gainApplause(p, e.cat, e.n, false);
         break;
+      case "blessing":
+        this.gainBlessing(p, e.id);
+        break;
       case "create": {
         for (let i = 0; i < e.n; i++) {
           const o = this.newObj(e.card as Card, p, "hand");
@@ -1971,6 +2186,7 @@ export class Game {
     const attackers = candidates.filter((o) => chosen?.includes(o.uid));
     if (attackers.length === 0) return;
     for (const o of attackers) if (!this.hasKw(o, "警戒")) o.tapped = true;
+    for (const o of attackers) o.attackedThisTurn = true;
     this.combat = { attackers: attackers.map((o) => o.uid), blocks: {} };
     this.players[p].attackersThisTurn = Math.max(this.players[p].attackersThisTurn, attackers.length);
     // 喜劇:赤か白のクリーチャー2体以上で攻撃したとき
@@ -2140,6 +2356,10 @@ export class Game {
       q.releasedThisTurn = false;
       q.applauseThisTurn = {};
       q.enteredThisTurn.clear();
+      q.pioneeredThisTurn = false;
+      q.assembledThisTurn = false;
+      q.evolvedThisTurn = false;
+      for (const o of q.battlefield) o.attackedThisTurn = false;
     }
     this.onceUsed.clear();
     // アップキープ

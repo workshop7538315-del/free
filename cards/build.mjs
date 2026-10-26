@@ -83,7 +83,7 @@ for (const c of CARDS) {
     }
   }
   // 秘蔵庫のカードはクリーチャーで、リリース召喚の数値を持つ
-  if (c.abilities.some((a) => a.a === "releaseSummon" || a.a === "entrata") && !isCreature) throw new Error(`${c.id}: 秘蔵庫のカードはクリーチャーにしてください`);
+  if (c.abilities.some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "evolveOnly") && !isCreature) throw new Error(`${c.id}: 秘蔵庫のカードはクリーチャーにしてください`);
   if (c.abilities.some((a) => a.a === "spell" && a.modes && a.modes.length < 2)) throw new Error(`${c.id}: モード呪文は2つ以上の選択肢が要ります`);
   // 強化パックの新規カードは元のカードとの関係を持つ
   if (c.basedOn) {
@@ -176,7 +176,7 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
     return cs.every((x) => colors.includes(x));
   };
   // 秘蔵庫のカードはメインには入れない
-  const pool = out.filter((c) => fits(c) && !c.abilities.some((a) => a.a === "releaseSummon" || a.a === "entrata"));
+  const pool = out.filter((c) => fits(c) && !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly"].includes(a.a)));
   const inSet = (c) => !!set && c.id.startsWith(set);
   const themed = (c) => inSet(c) || (!!theme && theme(c));
   const score = (c) => {
@@ -241,7 +241,7 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
   let ex = 0;
   for (const [id, n] of Object.entries(extra)) {
     const c = out.find((x) => x.id === id);
-    if (!c || !c.abilities.some((a) => a.a === "releaseSummon" || a.a === "entrata")) throw new Error(`秘蔵庫のカード ${id} がありません`);
+    if (!c || !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly"].includes(a.a))) throw new Error(`秘蔵庫のカード ${id} がありません`);
     if (n > 2) throw new Error(`秘蔵庫の ${id} は2枚まで`);
     deck[id] = n;
     ex += n;
@@ -260,8 +260,8 @@ const DECKS = [
   { id: "wu", name: "白青:空の守り", colors: ["W", "U"], generic: true },
   { id: "ub", name: "青黒:記憶の簒奪", colors: ["U", "B"], generic: true },
   { id: "br", name: "黒赤:灰の代償", colors: ["B", "R"], generic: true },
-  { id: "rg", name: "赤緑:大地の猛攻", colors: ["R", "G"], generic: true },
-  { id: "gw", name: "緑白:群れの行進", colors: ["G", "W"], generic: true },
+  { id: "rg", name: "赤緑:大地の猛攻", colors: ["R", "G"], generic: true, extra: { eld01: 2, eld02: 2, eld03: 2, eld05: 2 } },
+  { id: "gw", name: "緑白:群れの行進", colors: ["G", "W"], generic: true, extra: { eld01: 2, eld02: 2, eld03: 2, eld05: 2 } },
   { id: "wb", name: "白黒:命の天秤", colors: ["W", "B"], generic: true },
   { id: "ur", name: "青赤:嵐の術士", colors: ["U", "R"], generic: true, extra: { cm09: 2, cm10: 2, cm01: 2, cm04: 2 } },
   { id: "bg", name: "黒緑:輪廻の園", colors: ["B", "G"], generic: true },
@@ -273,23 +273,23 @@ const DECKS = [
   { id: "t-three", set: "thr", name: "マナ総量3:三刻の盟約(白青)", colors: ["W", "U"], allowColorless: true, theme: (c) => tag("マナ総量3")(c) || mv(c.cost) === 3, archetype: "マナ総量3" },
   { id: "t-highlander", set: "hig", name: "孤高:三色の独唱(黒赤緑)", colors: ["B", "R", "G"], highlander: true, theme: tag("孤高"), archetype: "孤高" },
   { id: "t-hoshiyomi", set: "hsy", name: "星詠み:天球の導き(白青)", colors: ["W", "U"], theme: tag("星詠み"), archetype: "星詠み" },
-  { id: "t-tekki", set: "tek", name: "鉄機:鋼の軍団(赤+欠色)", colors: ["R"], allowColorless: true, theme: tag("鉄機"), archetype: "鉄機" },
+  { id: "t-tekki", set: "tek", name: "鉄機:鋼の軍団(赤+欠色)", colors: ["R"], allowColorless: true, theme: tag("鉄機"), archetype: "鉄機", extra: { eld08: 2, eld09: 2, eld12: 2, eld13: 2 } },
   { id: "t-graveyard", set: "grv", name: "墓地:深淵の書庫(青黒)", colors: ["U", "B"], theme: tag("墓地"), archetype: "墓地" },
   { id: "t-sacrifice", set: "ari", name: "生け贄:血の宴(黒赤)", colors: ["B", "R"], theme: tag("生け贄"), archetype: "生け贄", extra: { cm05: 2, cm06: 2, cm07: 2, cm08: 2 } },
   { id: "t-life", set: "lif", name: "ライフ:命の循環(白黒)", colors: ["W", "B"], theme: tag("ライフ"), archetype: "ライフ" },
   { id: "t-counters", set: "ctr", name: "カウンター:不屈の大地(黒緑)", colors: ["B", "G"], theme: tag("カウンター"), archetype: "カウンター" },
   { id: "t-spells", set: "spl", name: "呪文:嵐の詠唱(青赤)", colors: ["U", "R"], theme: tag("呪文"), archetype: "呪文", extra: { cm01: 2, cm02: 2, cm03: 2, cm04: 2 } },
   { id: "t-equip", set: "eqp", themeSpells: 11, name: "装備:武具の行進(赤白)", colors: ["R", "W"], theme: tag("装備"), archetype: "装備", extra: { cm09: 2, cm10: 2, cm11: 2, cm12: 2 } },
-  { id: "t-heartbeat", set: "hrt", name: "鼓動:大地の脈動(赤緑)", colors: ["R", "G"], theme: tag("鼓動"), archetype: "鼓動" },
+  { id: "t-heartbeat", set: "hrt", name: "鼓動:大地の脈動(赤緑)", colors: ["R", "G"], theme: tag("鼓動"), archetype: "鼓動", extra: { eld01: 2, eld02: 2, eld03: 2, eld05: 2 } },
   { id: "t-armed-r", set: "arm", name: "マナ武装:赤単の烈火", colors: ["R"], theme: tag("マナ武装"), archetype: "マナ武装" },
-  { id: "t-armed-g", set: "arm", name: "マナ武装:緑単の巨獣", colors: ["G"], theme: tag("マナ武装"), archetype: "マナ武装" },
+  { id: "t-armed-g", set: "arm", name: "マナ武装:緑単の巨獣", colors: ["G"], theme: tag("マナ武装"), archetype: "マナ武装", extra: { eld01: 2, eld02: 2, eld03: 2, eld05: 2 } },
   { id: "t-goblin", name: "部族:ゴブリンの大群(赤単)", colors: ["R"], theme: (c) => sub("ゴブリン")(c), archetype: "部族", extra: { cm09: 2, cm10: 2, cm11: 2, cm12: 2 } },
-  { id: "t-elf", name: "部族:エルフの森(緑単)", colors: ["G"], theme: (c) => sub("エルフ")(c), archetype: "部族" },
+  { id: "t-elf", name: "部族:エルフの森(緑単)", colors: ["G"], theme: (c) => sub("エルフ")(c), archetype: "部族", extra: { eld01: 2, eld02: 2, eld03: 2, eld05: 2 } },
   { id: "t-zombie", name: "部族:ゾンビの行進(黒単)", colors: ["B"], theme: (c) => sub("ゾンビ")(c), archetype: "部族" },
   // 第4弾
-  { id: "t-crest", set: "aw", name: "紋章:大地の目覚め(緑白)", colors: ["G", "W"], allowColorless: true, theme: tag("紋章"), archetype: "紋章" },
-  { id: "t-manifest", set: "aw", name: "紋章:顕現の潮(緑青)", colors: ["G", "U"], allowColorless: true, theme: tag("紋章"), archetype: "紋章" },
-  { id: "t-duel", set: "ct", name: "決闘:剣と薔薇の作法(赤白)", colors: ["R", "W"], allowColorless: true, theme: tag("決闘"), archetype: "決闘" },
+  { id: "t-crest", set: "aw", name: "紋章:大地の目覚め(緑白)", colors: ["G", "W"], allowColorless: true, theme: tag("紋章"), archetype: "紋章", extra: { eld01: 2, eld02: 2, eld03: 2, eld05: 2 } },
+  { id: "t-manifest", set: "aw", name: "紋章:顕現の潮(緑青)", colors: ["G", "U"], allowColorless: true, theme: tag("紋章"), archetype: "紋章", extra: { eld01: 2, eld02: 2, eld03: 2, eld05: 2 } },
+  { id: "t-duel", set: "ct", name: "決闘:剣と薔薇の作法(赤白)", colors: ["R", "W"], allowColorless: true, theme: tag("決闘"), archetype: "決闘", extra: { eld06: 2, eld07: 2, eld08: 2, eld09: 2 } },
   { id: "t-intrigue", set: "ct", name: "陰謀:影の宮廷(青黒)", colors: ["U", "B"], theme: tag("陰謀"), archetype: "陰謀" },
   { id: "t-gate-beast", set: "hz", name: "秘蔵:神獣の森(緑白)", colors: ["G", "W"], theme: tag("秘蔵"), archetype: "秘蔵", core: { hz18: 4, hz21: 4, hz19: 3, hz20: 3, hz24: 3, hz42: 3, hz55: 2, hz23: 2 }, extra: { hz01: 2, hz02: 2, hz03: 2, hz04: 2 } },
   { id: "t-gate-spirit", set: "hz", name: "秘蔵:灯る祖霊(白黒)", colors: ["W", "B"], theme: tag("秘蔵"), archetype: "秘蔵", core: { hz25: 4, hz28: 4, hz26: 3, hz27: 3, hz31: 3, hz53: 2, hz75: 2, hz30: 2 }, extra: { hz05: 2, hz06: 2, hz07: 2, hz08: 2 } },
@@ -297,6 +297,8 @@ const DECKS = [
   { id: "t-cm-madness", set: "cm", name: "喝采:狂気の道化芝居(青赤)", colors: ["U", "R"], theme: applauseTheme("狂気", "呪文"), archetype: "喝采", core: { cm14: 4, cm15: 4, cm17: 4, cm16: 3, cm43: 3, cm18: 3, cm19: 3, cm20: 2, cm40: 2, cm35: 2 }, extra: { cm01: 2, cm02: 2, cm03: 2, cm04: 2 } },
   { id: "t-cm-tragedy", set: "cm", name: "喝采:血の悲劇(黒赤)", colors: ["B", "R"], theme: applauseTheme("悲劇", "生け贄"), archetype: "喝采", core: { cm27: 4, cm29: 3, cm37: 3, cm25: 3, cm41: 2, cm24: 2, cm38: 2 }, extra: { cm05: 2, cm06: 2, cm07: 2, cm08: 2 } },
   { id: "t-cm-comedy", set: "cm", name: "喝采:喜劇の一座(赤白)", colors: ["R", "W"], theme: applauseTheme("喜劇", "人間"), archetype: "喝采", core: { cm45: 4, cm31: 4, cm19: 2, cm30: 3, cm32: 3, cm34: 3, cm33: 2, cm42: 2 }, extra: { cm09: 2, cm10: 2, cm11: 2, cm12: 2 } },
+  { id: "t-eld-pioneer", set: "eld", name: "黄金郷:開拓者の進軍(緑単)", colors: ["G"], theme: tag("黄金郷"), archetype: "黄金郷", core: { eld14: 4, eld15: 4, eld18: 3, eld17: 3, eld44: 3, eld22: 2, eld19: 2, eld40: 2, eld23: 2, eld21: 2 }, extra: { eld01: 2, eld02: 2, eld03: 2, eld05: 2 } },
+  { id: "t-eld-invent", set: "eld", name: "黄金郷:発明家の工房(赤白)", colors: ["R", "W"], theme: tag("黄金郷"), archetype: "黄金郷", core: { eld24: 4, eld25: 3, eld29: 3, eld33: 3, eld34: 3, eld35: 2, eld31: 2, eld28: 2, eld26: 2 }, extra: { eld06: 2, eld07: 2, eld08: 2, eld09: 2 } },
   { id: "t-void", set: "vd", name: "虚無:色喰らいの深淵(欠色)", colors: [], allowColorless: true, theme: tag("虚無"), archetype: "虚無" },
   { id: "t-void-swarm", set: "vd", name: "虚無:群れなす虚無(欠色)", colors: [], allowColorless: true, theme: tag("虚無"), archetype: "虚無", core: { vd08: 4, vd09: 4, vd36: 4, vd13: 4, vd18: 3, vd33: 3, vd37: 3, vd38: 2, vd22: 2 } },
   { id: "t-void-titan", set: "vd", name: "虚無:始祖の目覚め(欠色)", colors: [], allowColorless: true, theme: tag("虚無"), archetype: "虚無", core: { vd06: 4, adv27: 3, vd10: 4, vd28: 3, vd14: 2, vd18: 3, vd01: 3, vd04: 2, vd41: 2, vd42: 2, vd43: 1 } },

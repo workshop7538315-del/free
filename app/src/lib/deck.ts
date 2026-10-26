@@ -8,7 +8,8 @@ export const EXTRA_SIZE = 8;
 export const EXTRA_COPIES = 2;
 
 /** 秘蔵庫のカード(リリース召喚を持つ) */
-export const isExtra = (c: Card | undefined) => !!c?.abilities?.some((a) => a.a === "releaseSummon" || a.a === "entrata");
+export const isExtra = (c: Card | undefined) =>
+  !!c?.abilities?.some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly");
 export const maxCopies = (c: Card | undefined) => (isExtra(c) ? EXTRA_COPIES : MAX_COPIES);
 
 /** メインデッキの枚数(byId があれば秘蔵庫のカードを除く) */

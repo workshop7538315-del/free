@@ -17,6 +17,7 @@ import {
   isInstantCard,
   isExtraCard,
   APPLAUSE_CAP,
+  BLESSING_ELDORADO,
   releaseAbility,
   spellAbility,
   type Action,
@@ -208,7 +209,13 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
     else if (a.type === "activate") s = scoreActivate(g, p, a);
     else if (a.type === "equip") s = main && g.step === "main1" && g.find(a.uid)?.attachedTo == null ? 2.2 : -1;
     else if (a.type === "cycle") s = scoreCycle(g, p, a.uid);
-    else if (a.type === "summon") s = a.via === "entrata" ? scoreEntrata(g, p, a.uid) : scoreSummon(g, p, a.uid);
+    else if (a.type === "summon")
+      s =
+        a.via === "entrata" ? scoreEntrata(g, p, a.uid)
+        : a.via === "pioneer" ? scorePioneer(g, p, a.uid)
+        : a.via === "assemble" ? scoreAssemble(g, p, a.uid)
+        : a.via === "evolve" ? scoreEvolve(g, p, a.uid)
+        : scoreSummon(g, p, a.uid);
     if (s > 0 && (!best || s > best.s)) best = { a, s };
   }
   return best?.a ?? pass;
@@ -640,6 +647,9 @@ function chooseYesNo(g: Game, p: PlayerId, d: Extract<Decision, { kind: "yesno" 
     }
     case "reclaim":
       return me.mana.length >= 5;
+    case "blessing":
+      // ライブラリーに余裕があれば、マナと戦場を減らさずに済む方を選ぶ
+      return me.library.length >= 12;
     case "kicker":
       return true;
     case "lookTop":
@@ -656,6 +666,9 @@ function chooseCards(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseC
   const me = g.players[p];
   let sorted: Obj[] = objs;
   switch (d.reason) {
+    case "pioneerBase":
+      sorted = [...objs].sort((a, b) => creatureValue(g, a) - creatureValue(g, b));
+      break;
     case "discard":
     case "bottom":
       sorted = [...objs].sort((a, b) => keepValue(g, p, a.card) - keepValue(g, p, b.card));
@@ -879,7 +892,13 @@ function chooseMode(g: Game, p: PlayerId, d: Extract<Decision, { kind: "mode" }>
 }
 
 /** リリースの素材として失う価値 */
-function fodderWorth(g: Game, _p: PlayerId, o: Obj): number {
+function fodderWorth(g: Game, p: PlayerId, o: Obj): number {
+  // マナゾーンのカード:マナが育っているほど手放しやすい
+  if (o.zone === "mana") {
+    const n = g.players[p].mana.length;
+    return n >= 10 ? 0.4 : n >= 8 ? 1.0 : n >= 6 ? 2.0 : 3.5;
+  }
+  if (o.token && !isCreatureCard(o.card)) return 0.3;
   if (isCreatureCard(o.card)) return creatureValue(g, o);
   // エンチャント:オーラや全体強化など、場で働いているものは少し高く見る
   const statics = abilitiesOf(o.card).filter((a) => a.a === "static" || a.a === "trigger").length;
@@ -887,7 +906,7 @@ function fodderWorth(g: Game, _p: PlayerId, o: Obj): number {
 }
 
 /** 合計が min 以上になる、失う価値のできるだけ小さい組み合わせ */
-function pickFodder(g: Game, p: PlayerId, items: { o: Obj; value: number }[], min: number): { o: Obj; value: number }[] {
+function pickFodder(g: Game, p: PlayerId, items: { o: Obj; value: number }[], min: number, minCount = 0): { o: Obj; value: number }[] {
   // 価値1あたりの損が小さい順に入れ、最後に余分なものを外す
   const sorted = [...items].sort((a, b) => fodderWorth(g, p, a.o) / Math.max(1, a.value) - fodderWorth(g, p, b.o) / Math.max(1, b.value));
   const picked: { o: Obj; value: number }[] = [];
@@ -898,7 +917,7 @@ function pickFodder(g: Game, p: PlayerId, items: { o: Obj; value: number }[], mi
     sum += x.value;
   }
   for (const x of [...picked].sort((a, b) => fodderWorth(g, p, b.o) - fodderWorth(g, p, a.o)))
-    if (sum - x.value >= min) {
+    if (sum - x.value >= min && picked.length > minCount) {
       picked.splice(picked.indexOf(x), 1);
       sum -= x.value;
     }
@@ -907,7 +926,45 @@ function pickFodder(g: Game, p: PlayerId, items: { o: Obj; value: number }[], mi
 
 function chooseSum(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseSum" }>): number[] {
   const items = d.options.map((uid, i) => ({ o: g.find(uid)!, value: d.values[i] })).filter((x) => x.o);
-  return pickFodder(g, p, items, d.min).map((x) => x.o.uid);
+  const picked = pickFodder(g, p, items, d.min, d.minCount ?? 0);
+  // 枚数が足りなければ、価値の低いものを足す
+  for (const x of [...items].sort((a, b) => fodderWorth(g, p, a.o) - fodderWorth(g, p, b.o)))
+    if (picked.length < (d.minCount ?? 0) && !picked.includes(x)) picked.push(x);
+  return picked.map((x) => x.o.uid);
+}
+
+/** 開拓進化の評価:出てくる体 − 素材のクリーチャー − 墓地に置くカード */
+function scorePioneer(g: Game, p: PlayerId, uid: number): number {
+  const o = g.players[p].extra.find((x) => x.uid === uid);
+  const pi = o ? (abilitiesOf(o.card).find((a) => a.a === "pioneer") as { n: number; grand?: boolean } | undefined) : undefined;
+  if (!o || !pi || !(g.step === "main1" || g.step === "main2")) return -1;
+  const bases = g.pioneerBases(p, o);
+  if (!bases.length) return -1;
+  const base = [...bases].sort((a, b) => creatureValue(g, a) - creatureValue(g, b))[0];
+  const me = g.players[p];
+  const gain = cardCreatureValue(o.card) + 2 + (pi.grand ? 6 : 0);
+  // 加護があり、ライブラリーに余裕があれば、山札を削る(損はほぼない)
+  if (me.blessings.includes(BLESSING_ELDORADO) && me.library.length >= 12) return gain - creatureValue(g, base);
+  const fodder = g.pioneerFodder(p, base);
+  const picked = pickFodder(g, p, fodder, pi.n, pi.grand ? 3 : 1);
+  if (picked.reduce((s, x) => s + x.value, 0) < pi.n) return -1;
+  const loss = picked.reduce((s, x) => s + fodderWorth(g, p, x.o), 0);
+  return gain - creatureValue(g, base) - loss;
+}
+
+function scoreAssemble(g: Game, p: PlayerId, uid: number): number {
+  if (!(g.step === "main1")) return -1;
+  return g.players[p].extra.some((x) => x.uid === uid) ? 3 : -1;
+}
+
+function scoreEvolve(g: Game, p: PlayerId, uid: number): number {
+  const inv = g.find(uid);
+  if (!inv || inv.attachedTo == null) return -1;
+  const holder = g.find(inv.attachedTo);
+  const partnerId = (abilitiesOf(inv.card).find((a) => a.a === "assemble") as { partner: string } | undefined)?.partner;
+  const partner = g.players[p].extra.find((x) => x.card.id === partnerId);
+  if (!holder || !partner) return -1;
+  return cardCreatureValue(partner.card) - creatureValue(g, holder) + 1;
 }
 
 /** 行動でその喝采がまだ溜まるか(デッキに関係があり、このターンの上限に達していない) */

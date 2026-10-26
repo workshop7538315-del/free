@@ -99,6 +99,12 @@ export const once = (ability) => ({ ...ability, oncePerTurn: true });
 export const releaseSummon = (n, from) => ({ a: "releaseSummon", n, ...(from ? { from } : {}) });
 /** エントラータ N【cat】:喝采【cat】をN消費して秘蔵庫から出す */
 export const entrata = (n, cat) => ({ a: "entrata", n, cat });
+/** 開拓進化【color】N(grand なら大開拓進化) */
+export const pioneer = (n, color, grand = false) => ({ a: "pioneer", n, color, ...(grand ? { grand } : {}) });
+/** 組み立て【color】:秘蔵庫の発明品。partner(ID と名前)に武装進化する */
+export const assemble = (color, partner, partnerName, cond = "attacked") => ({ a: "assemble", color, partner, partnerName, cond });
+/** 武装進化でのみ戦場に出る */
+export const evolveOnly = () => ({ a: "evolveOnly" });
 /** ウシータ(退場):秘蔵庫に戻るとき */
 export const uscita = trig("uscita");
 /** 喝采 */
@@ -233,6 +239,8 @@ export const E = {
   create: (card, n = 1) => ({ do: "create", card, n }),
   /** 喝采【cat】を N 増やす */
   applause: (cat, n = 1) => ({ do: "applause", cat, n }),
+  /** 加護を得る */
+  blessing: (id) => ({ do: "blessing", id }),
   /** 決闘:対象は [自分のクリーチャー, 相手のクリーチャー]。win は勝ったときの効果 */
   duel: (win) => ({ do: "duel", tg: [0, 1], ...(win ? { win: [win].flat() } : {}) }),
   /** このクリーチャー自身が決闘する。対象は [相手のクリーチャー] */
@@ -540,6 +548,8 @@ function effectText(e, name, abil, notes) {
       return `対戦相手のマナゾーンにある${e.crest ? "紋章を持つ" : "表向きの"}カードを${e.n}枚選び、裏向きにする。`;
     case "applause":
       return `あなたの喝采【${e.cat}】を${e.n}増やす。`;
+    case "blessing":
+      return `あなたは加護《${e.id}》を得る。`;
     case "create": {
       const c = e.card;
       const pt = c.power !== undefined ? ` ${c.power}/${c.toughness}` : "";
@@ -683,6 +693,14 @@ function abilityTextBody(abil, card) {
       return `装備 ${abil.cost}`;
     case "entrata":
       return `エントラータ ${abil.n}【${abil.cat}】`;
+    case "pioneer":
+      return abil.grand ? `大開拓進化【${COLOR_JA[abil.color]}】${abil.n}(あなたの開拓者1体の上に重ねる。3枚以上)` : `開拓進化【${COLOR_JA[abil.color]}】${abil.n}`;
+    case "assemble": {
+      const cond = abil.cond === "attacked" ? "このターン、装備しているクリーチャーが攻撃したなら" : "装備しているクリーチャーに装備品が2つ以上ついているなら";
+      return `組み立て【${COLOR_JA[abil.color]}】 / 武装進化 ― ${cond}、そのクリーチャーと${name}を《${abil.partnerName}》に武装進化してもよい。`;
+    }
+    case "evolveOnly":
+      return `${name}は武装進化でのみ戦場に出る。`;
     case "releaseSummon":
       return `リリース召喚 ${abil.n}(${(abil.from ?? [{ type: "エンチャント" }]).map((f) => (Object.keys(f).length ? filterPhrase(f, "permanent") : "パーマネント")).join("か")})`;
     case "offering":
@@ -711,6 +729,7 @@ function abilityTextBody(abil, card) {
     case "activated":
       return `${costSymbolsText(abil.cost, name)}:${bodyText(abil, name)}`;
     case "mana":
+      if (abil.sacSelf) return `${name}を生け贄に捧げる:${abil.produce[0] === "any" ? "好きな色1色のマナ1つ" : abil.produce.join("か")}を加える。`;
       if (abil.produce[0] === "any") return "{T}:好きな色1色のマナ1つを加える。";
       return `{T}:${abil.produce.join("か")}を加える。`;
     case "enchant":

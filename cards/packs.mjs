@@ -32,6 +32,7 @@ import { VOIDS } from "./sets/p7-void.mjs";
 import { BEACON, BEACON_REPRINTS } from "./sets/p8-beacon.mjs";
 import { GATE } from "./sets/p9-gate.mjs";
 import { COMMEDIA } from "./sets/p95-commedia.mjs";
+import { ELDORADO } from "./sets/p95-eldorado.mjs";
 
 export const PACKS = [
   {
@@ -125,5 +126,14 @@ export const PACKS = [
     words: ["仮面", "演劇", "狂気"],
     theme: "イタリアの即興仮面劇(コンメディア・デッラルテ)が舞台。青・黒・赤だけのパック。呪文を唱えると喝采【狂気】、生け贄に捧げると喝采【悲劇】、大勢で攻撃すると喝采【喜劇】が溜まり、喝采を消費して秘蔵庫の役者を登場させる(エントラータ)。",
     sets: [COMMEDIA],
+  },
+  {
+    id: "p95b",
+    number: 9.5,
+    name: "黄金郷の発明家",
+    kind: "新規展開",
+    words: ["開拓", "発明", "黄金郷"],
+    theme: "白・赤・緑と欠色だけのパック。緑は戦場とマナゾーンのカードを墓地に置いて秘蔵庫の開拓者を出し(開拓進化【緑】)、切り札の大開拓者エル・ドラードは加護《黄金郷への道》をもたらす。白赤はクリーチャーをタップして秘蔵庫の発明品を組み立て、条件を満たすと合体先と武装進化する。報酬は好きな色のマナになる《黄金》。",
+    sets: [ELDORADO],
   },
 ];

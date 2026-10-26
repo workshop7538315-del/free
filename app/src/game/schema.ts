@@ -159,6 +159,8 @@ export type Effect = Common &
     | { do: "create"; card: GeneratedCard; n: number }
     /** 喝采【cat】を N 増やす */
     | { do: "applause"; cat: Applause; n: number }
+    /** 加護を得る(加護の枠を使う。すでに持っていれば何もしない) */
+    | { do: "blessing"; id: string }
     /** 虚化:自分と対戦相手のマナゾーンの表向きのカードをそれぞれN枚、裏向き(欠色)にする(相手の分も自分が選ぶ) */
     | { do: "veil"; n: number }
     /** 顕現 N:自分のマナゾーンからマナ総量N以下のクリーチャー・カードを1枚戦場に出す */
@@ -249,7 +251,14 @@ export type Ability = { text?: string } & (
   | { a: "static"; st: StaticSpec; if?: Cond; from?: "mana" }
   | { a: "activated"; cost: ActivatedCost; targets?: TargetSpec[]; effects: Effect[] }
   /** {T}:マナを加える。produce は選べる候補("any"=好きな色1色) */
-  | { a: "mana"; produce: string[] }
+  /** sacSelf:このパーマネントを生け贄に捧げてマナを出す(《黄金》) */
+  | { a: "mana"; produce: string[]; sacSelf?: boolean }
+  /** 開拓進化【color】N:color のクリーチャー1体と、戦場かマナゾーンのカード(マナ総量の合計N以上)を墓地に置いて出す。grand は大開拓進化(開拓者の上に重ね、最低3枚) */
+  | { a: "pioneer"; n: number; color: Color; grand?: boolean }
+  /** 組み立て【color】:秘蔵庫の発明品(装備品)。マナコストを払い、color のクリーチャーをタップして、そのクリーチャーにつけて出す。partner と cond が武装進化 */
+  | { a: "assemble"; color: Color; partner: string; partnerName?: string; cond: "attacked" | "twoEquip" }
+  /** 武装進化でのみ戦場に出る(秘蔵庫の合体先) */
+  | { a: "evolveOnly" }
   /** オーラ:クリーチャーにつける */
   | { a: "enchant" }
   /** 追加払い:唱えるときに追加でこのコストを払ってもよい(払ったら条件 kicked) */

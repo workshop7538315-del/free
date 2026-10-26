@@ -161,7 +161,7 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
         {me.extra.length > 0 && (
           <section className="hand extra-zone" aria-label="あなたの秘蔵庫">
             <h3 className="zone-label">
-              秘蔵庫 {me.extra.length}枚<span className="zone-hint">(リリース召喚・エントラータで出す)</span>
+              秘蔵庫 {me.extra.length}枚<span className="zone-hint">(リリース召喚・エントラータ・開拓進化・組み立てで出す)</span>
             </h3>
             <div className="hand-cards">
               {me.extra.map((o) => (
@@ -246,6 +246,11 @@ function PlayerBar({ g, p, targetable, onClick }: { g: Game; p: Player; targetab
         <span>山札 {p.library.length}</span>
         <span>墓地 {p.graveyard.length}</span>
         {p.extra.length > 0 && <span>秘蔵庫 {p.extra.length}</span>}
+        {p.blessings.map((b) => (
+          <span key={b} className="applause" title="加護:加護の枠を1つ使う">
+            加護《{b}》
+          </span>
+        ))}
         {Object.entries(p.applause).map(([cat, n]) => (
           <span key={cat} className="applause" title={`喝采【${cat}】:加護の枠を1つ使う`}>
             喝采【{cat}】{n}
@@ -553,7 +558,7 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
       return (
         <>
           <p className="prompt-text">
-            {d.prompt}(合計 {sum}/{d.min})
+            {d.prompt}(合計 {sum}/{d.min}{d.minCount ? `、${chosen.length}/${d.minCount}枚` : ""})
           </p>
           <div className="prompt-actions">
             {d.options.map((u, i) => {
@@ -574,8 +579,8 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
             })}
           </div>
           <div className="prompt-actions">
-            <button type="button" className="btn btn-primary" disabled={sum < d.min} onClick={() => answer(chosen)}>
-              リリースして召喚する
+            <button type="button" className="btn btn-primary" disabled={sum < d.min || chosen.length < (d.minCount ?? 0)} onClick={() => answer(chosen)}>
+              {d.confirm ?? "リリースして召喚する"}
             </button>
           </div>
         </>
@@ -648,6 +653,13 @@ function actionLabel(g: Game, a: Action): string {
     case "cycle":
       return "循環(捨てて1枚引く)";
     case "summon": {
+      if (a.via === "pioneer") {
+        const o = g.find(a.uid);
+        const pi = o ? abilitiesOf(o.card).find((ab) => ab.a === "pioneer") : undefined;
+        return pi && pi.a === "pioneer" ? `${pi.grand ? "大開拓進化" : "開拓進化"}【${({ W: "白", U: "青", B: "黒", R: "赤", G: "緑" } as Record<string, string>)[pi.color]}】(マナ総量${pi.n}を墓地へ)` : "開拓進化";
+      }
+      if (a.via === "assemble") return "組み立てる(コストを払い、クリーチャーをタップしてつける)";
+      if (a.via === "evolve") return "武装進化する";
       if (a.via !== "entrata") return "リリース召喚する";
       const o = g.find(a.uid);
       const en = o ? abilitiesOf(o.card).find((ab) => ab.a === "entrata") : undefined;
