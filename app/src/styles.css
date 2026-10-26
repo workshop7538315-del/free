@@ -1514,3 +1514,11 @@ textarea {
 .zone-hint { font-size: 0.72rem; color: var(--muted); font-weight: 400; }
 .extra-zone .mini { border-style: dashed; }
 .flag-generated { color: var(--accent); }
+
+/* 喝采(第9.5弾) */
+.player-stats .applause {
+  padding: 0 0.4em;
+  border-radius: 999px;
+  background: color-mix(in srgb, #c0392b 14%, transparent);
+  font-weight: 600;
+}

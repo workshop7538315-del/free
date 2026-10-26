@@ -2,7 +2,7 @@
  * CPUの思考。エンジンからの質問に、簡単な評価関数で答える。
  */
 import type { Card } from "../types";
-import type { Amount, Effect, TargetSpec } from "./schema";
+import type { Amount, Applause, Effect, TargetSpec } from "./schema";
 import { cardColors, colorPips, manaValue, parseCost, COLORS, type Color } from "../lib/mana";
 import {
   abilitiesOf,
@@ -15,6 +15,8 @@ import {
   isCreatureCard,
   isEquipment,
   isInstantCard,
+  isExtraCard,
+  APPLAUSE_CAP,
   releaseAbility,
   spellAbility,
   type Action,
@@ -206,7 +208,7 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
     else if (a.type === "activate") s = scoreActivate(g, p, a);
     else if (a.type === "equip") s = main && g.step === "main1" && g.find(a.uid)?.attachedTo == null ? 2.2 : -1;
     else if (a.type === "cycle") s = scoreCycle(g, p, a.uid);
-    else if (a.type === "summon") s = scoreSummon(g, p, a.uid);
+    else if (a.type === "summon") s = a.via === "entrata" ? scoreEntrata(g, p, a.uid) : scoreSummon(g, p, a.uid);
     if (s > 0 && (!best || s > best.s)) best = { a, s };
   }
   return best?.a ?? pass;
@@ -282,6 +284,8 @@ function scoreCast(g: Game, p: PlayerId, a: Extract<Action, { type: "cast" }>, m
     : evalMode(sp.effects, sp.targets ?? []);
   const b = burnAbility(c);
   if (b) v += 0.3;
+  // 唱えると喝采【狂気】が溜まる
+  if (v > 0 && applauseRoom(g, p, "狂気")) v += 0.6;
   return v > 0.8 ? v : -1;
 }
 
@@ -436,6 +440,8 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
     }
     case "plunder":
       return Math.min(e.n, them.mana.length) * 2.2;
+    case "applause":
+      return e.n * 0.6;
     case "create":
       // 生成したカードの価値(軽い呪文やトークンを想定)
       return e.n * (0.9 + Math.min(manaValue(e.card.cost), 4) * 0.25);
@@ -499,8 +505,16 @@ function scoreActivate(g: Game, p: PlayerId, a: Extract<Action, { type: "activat
     const cheapest = Math.min(...opts.map((x) => creatureValue(g, x) - (x.token ? 2 : 0)));
     cost += Math.max(0.5, cheapest);
   }
-  if (ab.cost.sacSelf) cost += isCreatureCard(o.card) ? creatureValue(g, o) : 1.5;
+  if (ab.cost.sacSelf) cost += (isCreatureCard(o.card) ? creatureValue(g, o) : 1.5) * (isExtraCard(o.card) ? 0.3 : 1);
+  // 生け贄に捧げると喝采【悲劇】が溜まる
+  if ((ab.cost.sac || ab.cost.sacSelf) && applauseRoom(g, p, "悲劇")) value += 0.9;
   if (ab.cost.life) cost += ab.cost.life * (g.players[p].life < 8 ? 1 : 0.3);
+  if (ab.cost.applause) {
+    // 秘蔵庫にその喝采で出せる役者がいるなら、喝采は取っておきたい
+    const cat = ab.cost.applause.cat;
+    const saving = g.players[p].extra.some((x) => abilitiesOf(x.card).some((b) => b.a === "entrata" && b.cat === cat));
+    cost += ab.cost.applause.n * (saving ? 0.9 : 0.4);
+  }
   const score = value - cost;
   return score > 0.5 ? score : -1;
 }
@@ -894,6 +908,20 @@ function pickFodder(g: Game, p: PlayerId, items: { o: Obj; value: number }[], mi
 function chooseSum(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseSum" }>): number[] {
   const items = d.options.map((uid, i) => ({ o: g.find(uid)!, value: d.values[i] })).filter((x) => x.o);
   return pickFodder(g, p, items, d.min).map((x) => x.o.uid);
+}
+
+/** 行動でその喝采がまだ溜まるか(デッキに関係があり、このターンの上限に達していない) */
+function applauseRoom(g: Game, p: PlayerId, cat: Applause): boolean {
+  const pl = g.players[p];
+  return pl.applause[cat] !== undefined && (pl.applauseThisTurn[cat] ?? 0) < APPLAUSE_CAP[cat];
+}
+
+function scoreEntrata(g: Game, p: PlayerId, uid: number): number {
+  const o = g.players[p].extra.find((x) => x.uid === uid);
+  if (!o || !(g.step === "main1" || g.step === "main2")) return -1;
+  const en = abilitiesOf(o.card).find((a) => a.a === "entrata") as { n: number } | undefined;
+  if (!en) return -1;
+  return cardCreatureValue(o.card) + 1.5 - en.n * 0.1;
 }
 
 function scoreSummon(g: Game, p: PlayerId, uid: number): number {

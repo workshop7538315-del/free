@@ -20,7 +20,7 @@ for (const a of A) {
     if (a === b) continue;
     let ww = 0;
     for (let i = 0; i < SEEDS; i++) {
-      const g = new Game({ decks: [expand(decks.find((d) => d.id === a)!.cards).filter((c) => !process.env.NOEXTRA || !c.abilities.some((x) => x.a === "releaseSummon")).concat(ADD), expand(decks.find((d) => d.id === b)!.cards)], names: ["A", "B"], agents: [new CpuAgent(), new CpuAgent()], seed: i * 97 + 5, first: (i % 2) as PlayerId, maxTurns: 80 });
+      const g = new Game({ decks: [expand(decks.find((d) => d.id === a)!.cards).filter((c) => !process.env.NOEXTRA || !c.abilities.some((x) => x.a === "releaseSummon" || x.a === "entrata")).concat(ADD), expand(decks.find((d) => d.id === b)!.cards)], names: ["A", "B"], agents: [new CpuAgent(), new CpuAgent()], seed: i * Number(process.env.SEEDMUL ?? 97) + Number(process.env.SEEDADD ?? 5), first: (i % 2) as PlayerId, maxTurns: 80 });
       if ((await g.run()) === 0) ww++;
     }
     w += ww; n += SEEDS;

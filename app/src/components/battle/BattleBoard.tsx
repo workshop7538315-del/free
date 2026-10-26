@@ -161,7 +161,7 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
         {me.extra.length > 0 && (
           <section className="hand extra-zone" aria-label="あなたの秘蔵庫">
             <h3 className="zone-label">
-              秘蔵庫 {me.extra.length}枚<span className="zone-hint">(エンチャントや奉納を持つクリーチャーをリリースして出す)</span>
+              秘蔵庫 {me.extra.length}枚<span className="zone-hint">(リリース召喚・エントラータで出す)</span>
             </h3>
             <div className="hand-cards">
               {me.extra.map((o) => (
@@ -246,6 +246,11 @@ function PlayerBar({ g, p, targetable, onClick }: { g: Game; p: Player; targetab
         <span>山札 {p.library.length}</span>
         <span>墓地 {p.graveyard.length}</span>
         {p.extra.length > 0 && <span>秘蔵庫 {p.extra.length}</span>}
+        {Object.entries(p.applause).map(([cat, n]) => (
+          <span key={cat} className="applause" title={`喝采【${cat}】:加護の枠を1つ使う`}>
+            喝采【{cat}】{n}
+          </span>
+        ))}
         {p.pool.length > 0 && <span>浮きマナ {p.pool.join("")}</span>}
       </span>
       {isTurn && <span className="turn-flag">{STEP_NAMES[g.step]}</span>}
@@ -642,15 +647,19 @@ function actionLabel(g: Game, a: Action): string {
     }
     case "cycle":
       return "循環(捨てて1枚引く)";
-    case "summon":
-      return "リリース召喚する";
+    case "summon": {
+      if (a.via !== "entrata") return "リリース召喚する";
+      const o = g.find(a.uid);
+      const en = o ? abilitiesOf(o.card).find((ab) => ab.a === "entrata") : undefined;
+      return en && en.a === "entrata" ? `エントラータ(喝采【${en.cat}】を${en.n}消費して登場)` : "エントラータ";
+    }
     case "equip":
       return "装備する";
     case "activate": {
       const o = g.find(a.uid);
       const ab = o ? abilitiesOf(o.card)[a.index] : undefined;
       if (ab && ab.a === "activated")
-        return `能力を起動(${[ab.cost.mana, ab.cost.tap ? "タップ" : "", ab.cost.sac ? "生け贄" : "", ab.cost.sacSelf ? "これを生け贄" : "", ab.cost.life ? `ライフ${ab.cost.life}` : ""]
+        return `能力を起動(${[ab.cost.mana, ab.cost.tap ? "タップ" : "", ab.cost.sac ? "生け贄" : "", ab.cost.sacSelf ? "これを生け贄" : "", ab.cost.life ? `ライフ${ab.cost.life}` : "", ab.cost.applause ? `喝采【${ab.cost.applause.cat}】${ab.cost.applause.n}` : ""]
           .filter(Boolean)
           .join("、")})`;
       return "能力を起動";

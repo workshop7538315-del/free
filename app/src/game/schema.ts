@@ -23,6 +23,9 @@ export type Filter = {
   color?: Color;
 };
 
+/** 喝采のカテゴリー(第9.5弾) */
+export type Applause = "狂気" | "悲劇" | "喜劇";
+
 export type CondName =
   /** 燃焼した */
   | "burned"
@@ -66,12 +69,14 @@ export type Cond =
   /** マナ武装 N:自分のマナゾーンにその色のカードがN枚以上 */
   | { armed: Color; n: number }
   /** 指定したパーマネントをN個以上コントロールしている */
-  | { control: Filter; n: number };
+  | { control: Filter; n: number }
+  /** 喝采【cat】が N 以上 */
+  | { applause: Applause; n: number };
 
 export type CountKind = "mana" | "creatures" | "graveyard" | "colorsInMana" | "hand" | "oppCreatures" | "burned" | "crests" | "colorlessMana";
 
 /** 数。"X"=唱えたときのX、count=数を数える、perm=条件に合う自分のパーマネントの数 */
-export type Amount = number | "X" | { count: CountKind } | { count: "perm"; filter: Filter };
+export type Amount = number | "X" | { count: CountKind } | { count: "perm"; filter: Filter } | { count: "applause"; cat: Applause };
 
 export type TargetSpec =
   | {
@@ -152,6 +157,8 @@ export type Effect = Common &
     | { do: "shuffleGraveyard" }
     /** 生成:このカードをN枚、手札に加える(チャージできず、手札・スタック・戦場以外に移ると消える) */
     | { do: "create"; card: GeneratedCard; n: number }
+    /** 喝采【cat】を N 増やす */
+    | { do: "applause"; cat: Applause; n: number }
     /** 虚化:自分と対戦相手のマナゾーンの表向きのカードをそれぞれN枚、裏向き(欠色)にする(相手の分も自分が選ぶ) */
     | { do: "veil"; n: number }
     /** 顕現 N:自分のマナゾーンからマナ総量N以下のクリーチャー・カードを1枚戦場に出す */
@@ -189,7 +196,9 @@ export type TriggerEvent =
   /** このカードがどこからでも墓地に置かれたとき */
   | "toGraveyard"
   /** あなたが(filter に合う)パーマネントを生け贄に捧げるたび */
-  | "sacrifice";
+  | "sacrifice"
+  /** ウシータ:この秘蔵庫のカードが戦場を離れて秘蔵庫に戻るとき */
+  | "uscita";
 
 export type StaticSpec =
   /** 自分の(他の)クリーチャー全体の強化。filter で種族などを絞れる */
@@ -216,6 +225,8 @@ export type ActivatedCost = {
   sacSelf?: boolean;
   /** ライフを支払う */
   life?: number;
+  /** 喝采を消費する */
+  applause?: { cat: Applause; n: number };
 };
 
 export type Ability = { text?: string } & (
@@ -229,6 +240,8 @@ export type Ability = { text?: string } & (
   | { a: "spell"; targets?: TargetSpec[]; effects: Effect[]; modes?: SpellMode[] }
   /** リリース召喚 N:秘蔵庫のクリーチャー。エンチャントと奉納を持つクリーチャーをマナ総量の合計がN以上になるようにリリースし、マナを払わずに出す */
   | { a: "releaseSummon"; n: number; from?: Filter[] }
+  /** エントラータ N【cat】:喝采【cat】をN消費して、秘蔵庫からこのクリーチャーを戦場に出す(同じカードは1ターンに1回) */
+  | { a: "entrata"; n: number; cat: Applause }
   /** 奉納 N(sub):リリース召喚に使うとき、マナ総量を+Nとして数える(sub があれば、その種族のリリース召喚のときだけ) */
   | { a: "offering"; n: number; sub?: string }
   /** from: "mana" は紋章(このカードがマナゾーンにあるあいだだけ働く) */

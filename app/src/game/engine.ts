@@ -4,7 +4,7 @@
  * 人間は画面で、CPUは ai.ts で答える。
  */
 import type { Card } from "../types";
-import type { Ability, ActivatedCost, Amount, Cond, Effect, Filter, StaticSpec, TargetSpec, TriggerEvent, SpellMode } from "./schema";
+import type { Ability, ActivatedCost, Amount, Applause, Cond, Effect, Filter, StaticSpec, TargetSpec, TriggerEvent, SpellMode } from "./schema";
 import { cardColors, manaValue, parseCost, type Color } from "../lib/mana";
 import { findPayment, type ManaUnit } from "./payment";
 
@@ -92,6 +92,12 @@ export type Player = {
   spellsThisTurn: number;
   /** このターンにリリース召喚を行った */
   releasedThisTurn: boolean;
+  /** 喝采(第9.5弾)。デッキに関係するカードがあるカテゴリーだけが溜まる(加護の枠を使う) */
+  applause: Partial<Record<Applause, number>>;
+  /** このターンに行動で溜めた喝采(上限の判定用) */
+  applauseThisTurn: Partial<Record<Applause, number>>;
+  /** このターンにエントラータしたカード */
+  enteredThisTurn: Set<number>;
 };
 
 export type TargetRef =
@@ -124,8 +130,8 @@ export type Action =
   | { type: "activate"; uid: number; index: number }
   | { type: "cycle"; uid: number }
   | { type: "equip"; uid: number }
-  /** 秘蔵庫からリリース召喚する */
-  | { type: "summon"; uid: number };
+  /** 秘蔵庫からリリース召喚する(via: "entrata" ならエントラータ) */
+  | { type: "summon"; uid: number; via?: "entrata" };
 
 export type Decision =
   | { kind: "action"; options: Action[] }
@@ -179,7 +185,14 @@ export const releaseAbility = (c: Card) => abilitiesOf(c).find((a) => a.a === "r
 export const isAura = (c: Card) => abilitiesOf(c).some((a) => a.a === "enchant");
 export const isEquipment = (c: Card) => abilitiesOf(c).some((a) => a.a === "equip");
 /** 秘蔵庫のカード(リリース召喚を持つ) */
-export const isExtraCard = (c: Card) => abilitiesOf(c).some((a) => a.a === "releaseSummon");
+export const isExtraCard = (c: Card) => abilitiesOf(c).some((a) => a.a === "releaseSummon" || a.a === "entrata");
+export const entrataOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "entrata") as Extract<Ability, { a: "entrata" }> | undefined;
+/** 喝采の枠は加護の枠(5つ)を使う */
+export const BLESSING_SLOTS = 5;
+/** 行動で溜まる喝采の、1ターンの上限 */
+export const APPLAUSE_CAP: Record<Applause, number> = { 狂気: 2, 悲劇: 3, 喜劇: 3 };
+/** カードが関係する喝采のカテゴリー */
+export const applauseCatsOf = (c: Card): Applause[] => [...new Set([...JSON.stringify(c.abilities).matchAll(/"(?:cat|applause)":"(狂気|悲劇|喜劇)"/g)].map((m) => m[1] as Applause))];
 export const releaseOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "releaseSummon") as Extract<Ability, { a: "releaseSummon" }> | undefined;
 export const offeringOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "offering") as Extract<Ability, { a: "offering" }> | undefined;
 /** 紋章(マナゾーンで働く能力)か */
@@ -291,6 +304,10 @@ export class Game {
       attackersThisTurn: 0,
       spellsThisTurn: 0,
       releasedThisTurn: false,
+      // 喝采:そのカテゴリーに関係するメインのカードを唱えると「幕が上がり」、加護の枠を使って0から溜まり始める
+      applause: {},
+      applauseThisTurn: {},
+      enteredThisTurn: new Set(),
     });
     this.players = [mk(0), mk(1)];
     this.firstPlayer = opts.first ?? (this.rng() < 0.5 ? 0 : 1);
@@ -413,6 +430,10 @@ export class Game {
       to = "extra";
       o.faceDown = false;
       this.addLog(`${o.card.name}は秘蔵庫に戻った`, o.owner);
+      // ウシータ(退場):秘蔵庫に戻るときに誘発する
+      if (wasBattlefield)
+        for (const ab of abilitiesOf(o.card))
+          if (ab.a === "trigger" && ab.on === "uscita") this.pendingTriggers.push({ obj: o, ability: ab, controller: o.owner });
     }
     o.controller = opts.controller ?? o.owner;
     o.zone = to;
@@ -460,6 +481,7 @@ export class Game {
     const pl = this.players[p];
     if (typeof c === "object") {
       if ("armed" in c) return pl.mana.filter((o) => manaColors(o).includes(c.armed)).length >= c.n;
+      if ("applause" in c) return (pl.applause[c.applause] ?? 0) >= c.n;
       return pl.battlefield.filter((o) => matchFilter(o.card, c.control, this.colorsOf(o))).length >= c.n;
     }
     switch (c) {
@@ -528,6 +550,8 @@ export class Game {
         return new Set(pl.mana.flatMap(manaColors)).size;
       case "perm":
         return pl.battlefield.filter((o) => matchFilter(o.card, n.filter, this.colorsOf(o))).length;
+      case "applause":
+        return pl.applause[n.cat] ?? 0;
     }
   }
 
@@ -892,6 +916,7 @@ export class Game {
     if (a.cost.tap && (o.tapped || (isCreatureCard(o.card) && o.sick))) return false;
     if (a.cost.sac && this.sacOptions(p, a.cost).length === 0) return false;
     if (a.cost.life && this.players[p].life <= a.cost.life) return false;
+    if (a.cost.applause && (this.players[p].applause[a.cost.applause.cat] ?? 0) < a.cost.applause.n) return false;
     if (a.cost.mana && !this.canPay(p, a.cost.mana, 0, a.cost.tap ? o : undefined)) return false;
     if (a.targets) for (const t of a.targets) if (this.targetOptions(t, p).length === 0) return false;
     return true;
@@ -923,6 +948,7 @@ export class Game {
       });
     if (this.sorcerySpeed(p) && !pl.releasedThisTurn)
       for (const o of pl.extra) if (this.canRelease(p, o)) out.push({ type: "summon", uid: o.uid });
+    if (this.sorcerySpeed(p)) for (const o of pl.extra) if (this.canEntrata(p, o)) out.push({ type: "summon", uid: o.uid, via: "entrata" });
     return out;
   }
 
@@ -934,6 +960,7 @@ export class Game {
       this.players[p].chargesUsed++;
       if (abilitiesOf(o.card).some((ab) => ab.a === "trigger" && ab.on === "charge")) this.usedCards.add(o.card.id);
       this.addLog(`${o.card.name}をチャージした`, p);
+      this.openCurtain(p, o.card);
       this.putIntoMana(o, p);
     } else if (a.type === "cast") {
       const pl = this.players[p];
@@ -941,7 +968,8 @@ export class Game {
       const o = zone.find((x) => x.uid === a.uid);
       if (o && this.canCast(p, o, a.from)) await this.cast(p, o, a.from);
     } else if (a.type === "summon") {
-      await this.releaseSummon(p, a.uid);
+      if (a.via === "entrata") this.entrata(p, a.uid);
+      else await this.releaseSummon(p, a.uid);
     } else if (a.type === "cycle") {
       const o = this.players[p].hand.find((x) => x.uid === a.uid);
       const cy = o && abilityOf(o.card, "cycling");
@@ -1036,7 +1064,11 @@ export class Game {
     }
     this.move(o, "stack");
     this.usedCards.add(c.id);
-    if (isInstantCard(c) || isSorceryCard(c)) this.players[p].spellsThisTurn++;
+    this.openCurtain(p, c);
+    if (isInstantCard(c) || isSorceryCard(c)) {
+      this.players[p].spellsThisTurn++;
+      this.gainApplause(p, "狂気", 1, true);
+    }
     // 「唱えたとき」(呪文より先に解決する。打ち消されても失われない)
     for (const ab of abilitiesOf(c)) if (ab.a === "trigger" && ab.on === "castSelf") this.pendingTriggers.push({ obj: o, ability: ab, controller: p });
     const item: StackItem = {
@@ -1080,6 +1112,7 @@ export class Game {
       if (victim) this.sacrifice(victim, p);
     }
     if (a.cost.sacSelf) this.sacrifice(o, p);
+    if (a.cost.applause) this.spendApplause(p, a.cost.applause.cat, a.cost.applause.n);
     this.usedCards.add(o.card.id);
     this.stack.push({ id: this.stackId++, kind: "activated", obj: o, controller: p, ability: a, targets, burned: false, burnCount: 0, kicked: false, dashed: false, flashback: false, x: 0 });
     this.addLog(`${o.card.name}の能力を起動した`, p);
@@ -1294,6 +1327,8 @@ export class Game {
   private sacrifice(o: Obj, p: PlayerId) {
     if (o.zone !== "battlefield") return;
     this.addLog(`${o.card.name}を生け贄に捧げた`, p);
+    // 悲劇:生け贄に捧げるか、トークンでないクリーチャーが死亡するたび(クリーチャーは die の側で数える)
+    if (!isCreatureCard(o.card) || o.token) this.gainApplause(p, "悲劇", 1, true);
     const card = o.card;
     const colors = this.colorsOf(o);
     for (const src of this.sources(p))
@@ -1352,6 +1387,54 @@ export class Game {
     this.enterBattlefield(o, p);
   }
 
+  // ------------------------------------------------------------ 喝采とエントラータ(第9.5弾)
+  /** 喝采を増やす。capped なら行動で溜まる分として1ターンの上限を守る。デッキに関係のないカテゴリーは溜まらない */
+  gainApplause(p: PlayerId, cat: Applause, n: number, capped: boolean) {
+    const pl = this.players[p];
+    if (pl.applause[cat] === undefined || n <= 0) return;
+    let add = n;
+    if (capped) {
+      add = Math.min(n, APPLAUSE_CAP[cat] - (pl.applauseThisTurn[cat] ?? 0));
+      if (add <= 0) return;
+      pl.applauseThisTurn[cat] = (pl.applauseThisTurn[cat] ?? 0) + add;
+    }
+    pl.applause[cat] = (pl.applause[cat] ?? 0) + add;
+    this.addLog(`喝采【${cat}】+${add}(${pl.applause[cat]})`, p);
+  }
+
+  /** 開幕:喝采に関係するカードを唱えるかチャージすると、そのカテゴリーの喝采が溜まり始める(秘蔵庫のカードだけでは始まらない) */
+  private openCurtain(p: PlayerId, c: Card) {
+    const pl = this.players[p];
+    for (const cat of applauseCatsOf(c)) {
+      if (pl.applause[cat] !== undefined || Object.keys(pl.applause).length >= BLESSING_SLOTS) continue;
+      pl.applause[cat] = 0;
+      this.addLog(`喝采【${cat}】の幕が上がった`, p);
+    }
+  }
+
+  private spendApplause(p: PlayerId, cat: Applause, n: number) {
+    const pl = this.players[p];
+    pl.applause[cat] = Math.max(0, (pl.applause[cat] ?? 0) - n);
+  }
+
+  canEntrata(p: PlayerId, o: Obj): boolean {
+    const en = entrataOf(o.card);
+    const pl = this.players[p];
+    return !!en && o.zone === "extra" && !pl.enteredThisTurn.has(o.uid) && (pl.applause[en.cat] ?? 0) >= en.n;
+  }
+
+  private entrata(p: PlayerId, uid: number) {
+    const pl = this.players[p];
+    const o = pl.extra.find((x) => x.uid === uid);
+    if (!o || !this.sorcerySpeed(p) || !this.canEntrata(p, o)) return;
+    const en = entrataOf(o.card)!;
+    this.spendApplause(p, en.cat, en.n);
+    pl.enteredThisTurn.add(o.uid);
+    this.addLog(`喝采【${en.cat}】を${en.n}消費し、${o.card.name}がエントラータ(登場)した`, p);
+    this.usedCards.add(o.card.id);
+    this.enterBattlefield(o, p);
+  }
+
   /** 戦場から墓地へ(死亡) */
   private die(o: Obj) {
     if (o.zone !== "battlefield") return;
@@ -1362,6 +1445,7 @@ export class Game {
     const rinne = wasCreature && !o.token && this.hasKw(o, "輪廻");
     this.move(o, "graveyard");
     this.addLog(`${o.card.name}が墓地に置かれた`, controller);
+    if (wasCreature && !o.token) this.gainApplause(controller, "悲劇", 1, true);
     if (wasCreature) {
       for (const ab of dyingAbilities) if (ab.a === "trigger" && ab.on === "dies") this.pendingTriggers.push({ obj: o, ability: ab, controller });
       this.queueTriggers("allyDies", this.sources(controller));
@@ -1724,6 +1808,9 @@ export class Game {
           );
         break;
       }
+      case "applause":
+        this.gainApplause(p, e.cat, e.n, false);
+        break;
       case "create": {
         for (let i = 0; i < e.n; i++) {
           const o = this.newObj(e.card as Card, p, "hand");
@@ -1895,6 +1982,7 @@ export class Game {
     for (const o of attackers) if (!this.hasKw(o, "警戒")) o.tapped = true;
     this.combat = { attackers: attackers.map((o) => o.uid), blocks: {} };
     this.players[p].attackersThisTurn = Math.max(this.players[p].attackersThisTurn, attackers.length);
+    if (attackers.length >= 2) this.gainApplause(p, "喜劇", attackers.length >= 3 ? 2 : 1, true);
     this.addLog(`${attackers.map((o) => o.card.name).join("、")}で攻撃した`, p);
     this.queueTriggers("attacks", attackers);
     await this.priorityStep();
@@ -2057,6 +2145,8 @@ export class Game {
       q.attackersThisTurn = 0;
       q.spellsThisTurn = 0;
       q.releasedThisTurn = false;
+      q.applauseThisTurn = {};
+      q.enteredThisTurn.clear();
     }
     this.onceUsed.clear();
     // アップキープ

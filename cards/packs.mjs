@@ -31,6 +31,7 @@ import { COURT } from "./sets/p6-court.mjs";
 import { VOIDS } from "./sets/p7-void.mjs";
 import { BEACON, BEACON_REPRINTS } from "./sets/p8-beacon.mjs";
 import { GATE } from "./sets/p9-gate.mjs";
+import { COMMEDIA } from "./sets/p95-commedia.mjs";
 
 export const PACKS = [
   {
@@ -115,5 +116,14 @@ export const PACKS = [
     words: ["奉納", "リリース", "秘蔵"],
     theme: "メインのデッキとは別に、8枚の「秘蔵庫」を持つ。軽いエンチャントや「奉納」を持つクリーチャーで手札とマナを整え、それらを生け贄に捧げて(リリース召喚)、秘蔵庫の神獣・祖霊・機神をコストを支払わずに呼び出す。捧げずに残せば、ドローやマナを生み続ける。",
     sets: [GATE],
+  },
+  {
+    id: "p95a",
+    number: 9.5,
+    name: "仮面劇場の狂宴",
+    kind: "新規展開",
+    words: ["仮面", "演劇", "狂気"],
+    theme: "イタリアの即興仮面劇(コンメディア・デッラルテ)が舞台。青・黒・赤だけのパック。呪文を唱えると喝采【狂気】、生け贄に捧げると喝采【悲劇】、大勢で攻撃すると喝采【喜劇】が溜まり、喝采を消費して秘蔵庫の役者を登場させる(エントラータ)。",
+    sets: [COMMEDIA],
   },
 ];

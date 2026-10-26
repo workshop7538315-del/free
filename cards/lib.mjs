@@ -97,6 +97,12 @@ export const once = (ability) => ({ ...ability, oncePerTurn: true });
 /** リリース召喚 N(秘蔵庫のクリーチャー) */
 /** リリース召喚 N:from は素材にできるパーマネントの条件の一覧(省略するとエンチャント)。{} はトークン以外のすべて */
 export const releaseSummon = (n, from) => ({ a: "releaseSummon", n, ...(from ? { from } : {}) });
+/** エントラータ N【cat】:喝采【cat】をN消費して秘蔵庫から出す */
+export const entrata = (n, cat) => ({ a: "entrata", n, cat });
+/** ウシータ(退場):秘蔵庫に戻るとき */
+export const uscita = trig("uscita");
+/** 喝采 */
+export const applause = (cat, n) => ({ applause: cat, n });
 /** 奉納 N(sub) */
 export const offering = (n, sub) => ({ a: "offering", n, ...(sub ? { sub } : {}) });
 /** モード呪文:modes は [ラベル, 効果, 対象] の配列 */
@@ -225,6 +231,8 @@ export const E = {
   manifest: (maxMV, haste = false) => ({ do: "manifest", maxMV, ...(haste ? { haste } : {}) }),
   /** 生成:card(gen で作る)をN枚手札に加える */
   create: (card, n = 1) => ({ do: "create", card, n }),
+  /** 喝采【cat】を N 増やす */
+  applause: (cat, n = 1) => ({ do: "applause", cat, n }),
   /** 決闘:対象は [自分のクリーチャー, 相手のクリーチャー]。win は勝ったときの効果 */
   duel: (win) => ({ do: "duel", tg: [0, 1], ...(win ? { win: [win].flat() } : {}) }),
   /** このクリーチャー自身が決闘する。対象は [相手のクリーチャー] */
@@ -287,10 +295,12 @@ const PER_TEXT = {
   colorlessMana: "あなたのマナゾーンにある欠色のカード1枚につき",
 };
 function countText(n) {
+  if (n.count === "applause") return `あなたの喝采【${n.cat}】の数`;
   if (n.count === "perm") return `あなたがコントロールする${filterPhrase(n.filter, "permanent")}の数`;
   return COUNT_TEXT[n.count];
 }
 function perText(n) {
+  if (n.count === "applause") return `あなたの喝采【${n.cat}】1につき`;
   if (n.count === "perm") return `あなたがコントロールする${filterPhrase(n.filter, "permanent")}1${unitOf(n.filter)}につき`;
   return PER_TEXT[n.count];
 }
@@ -307,6 +317,7 @@ function amountText(n, notes) {
 export function condLabel(c) {
   if (typeof c === "object") {
     if ("armed" in c) return `マナ武装 ${c.n}(${COLOR_JA[c.armed]})`;
+    if ("applause" in c) return `喝采【${c.applause}】${c.n}`;
     return null;
   }
   return (
@@ -355,6 +366,7 @@ function condWhile(c) {
 function condPlain(c) {
   if (typeof c === "object") {
     if ("armed" in c) return `あなたのマナゾーンに${COLOR_JA[c.armed]}のカードが${c.n}枚以上ある`;
+    if ("applause" in c) return `あなたの喝采【${c.applause}】が${c.n}以上ある`;
     return `あなたが${filterPhrase(c.control, "permanent")}を${c.n}${unitOf(c.control)}以上コントロールしている`;
   }
   return {
@@ -526,6 +538,8 @@ function effectText(e, name, abil, notes) {
     case "veilOpp":
       if (e.all) return "対戦相手のマナゾーンにある表向きのカードをすべて裏向きにする。";
       return `対戦相手のマナゾーンにある${e.crest ? "紋章を持つ" : "表向きの"}カードを${e.n}枚選び、裏向きにする。`;
+    case "applause":
+      return `あなたの喝采【${e.cat}】を${e.n}増やす。`;
     case "create": {
       const c = e.card;
       const pt = c.power !== undefined ? ` ${c.power}/${c.toughness}` : "";
@@ -592,6 +606,7 @@ const TRIGGER_PREFIX = {
   castSelf: (n) => `あなたが${n}を唱えたとき、`,
   sacrifice: (n, f) => `あなたが${f ? filterPhrase(f, "permanent") : "パーマネント"}を生け贄に捧げるたび、`,
   toGraveyard: (n) => `${n}がどこからでも墓地に置かれたとき、`,
+  uscita: () => "ウシータ ― ",
 };
 
 function staticText(abil, name, card) {
@@ -639,6 +654,7 @@ function costSymbolsText(cost, name) {
   if (cost.life) parts.push(`${cost.life}点のライフを支払う`);
   if (cost.sac) parts.push(`${filterPhrase(cost.sac, "creature")}を1体生け贄に捧げる`);
   if (cost.sacSelf) parts.push(`${name}を生け贄に捧げる`);
+  if (cost.applause) parts.push(`喝采【${cost.applause.cat}】を${cost.applause.n}消費する`);
   return parts.join(", ");
 }
 
@@ -665,6 +681,8 @@ function abilityTextBody(abil, card) {
       return `循環 ${abil.cost}`;
     case "equip":
       return `装備 ${abil.cost}`;
+    case "entrata":
+      return `エントラータ ${abil.n}【${abil.cat}】`;
     case "releaseSummon":
       return `リリース召喚 ${abil.n}(${(abil.from ?? [{ type: "エンチャント" }]).map((f) => (Object.keys(f).length ? filterPhrase(f, "permanent") : "パーマネント")).join("か")})`;
     case "offering":

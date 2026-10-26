@@ -31,7 +31,8 @@ for (const pack of PACKS) {
 const PACK_IDS = new Set(PACKS.map((p) => p.id));
 if (PACK_IDS.size !== PACKS.length) throw new Error("パックIDが重複しています");
 PACKS.forEach((p, i) => {
-  if (p.number !== i + 1) throw new Error(`${p.name}:第${p.number}弾の番号が順番になっていません`);
+  // 番号は昇順(9.5弾のような小数や、同じ番号の複数パックも可)
+  if (i > 0 && p.number < PACKS[i - 1].number) throw new Error(`${p.name}:第${p.number}弾の番号が順番になっていません`);
   if (!["新規展開", "既存カード強化"].includes(p.kind)) throw new Error(`${p.name}:種類は「新規展開」か「既存カード強化」`);
   if (!Array.isArray(p.words) || p.words.length !== 3) throw new Error(`${p.name}:テーマの単語は3つ`);
 });
@@ -82,7 +83,7 @@ for (const c of CARDS) {
     }
   }
   // 秘蔵庫のカードはクリーチャーで、リリース召喚の数値を持つ
-  if (c.abilities.some((a) => a.a === "releaseSummon") && !isCreature) throw new Error(`${c.id}: 秘蔵庫のカードはクリーチャーにしてください`);
+  if (c.abilities.some((a) => a.a === "releaseSummon" || a.a === "entrata") && !isCreature) throw new Error(`${c.id}: 秘蔵庫のカードはクリーチャーにしてください`);
   if (c.abilities.some((a) => a.a === "spell" && a.modes && a.modes.length < 2)) throw new Error(`${c.id}: モード呪文は2つ以上の選択肢が要ります`);
   // 強化パックの新規カードは元のカードとの関係を持つ
   if (c.basedOn) {
@@ -175,7 +176,7 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
     return cs.every((x) => colors.includes(x));
   };
   // 秘蔵庫のカードはメインには入れない
-  const pool = out.filter((c) => fits(c) && !c.abilities.some((a) => a.a === "releaseSummon"));
+  const pool = out.filter((c) => fits(c) && !c.abilities.some((a) => a.a === "releaseSummon" || a.a === "entrata"));
   const inSet = (c) => !!set && c.id.startsWith(set);
   const themed = (c) => inSet(c) || (!!theme && theme(c));
   const score = (c) => {
@@ -240,7 +241,7 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
   let ex = 0;
   for (const [id, n] of Object.entries(extra)) {
     const c = out.find((x) => x.id === id);
-    if (!c || !c.abilities.some((a) => a.a === "releaseSummon")) throw new Error(`秘蔵庫のカード ${id} がありません`);
+    if (!c || !c.abilities.some((a) => a.a === "releaseSummon" || a.a === "entrata")) throw new Error(`秘蔵庫のカード ${id} がありません`);
     if (n > 2) throw new Error(`秘蔵庫の ${id} は2枚まで`);
     deck[id] = n;
     ex += n;
@@ -252,6 +253,8 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
 const tag = (t) => (c) => c.tags?.includes(t);
 const sub = (s) => (c) => (c.subtype ?? "").split("・").includes(s);
 
+// 喝采デッキのテーマ:そのカテゴリーの喝采カードと、元になったアーキタイプのカード
+const applauseTheme = (cat, base) => (c) => c.tags?.includes(base) || (c.tags?.includes("喝采") && JSON.stringify(c.abilities).includes(cat));
 const DECKS = [
   // 2色の汎用デッキ(最初のセットのカード中心)
   { id: "wu", name: "白青:空の守り", colors: ["W", "U"], generic: true },
@@ -262,7 +265,7 @@ const DECKS = [
   { id: "wb", name: "白黒:命の天秤", colors: ["W", "B"], generic: true },
   { id: "ur", name: "青赤:嵐の術士", colors: ["U", "R"], generic: true },
   { id: "bg", name: "黒緑:輪廻の園", colors: ["B", "G"], generic: true },
-  { id: "rw", name: "赤白:先陣の旗", colors: ["R", "W"], generic: true, core: { cb35: 4, cb37: 2, cb36: 3, cb40: 3, cb72: 4, cb76: 2, cb68: 2 } },
+  { id: "rw", name: "赤白:先陣の旗", colors: ["R", "W"], generic: true, core: { cb35: 4, cb37: 2, cb36: 3, cb40: 3, cb72: 4, cb76: 2, cb68: 2, cm31: 3, cm33: 1, cm45: 2 }, extra: { cm09: 2, cm10: 2, cm11: 2, cm12: 2 } },
   { id: "gu", name: "緑青:満ちる大海", colors: ["G", "U"], generic: true },
   // テーマデッキ
   { id: "t-human", set: "hum", name: "人間:民衆の蜂起(白赤)", colors: ["W", "R"], theme: tag("人間"), archetype: "人間" },
@@ -272,10 +275,10 @@ const DECKS = [
   { id: "t-hoshiyomi", set: "hsy", name: "星詠み:天球の導き(白青)", colors: ["W", "U"], theme: tag("星詠み"), archetype: "星詠み" },
   { id: "t-tekki", set: "tek", name: "鉄機:鋼の軍団(赤+欠色)", colors: ["R"], allowColorless: true, theme: tag("鉄機"), archetype: "鉄機" },
   { id: "t-graveyard", set: "grv", name: "墓地:深淵の書庫(青黒)", colors: ["U", "B"], theme: tag("墓地"), archetype: "墓地" },
-  { id: "t-sacrifice", set: "ari", name: "生け贄:血の宴(黒赤)", colors: ["B", "R"], theme: tag("生け贄"), archetype: "生け贄" },
+  { id: "t-sacrifice", set: "ari", name: "生け贄:血の宴(黒赤)", colors: ["B", "R"], theme: tag("生け贄"), archetype: "生け贄", core: { cm27: 3, cm24: 2, cm38: 1 }, extra: { cm05: 2, cm06: 2, cm07: 2, cm08: 2 } },
   { id: "t-life", set: "lif", name: "ライフ:命の循環(白黒)", colors: ["W", "B"], theme: tag("ライフ"), archetype: "ライフ" },
   { id: "t-counters", set: "ctr", name: "カウンター:不屈の大地(黒緑)", colors: ["B", "G"], theme: tag("カウンター"), archetype: "カウンター" },
-  { id: "t-spells", set: "spl", name: "呪文:嵐の詠唱(青赤)", colors: ["U", "R"], theme: tag("呪文"), archetype: "呪文" },
+  { id: "t-spells", set: "spl", name: "呪文:嵐の詠唱(青赤)", colors: ["U", "R"], theme: tag("呪文"), archetype: "呪文", core: { cm15: 3, cm43: 2, cm40: 1 }, extra: { cm01: 2, cm02: 2, cm03: 2, cm04: 2 } },
   { id: "t-equip", set: "eqp", themeSpells: 11, name: "装備:武具の行進(赤白)", colors: ["R", "W"], theme: tag("装備"), archetype: "装備" },
   { id: "t-heartbeat", set: "hrt", name: "鼓動:大地の脈動(赤緑)", colors: ["R", "G"], theme: tag("鼓動"), archetype: "鼓動" },
   { id: "t-armed-r", set: "arm", name: "マナ武装:赤単の烈火", colors: ["R"], theme: tag("マナ武装"), archetype: "マナ武装" },
@@ -291,6 +294,9 @@ const DECKS = [
   { id: "t-gate-beast", set: "hz", name: "秘蔵:神獣の森(緑白)", colors: ["G", "W"], theme: tag("秘蔵"), archetype: "秘蔵", core: { hz18: 4, hz21: 4, hz19: 3, hz20: 3, hz24: 3, hz42: 3, hz55: 2, hz23: 2 }, extra: { hz01: 2, hz02: 2, hz03: 2, hz04: 2 } },
   { id: "t-gate-spirit", set: "hz", name: "秘蔵:灯る祖霊(白黒)", colors: ["W", "B"], theme: tag("秘蔵"), archetype: "秘蔵", core: { hz25: 4, hz28: 4, hz26: 3, hz27: 3, hz31: 3, hz53: 2, hz75: 2, hz30: 2 }, extra: { hz05: 2, hz06: 2, hz07: 2, hz08: 2 } },
   { id: "t-gate-machine", set: "hz", name: "秘蔵:目覚める機神(青赤)", colors: ["U", "R"], theme: tag("秘蔵"), archetype: "秘蔵", core: { hz32: 4, hz35: 4, hz34: 3, hz33: 3, hz38: 3, hz47: 3, hz76: 2, hz61: 2 }, extra: { hz09: 2, hz10: 2, hz11: 2, hz12: 2 } },
+  { id: "t-cm-madness", set: "cm", name: "喝采:狂気の道化芝居(青赤)", colors: ["U", "R"], theme: applauseTheme("狂気", "呪文"), archetype: "喝采", core: { cm14: 4, cm15: 4, cm17: 4, cm16: 3, cm43: 3, cm18: 3, cm19: 3, cm20: 2, cm40: 2, cm35: 2 }, extra: { cm01: 2, cm02: 2, cm03: 2, cm04: 2 } },
+  { id: "t-cm-tragedy", set: "cm", name: "喝采:血の悲劇(黒赤)", colors: ["B", "R"], theme: applauseTheme("悲劇", "生け贄"), archetype: "喝采", core: { cm27: 4, cm29: 3, cm37: 3, cm25: 3, cm41: 2, cm24: 2, cm38: 2 }, extra: { cm05: 2, cm06: 2, cm07: 2, cm08: 2 } },
+  { id: "t-cm-comedy", set: "cm", name: "喝采:喜劇の一座(赤白)", colors: ["R", "W"], theme: applauseTheme("喜劇", "人間"), archetype: "喝采", core: { cm45: 4, cm31: 4, cm19: 2, cm30: 3, cm32: 3, cm34: 3, cm33: 2, cm42: 2 }, extra: { cm09: 2, cm10: 2, cm11: 2, cm12: 2 } },
   { id: "t-void", set: "vd", name: "虚無:色喰らいの深淵(欠色)", colors: [], allowColorless: true, theme: tag("虚無"), archetype: "虚無" },
   { id: "t-void-swarm", set: "vd", name: "虚無:群れなす虚無(欠色)", colors: [], allowColorless: true, theme: tag("虚無"), archetype: "虚無", core: { vd08: 4, vd09: 4, vd36: 4, vd13: 4, vd18: 3, vd33: 3, vd37: 3, vd38: 2, vd22: 2 } },
   { id: "t-void-titan", set: "vd", name: "虚無:始祖の目覚め(欠色)", colors: [], allowColorless: true, theme: tag("虚無"), archetype: "虚無", core: { vd06: 4, adv27: 3, vd10: 4, vd28: 3, vd14: 2, vd18: 3, vd01: 3, vd04: 2, vd41: 2, vd42: 2, vd43: 1 } },
