@@ -304,8 +304,8 @@ export class Game {
       attackersThisTurn: 0,
       spellsThisTurn: 0,
       releasedThisTurn: false,
-      // 喝采:そのカテゴリーに関係するメインのカードを唱えると「幕が上がり」、加護の枠を使って0から溜まり始める
-      applause: {},
+      // 喝采:デッキ(メインか秘蔵庫)に関係するカードがあるカテゴリーだけ、加護の枠を使って0から溜まる
+      applause: Object.fromEntries([...new Set(opts.decks[id].flatMap(applauseCatsOf))].slice(0, BLESSING_SLOTS).map((c) => [c, 0])),
       applauseThisTurn: {},
       enteredThisTurn: new Set(),
     });
@@ -960,7 +960,6 @@ export class Game {
       this.players[p].chargesUsed++;
       if (abilitiesOf(o.card).some((ab) => ab.a === "trigger" && ab.on === "charge")) this.usedCards.add(o.card.id);
       this.addLog(`${o.card.name}をチャージした`, p);
-      this.openCurtain(p, o.card);
       this.putIntoMana(o, p);
     } else if (a.type === "cast") {
       const pl = this.players[p];
@@ -1064,10 +1063,10 @@ export class Game {
     }
     this.move(o, "stack");
     this.usedCards.add(c.id);
-    this.openCurtain(p, c);
     if (isInstantCard(c) || isSorceryCard(c)) {
       this.players[p].spellsThisTurn++;
-      this.gainApplause(p, "狂気", 1, true);
+      // 狂気:青か赤のインスタントかソーサリー
+      if (cardColors(c.cost).some((x) => x === "U" || x === "R")) this.gainApplause(p, "狂気", 1, true);
     }
     // 「唱えたとき」(呪文より先に解決する。打ち消されても失われない)
     for (const ab of abilitiesOf(c)) if (ab.a === "trigger" && ab.on === "castSelf") this.pendingTriggers.push({ obj: o, ability: ab, controller: p });
@@ -1328,7 +1327,8 @@ export class Game {
     if (o.zone !== "battlefield") return;
     this.addLog(`${o.card.name}を生け贄に捧げた`, p);
     // 悲劇:生け贄に捧げるか、トークンでないクリーチャーが死亡するたび(クリーチャーは die の側で数える)
-    if (!isCreatureCard(o.card) || o.token) this.gainApplause(p, "悲劇", 1, true);
+    // 悲劇は黒か赤のものだけ
+    if ((!isCreatureCard(o.card) || o.token) && this.colorsOf(o).some((x) => x === "B" || x === "R")) this.gainApplause(p, "悲劇", 1, true);
     const card = o.card;
     const colors = this.colorsOf(o);
     for (const src of this.sources(p))
@@ -1402,16 +1402,6 @@ export class Game {
     this.addLog(`喝采【${cat}】+${add}(${pl.applause[cat]})`, p);
   }
 
-  /** 開幕:喝采に関係するカードを唱えるかチャージすると、そのカテゴリーの喝采が溜まり始める(秘蔵庫のカードだけでは始まらない) */
-  private openCurtain(p: PlayerId, c: Card) {
-    const pl = this.players[p];
-    for (const cat of applauseCatsOf(c)) {
-      if (pl.applause[cat] !== undefined || Object.keys(pl.applause).length >= BLESSING_SLOTS) continue;
-      pl.applause[cat] = 0;
-      this.addLog(`喝采【${cat}】の幕が上がった`, p);
-    }
-  }
-
   private spendApplause(p: PlayerId, cat: Applause, n: number) {
     const pl = this.players[p];
     pl.applause[cat] = Math.max(0, (pl.applause[cat] ?? 0) - n);
@@ -1443,9 +1433,10 @@ export class Game {
     const dyingAbilities = abilitiesOf(o.card).filter((a) => !isCrestAbility(a));
     const undying = wasCreature && !o.token && o.counters === 0 && this.hasKw(o, "不屈");
     const rinne = wasCreature && !o.token && this.hasKw(o, "輪廻");
+    const tragic = wasCreature && !o.token && this.colorsOf(o).some((x) => x === "B" || x === "R");
     this.move(o, "graveyard");
     this.addLog(`${o.card.name}が墓地に置かれた`, controller);
-    if (wasCreature && !o.token) this.gainApplause(controller, "悲劇", 1, true);
+    if (tragic) this.gainApplause(controller, "悲劇", 1, true);
     if (wasCreature) {
       for (const ab of dyingAbilities) if (ab.a === "trigger" && ab.on === "dies") this.pendingTriggers.push({ obj: o, ability: ab, controller });
       this.queueTriggers("allyDies", this.sources(controller));
@@ -1982,7 +1973,9 @@ export class Game {
     for (const o of attackers) if (!this.hasKw(o, "警戒")) o.tapped = true;
     this.combat = { attackers: attackers.map((o) => o.uid), blocks: {} };
     this.players[p].attackersThisTurn = Math.max(this.players[p].attackersThisTurn, attackers.length);
-    if (attackers.length >= 2) this.gainApplause(p, "喜劇", attackers.length >= 3 ? 2 : 1, true);
+    // 喜劇:赤か白のクリーチャー2体以上で攻撃したとき
+    const comic = attackers.filter((o) => this.colorsOf(o).some((x) => x === "R" || x === "W")).length;
+    if (comic >= 2) this.gainApplause(p, "喜劇", comic >= 3 ? 2 : 1, true);
     this.addLog(`${attackers.map((o) => o.card.name).join("、")}で攻撃した`, p);
     this.queueTriggers("attacks", attackers);
     await this.priorityStep();
