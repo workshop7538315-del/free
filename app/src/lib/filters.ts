@@ -13,7 +13,8 @@ export type FilterState = {
   multi: boolean;
   /** 多色を選んで色も指定したとき:その色をすべて含む / ちょうどその色 */
   multiMatch: "include" | "exact";
-  type: string;
+  /** カードタイプ(複数選べる。空ならすべて) */
+  types: string[];
   keyword: string;
   /** アーキタイプ(カードの tags) */
   archetype: string;
@@ -33,7 +34,7 @@ export const initialFilters = (): FilterState => ({
   colorless: false,
   multi: false,
   multiMatch: "include",
-  type: "すべて",
+  types: [],
   keyword: "",
   archetype: "",
   pack: "",
@@ -57,7 +58,7 @@ export function isFiltering(f: FilterState): boolean {
     f.colors.length > 0 ||
     f.colorless ||
     f.multi ||
-    f.type !== "すべて" ||
+    f.types.length > 0 ||
     !!f.keyword ||
     !!f.archetype ||
     !!f.pack ||
@@ -93,7 +94,7 @@ export function applyFilters(cards: Card[], f: FilterState, deck: DeckCards): Ca
   const q = f.query.trim().toLowerCase();
   return cards
     .filter((c) => matchColor(c, f))
-    .filter((c) => f.type === "すべて" || c.type.includes(f.type))
+    .filter((c) => f.types.length === 0 || f.types.some((t) => c.type.includes(t)))
     .filter((c) => !f.keyword || cardKeywords(c).has(f.keyword))
     .filter((c) => !f.archetype || (c.tags ?? []).includes(f.archetype))
     .filter((c) => !f.pack || (c.packs ?? [c.pack]).includes(f.pack))

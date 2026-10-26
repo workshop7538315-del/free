@@ -3,7 +3,7 @@ import { COLORS, COLOR_NAMES, type Color } from "../lib/mana";
 import { KEYWORDS } from "../lib/keywords";
 import { activeRangeCount, emptyRange, initialFilters, isFiltering, type FilterState, type Range } from "../lib/filters";
 
-const TYPE_FILTERS = ["すべて", "クリーチャー", "インスタント", "ソーサリー", "エンチャント", "アーティファクト"];
+const TYPE_FILTERS = ["クリーチャー", "インスタント", "ソーサリー", "エンチャント", "アーティファクト"];
 
 type Props = {
   /** 選べるアーキタイプ(カードの多い順) */
@@ -80,15 +80,21 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
         </div>
       )}
 
+      <fieldset className="type-filter">
+        <legend className="visually-hidden">カードタイプで絞り込む(複数選べます)</legend>
+        {TYPE_FILTERS.map((t) => (
+          <label key={t} className="type-check">
+            <input
+              type="checkbox"
+              checked={f.types.includes(t)}
+              onChange={(e) => set({ types: e.target.checked ? TYPE_FILTERS.filter((x) => x === t || f.types.includes(x)) : f.types.filter((x) => x !== t) })}
+            />
+            {t}
+          </label>
+        ))}
+      </fieldset>
+
       <div className="filter-row">
-        <label>
-          <span className="visually-hidden">カードタイプ</span>
-          <select value={f.type} onChange={(e) => set({ type: e.target.value })}>
-            {TYPE_FILTERS.map((t) => (
-              <option key={t}>{t}</option>
-            ))}
-          </select>
-        </label>
         <label>
           <span className="visually-hidden">キーワード</span>
           <select value={f.keyword} onChange={(e) => set({ keyword: e.target.value })}>

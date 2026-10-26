@@ -1522,3 +1522,66 @@ textarea {
   background: color-mix(in srgb, #c0392b 14%, transparent);
   font-weight: 600;
 }
+
+/* カードタイプの絞り込み(複数選べるチェックボックス) */
+.type-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  border: 0;
+  padding: 0;
+  margin: 0 0 8px;
+}
+.type-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+/* デッキの一覧のカード名(ホバーでカードの内容を出す) */
+.card-tip-trigger {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: help;
+  text-decoration: underline dotted transparent;
+}
+.card-tip-trigger:hover,
+.card-tip-trigger:focus-visible {
+  text-decoration-color: currentColor;
+}
+.card-tip {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: var(--step--1);
+  line-height: 1.6;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+.card-tip-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-card);
+}
+.card-tip-type {
+  opacity: 0.75;
+  font-size: 0.75rem;
+}
+.card-tip-pt {
+  align-self: flex-end;
+  font-weight: 700;
+}

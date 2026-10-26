@@ -159,6 +159,8 @@ export type Effect = Common &
     | { do: "create"; card: GeneratedCard; n: number }
     /** 喝采【cat】を N 増やす */
     | { do: "applause"; cat: Applause; n: number }
+    /** card を N 枚生成してマナゾーンに置く(ターン終了時に墓地に置かれる=消える) */
+    | { do: "createMana"; card: GeneratedCard; n: number }
     /** 加護を得る(加護の枠を使う。すでに持っていれば何もしない) */
     | { do: "blessing"; id: string }
     /** 虚化:自分と対戦相手のマナゾーンの表向きのカードをそれぞれN枚、裏向き(欠色)にする(相手の分も自分が選ぶ) */

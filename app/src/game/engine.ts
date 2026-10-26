@@ -65,6 +65,8 @@ export type Obj = {
   tokenColors?: Color[];
   /** このターンに攻撃した */
   attackedThisTurn?: boolean;
+  /** ターン終了時に墓地に置かれる、マナゾーンに生成されたカード(マナゾーンを離れると消える) */
+  fleeting?: boolean;
   /** 武装進化で合体している発明品(付け替えられない。合体先が離れると一緒に秘蔵庫に戻る) */
   merged?: boolean;
 };
@@ -469,6 +471,8 @@ export class Game {
     if (o.token && to !== "battlefield") return;
     // 生成されたカードは、手札・スタック・戦場以外に移ると消える
     if (o.generated && to !== "hand" && to !== "stack" && to !== "battlefield") return;
+    // マナゾーンに生成されたカードは、マナゾーンを離れると消える
+    if (o.fleeting) return;
     const p = this.players[to === "battlefield" ? o.controller : o.owner];
     switch (to) {
       case "battlefield":
@@ -2017,6 +2021,16 @@ export class Game {
       case "blessing":
         this.gainBlessing(p, e.id);
         break;
+      case "createMana": {
+        for (let i = 0; i < e.n; i++) {
+          const o = this.newObj(e.card as Card, p, "mana");
+          o.generated = true;
+          o.fleeting = true;
+          pl.mana.push(o);
+        }
+        this.addLog(`《${e.card.name}》を${e.n}枚生成し、マナゾーンに置いた(ターン終了時に墓地に置かれる)`, p);
+        break;
+      }
       case "create": {
         for (let i = 0; i < e.n; i++) {
           const o = this.newObj(e.card as Card, p, "hand");
@@ -2401,6 +2415,12 @@ export class Game {
         o.deathtouched = false;
         o.temp = [];
       }
+    // マナゾーンに生成したカード(《火の粉》など)は、ターン終了時に墓地に置かれる
+    for (const q of this.players) {
+      const fleeting = q.mana.filter((o) => o.fleeting);
+      for (const o of fleeting) this.move(o, "graveyard");
+      if (fleeting.length) this.addLog(`マナゾーンの《${fleeting[0].card.name}》${fleeting.length}枚が墓地に置かれた`, q.id);
+    }
     this.emptyPools();
     this.active = this.other(p);
   }

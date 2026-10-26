@@ -471,6 +471,15 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
     }
     case "mill":
       return e.who === "opp" ? n(e.n, 1) * (them.library.length <= n(e.n, 1) ? 20 : 0.35) : n(e.n, 1) * 0.2;
+    case "createMana": {
+      if (!(g.step === "main1" || g.step === "main2") || g.active !== p) return 0;
+      const untapped = me.mana.filter((o) => !o.tapped).length - 1;
+      const enables = me.hand.some((o) => {
+        const mv = manaValue(o.card.cost);
+        return !spellAbility(o.card)?.effects.some((x) => x.do === "addMana" || x.do === "createMana") && mv > untapped && mv <= untapped + e.n;
+      });
+      return enables ? 2.5 : 0;
+    }
     case "addMana": {
       // 加えたマナで、今は唱えられない重いカードが唱えられるようになるなら使う
       if (!(g.step === "main1" || g.step === "main2") || g.active !== p) return 0;

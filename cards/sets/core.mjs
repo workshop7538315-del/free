@@ -1,5 +1,5 @@
 // 最初のセット(基本の166種類)。IDは変えないこと。
-import { cr, acr, ins, sor, ench, art, kw, burn, release, spell, etb, dies, attacks, charge, upkeep, castSpell, allyDies, stat, act, mana, T, E, iff, unless, may } from "../lib.mjs";
+import { cr, acr, ins, sor, ench, art, kw, burn, release, spell, etb, dies, attacks, charge, upkeep, castSpell, allyDies, stat, act, mana, gen, T, E, iff, unless, may } from "../lib.mjs";
 
 export const W = [
   cr("w001", "草原の見張り番", "{W}", "人間・兵士", 1, 2, "C", [kw("警戒"), charge(E.gain(2))]),
@@ -106,7 +106,7 @@ export const Rd = [
   sor("r007", "火の玉", "{X}{R}", "U", spell(E.dmg("X"), T.any)),
   ins("r008", "火花の礫", "{R}", "C", spell(E.dmg(2), T.any)),
   cr("r009", "ゴブリンの扇動者", "{2}{R}", "ゴブリン", 1, 1, "C", [etb(E.token(1, 1, 1, "R", "ゴブリン", ["速攻"]))]),
-  ins("r010", "炎の儀式", "{R}", "U", spell(E.addMana("{R}{R}{R}"))),
+  ins("r010", "炎の儀式", "{R}", "U", spell(E.createMana(gen("tk-hinoko", "火の粉", "{R}", "インスタント", spell(E.dmg(1), T.any)), 3))),
   ins("r011", "燃え立つ激情", "{R}", "C", spell(E.pump(2, 0, ["先制攻撃"]), T.cre)),
   cr("r012", "溶鉄の狂戦士", "{2}{R}", "人間・狂戦士", 3, 2, "C", [burn(1), etb(iff("burned", E.buffSelf(1, 0, ["速攻"])), undefined, {
     text: "燃焼したなら、溶鉄の狂戦士は+1/+0の修整と速攻を得た状態で戦場に出る。",

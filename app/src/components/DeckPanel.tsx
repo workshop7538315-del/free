@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { CardTip } from "./CardTip";
 import type { Card, DeckDraft, SavedDeck } from "../types";
 import { DECK_SIZE, EXTRA_SIZE, addCard, deckCount, deckStats, deckToText, extraCount, isExtra, validateDeck } from "../lib/deck";
 import { manaValue } from "../lib/mana";
@@ -123,7 +124,7 @@ export function DeckPanel(p: Props) {
                   {g.items.map(({ card, n }) => (
                     <li key={card.id} className="deck-row">
                       <span className="deck-row-n">{n}</span>
-                      <span className="deck-row-name">{card.name}</span>
+                      <CardTip card={card} />
                       <ManaCost cost={card.cost} size="sm" />
                       <span className="deck-row-steps">
                         <button

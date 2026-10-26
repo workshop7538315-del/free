@@ -239,6 +239,8 @@ export const E = {
   create: (card, n = 1) => ({ do: "create", card, n }),
   /** 喝采【cat】を N 増やす */
   applause: (cat, n = 1) => ({ do: "applause", cat, n }),
+  /** card を N 枚生成してマナゾーンに置く(ターン終了時に墓地に置かれる) */
+  createMana: (card, n = 1) => ({ do: "createMana", card, n }),
   /** 加護を得る */
   blessing: (id) => ({ do: "blessing", id }),
   /** 決闘:対象は [自分のクリーチャー, 相手のクリーチャー]。win は勝ったときの効果 */
@@ -550,6 +552,8 @@ function effectText(e, name, abil, notes) {
       return `あなたの喝采【${e.cat}】を${e.n}増やす。`;
     case "blessing":
       return `あなたは加護《${e.id}》を得る。`;
+    case "createMana":
+      return `《${e.card.name}》(${e.card.cost} ${e.card.type}:${(e.card.text ?? []).join(" ")})を${e.n}枚生成し、あなたのマナゾーンに置く。ターン終了時に、それらを墓地に置く。`;
     case "create": {
       const c = e.card;
       const pt = c.power !== undefined ? ` ${c.power}/${c.toughness}` : "";
