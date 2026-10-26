@@ -33,6 +33,7 @@ import { BEACON, BEACON_REPRINTS } from "./sets/p8-beacon.mjs";
 import { GATE } from "./sets/p9-gate.mjs";
 import { COMMEDIA } from "./sets/p95-commedia.mjs";
 import { ELDORADO } from "./sets/p95-eldorado.mjs";
+import { BLACK_MARKET } from "./sets/p10-blackmarket.mjs";
 
 export const PACKS = [
   {
@@ -135,5 +136,14 @@ export const PACKS = [
     words: ["開拓", "発明", "黄金郷"],
     theme: "白・赤・緑と欠色だけのパック。緑は戦場とマナゾーンのカードを墓地に置いて秘蔵庫の開拓者を出し(開拓進化【緑】)、切り札の大開拓者エル・ドラードは加護《黄金郷への道》をもたらす。白赤はクリーチャーをタップして秘蔵庫の発明品を組み立て、条件を満たすと合体先と武装進化する。報酬は好きな色のマナになる《黄金》。",
     sets: [ELDORADO],
+  },
+  {
+    id: "p10",
+    number: 10,
+    name: "闇市の大強盗",
+    kind: "新規展開",
+    words: ["快楽", "強盗", "闇市"],
+    theme: "港町の裏街・灰燭街が舞台。青・赤・緑だけのパック。赤緑の強盗団「鉄爪団」は自分の金庫(秘蔵庫)から宝石を盗み出してマナに換え(強盗)、宝石獣をマナ解放で目覚めさせる。青赤の密売組織「夢花会」の架空の薬は、捨てられたときに効く(陶酔)。常用者とキセルが捨てる手段で、常用者は依存に苦しむ。",
+    sets: [BLACK_MARKET],
   },
 ];

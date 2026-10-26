@@ -149,7 +149,7 @@ export type Decision =
   | { kind: "target"; prompt: string; spec: TargetSpec; options: TargetRef[]; source: Obj; effects: Effect[]; index: number }
   | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "kicker" | "lookTop" | "mulligan" | "reclaim" | "blessing"; obj?: Obj }
   | { kind: "number"; prompt: string; min: number; max: number; reason?: "x" | "burn"; obj?: Obj }
-  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" | "pioneerBase" }
+  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" | "pioneerBase" | "heist" }
   | { kind: "attackers"; options: number[] }
   /** モード呪文:選択肢から1つ選ぶ(答えは番号) */
   | { kind: "mode"; prompt: string; options: string[]; source: Obj; modes: SpellMode[] }
@@ -196,7 +196,8 @@ export const releaseAbility = (c: Card) => abilitiesOf(c).find((a) => a.a === "r
 export const isAura = (c: Card) => abilitiesOf(c).some((a) => a.a === "enchant");
 export const isEquipment = (c: Card) => abilitiesOf(c).some((a) => a.a === "equip");
 /** 秘蔵庫のカード(リリース召喚を持つ) */
-export const isExtraCard = (c: Card) => abilitiesOf(c).some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly");
+export const isExtraCard = (c: Card) =>
+  abilitiesOf(c).some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly" || a.a === "gem");
 export const pioneerOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "pioneer") as Extract<Ability, { a: "pioneer" }> | undefined;
 export const assembleOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "assemble") as Extract<Ability, { a: "assemble" }> | undefined;
 /** 加護《黄金郷への道》:開拓進化で、戦場とマナゾーンの代わりにライブラリーの上から墓地に置いてよい */
@@ -426,6 +427,8 @@ export class Game {
     // 陰謀:戦場を離れたクリーチャーと、手札から墓地に置かれた(捨てた)カードを数える
     if (wasBattlefield && to !== "battlefield" && isCreatureCard(o.card)) this.players[o.controller].lostThisTurn++;
     if (o.zone === "hand" && to === "graveyard") this.players[o.owner].lostThisTurn++;
+    // 手札から墓地に置かれた=捨てた(陶酔・「捨てるたび」)
+    const discarded = o.zone === "hand" && to === "graveyard";
     // 領域を移ると新しいオブジェクトとして扱う
     o.tapped = false;
     o.sick = false;
@@ -457,7 +460,8 @@ export class Game {
       }
     }
     // 秘蔵庫のカードは、戦場を離れたら(どこへ行く場合も)秘蔵庫に戻る
-    if (isExtraCard(o.card) && to !== "battlefield" && to !== "extra") {
+    // (強盗でマナゾーンに置くこと、マナ解放でスタックに置くことはできる)
+    if (isExtraCard(o.card) && to !== "battlefield" && to !== "extra" && to !== "mana" && to !== "stack") {
       to = "extra";
       o.faceDown = false;
       this.addLog(`${o.card.name}は秘蔵庫に戻った`, o.owner);
@@ -489,6 +493,14 @@ export class Game {
         p.graveyard.push(o);
         // 「どこからでも墓地に置かれたとき」
         for (const ab of abilitiesOf(o.card)) if (ab.a === "trigger" && ab.on === "toGraveyard") this.pendingTriggers.push({ obj: o, ability: ab, controller: o.owner });
+        if (discarded) {
+          // 陶酔:捨てられたこのカード自身
+          for (const ab of abilitiesOf(o.card)) if (ab.a === "trigger" && ab.on === "discarded") this.pendingTriggers.push({ obj: o, ability: ab, controller: o.owner });
+          // 「あなたがカードを捨てるたび」
+          for (const src of this.sources(o.owner))
+            for (const ab of this.activeAbilities(src))
+              if (ab.a === "trigger" && ab.on === "discard" && matchFilter(o.card, ab.filter)) this.pendingTriggers.push({ obj: src, ability: ab, controller: o.owner });
+        }
         break;
       case "library":
         if (opts.top) p.library.unshift(o);
@@ -538,6 +550,8 @@ export class Game {
         return pl.attackersThisTurn >= 2;
       case "chain":
         return pl.spellsThisTurn >= 2;
+      case "vaultEmpty":
+        return pl.extra.length === 0;
       case "intrigue":
         return this.players[this.other(p)].lostThisTurn > 0;
       case "fewerMana":
@@ -923,6 +937,9 @@ export class Game {
     const aff = abilityOf(c, "affinity");
     if (aff) discount += this.players[p].battlefield.filter((x) => matchFilter(x.card, aff.filter, this.colorsOf(x))).length;
     if (abilityOf(c, "voidAffinity")) discount += this.players[p].mana.filter((x) => x.faceDown).length;
+    // 金庫破り:秘蔵庫が空なら、マナ解放のコストが少なくなる
+    const crack = abilityOf(c, "vaultCrack");
+    if (crack && from === "mana" && this.players[p].extra.length === 0) discount += crack.n;
     for (const src of this.sources(p))
       for (const a of this.activeAbilities(src))
         if (a.a === "static" && a.st.s === "discount" && matchFilter(c, a.st.filter) && (!a.if || this.cond(a.if, p))) discount += a.st.n;
@@ -958,6 +975,7 @@ export class Game {
     if (a.cost.sac && this.sacOptions(p, a.cost).length === 0) return false;
     if (a.cost.life && this.players[p].life <= a.cost.life) return false;
     if (a.cost.applause && (this.players[p].applause[a.cost.applause.cat] ?? 0) < a.cost.applause.n) return false;
+    if (a.cost.discard && this.players[p].hand.length < a.cost.discard) return false;
     if (a.cost.mana && !this.canPay(p, a.cost.mana, 0, a.cost.tap ? o : undefined)) return false;
     if (a.targets) for (const t of a.targets) if (this.targetOptions(t, p).length === 0) return false;
     return true;
@@ -1161,6 +1179,13 @@ export class Game {
     }
     if (a.cost.sacSelf) this.sacrifice(o, p);
     if (a.cost.applause) this.spendApplause(p, a.cost.applause.cat, a.cost.applause.n);
+    if (a.cost.discard) {
+      const picked = await this.askCards(p, `捨てるカードを${a.cost.discard}枚選んでください`, this.players[p].hand, a.cost.discard, "discard");
+      for (const x of picked) {
+        this.move(x, "graveyard");
+        this.addLog(`${x.card.name}を捨てた`, p);
+      }
+    }
     this.usedCards.add(o.card.id);
     this.stack.push({ id: this.stackId++, kind: "activated", obj: o, controller: p, ability: a, targets, burned: false, burnCount: 0, kicked: false, dashed: false, flashback: false, x: 0 });
     this.addLog(`${o.card.name}の能力を起動した`, p);
@@ -2021,6 +2046,43 @@ export class Game {
       case "blessing":
         this.gainBlessing(p, e.id);
         break;
+      case "heist": {
+        const pool = [...pl.extra];
+        if (pool.length === 0) {
+          if (e.fallback) {
+            const o = this.newObj(e.fallback as Card, p, "hand");
+            o.generated = true;
+            pl.hand.push(o);
+            this.addLog(`強盗 ${e.n}:秘蔵庫が空なので、《${e.fallback.name}》を手札に加えた`, p);
+          }
+          break;
+        }
+        const picked = await this.askCards(p, `強盗 ${e.n}:マナゾーンに置く秘蔵庫のカードを選んでください`, pool, Math.min(e.n, pool.length), "heist");
+        for (const o of picked) this.move(o, "mana", { tapped: true });
+        this.addLog(`強盗 ${e.n}:${picked.map((o) => o.card.name).join("、")}を秘蔵庫からマナゾーンに置いた`, p);
+        break;
+      }
+      case "selfToMana": {
+        const o = ctx.item.obj;
+        if (o.zone === "graveyard" || o.zone === "hand") {
+          this.move(o, "mana", { tapped: true });
+          this.addLog(`${o.card.name}をマナゾーンに置いた`, p);
+        }
+        break;
+      }
+      case "addiction": {
+        if (pl.hand.length === 0) {
+          pl.life -= e.n;
+          this.addLog(`依存:捨てる手札がないので、${e.n}点のライフを失った`, p);
+          break;
+        }
+        const [o] = await this.askCards(p, "依存:捨てるカードを1枚選んでください", pl.hand, 1, "discard");
+        if (o) {
+          this.move(o, "graveyard");
+          this.addLog(`依存:${o.card.name}を捨てた`, p);
+        }
+        break;
+      }
       case "createMana": {
         for (let i = 0; i < e.n; i++) {
           const o = this.newObj(e.card as Card, p, "mana");

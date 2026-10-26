@@ -103,6 +103,16 @@ export const entrata = (n, cat) => ({ a: "entrata", n, cat });
 export const pioneer = (n, color, grand = false) => ({ a: "pioneer", n, color, ...(grand ? { grand } : {}) });
 /** 組み立て【color】:秘蔵庫の発明品。partner(ID と名前)に武装進化する */
 export const assemble = (color, partner, partnerName, cond = "attacked") => ({ a: "assemble", color, partner, partnerName, cond });
+/** 陶酔 ―:このカードが手札から捨てられたとき */
+export const onDiscarded = trig("discarded");
+/** あなたがカードを捨てるたび */
+export const onDiscard = (filter) => trig("discard", filter);
+/** 宝石獣:秘蔵庫に入り、強盗でマナに置かれ、マナ解放で唱える */
+export const gem = () => ({ a: "gem" });
+/** 金庫破り ― 秘蔵庫が空ならマナ解放のコスト{n}軽減 */
+export const vaultCrack = (n) => ({ a: "vaultCrack", n });
+/** 依存:アップキープに手札を1枚捨てる。捨てられないならNを失う */
+export const addiction = (n = 2) => ({ a: "trigger", on: "upkeep", effects: [{ do: "addiction", n }], text: `依存(あなたのアップキープの開始時に、手札を1枚捨てる。捨てられないなら、あなたは${n}点のライフを失う)` });
 /** 紋章 ― 埋蔵 N:マナゾーンから開拓進化で墓地に置くとき、マナ総量に+N */
 export const buried = (n) => ({ a: "buried", n, from: "mana" });
 /** 武装進化でのみ戦場に出る */
@@ -243,6 +253,10 @@ export const E = {
   applause: (cat, n = 1) => ({ do: "applause", cat, n }),
   /** card を N 枚生成してマナゾーンに置く(ターン終了時に墓地に置かれる) */
   createMana: (card, n = 1) => ({ do: "createMana", card, n }),
+  /** 強盗 N(fallback:秘蔵庫が空のときに手札に加える生成カード) */
+  heist: (n, fallback) => ({ do: "heist", n, ...(fallback ? { fallback } : {}) }),
+  /** このカードをマナゾーンに置く */
+  selfToMana: () => ({ do: "selfToMana" }),
   /** 加護を得る */
   blessing: (id) => ({ do: "blessing", id }),
   /** 決闘:対象は [自分のクリーチャー, 相手のクリーチャー]。win は勝ったときの効果 */
@@ -347,6 +361,7 @@ export function condLabel(c) {
       void: "虚空",
       raid: "強襲",
       chain: "連唱",
+      vaultEmpty: "金庫破り",
       vacuum: "真空",
     }[c] ?? null
   );
@@ -389,6 +404,7 @@ function condPlain(c) {
     void: "あなたのマナゾーンのカードの半分以上が欠色である",
     raid: "このターン、あなたがクリーチャー2体以上で攻撃した",
     chain: "このターン、あなたがインスタントかソーサリーを2つ以上唱えた",
+    vaultEmpty: "あなたの秘蔵庫にカードがない",
     vacuum: "あなたのマナゾーンのカードがすべて欠色である",
     intrigue: "このターン、対戦相手がカードを捨てたか、対戦相手のクリーチャーが戦場を離れた",
     threshold: "あなたの墓地にカードが7枚以上ある",
@@ -554,6 +570,12 @@ function effectText(e, name, abil, notes) {
       return `あなたの喝采【${e.cat}】を${e.n}増やす。`;
     case "blessing":
       return `あなたは加護《${e.id}》を得る。`;
+    case "heist":
+      return `強盗 ${e.n}(あなたの秘蔵庫からカードを${e.n}枚選び、タップ状態でマナゾーンに置く${e.fallback ? `。秘蔵庫が空なら、代わりに《${e.fallback.name}》(${e.fallback.cost} ${e.fallback.type}:${(e.fallback.text ?? []).join(" ")})を手札に加える` : ""})。`;
+    case "selfToMana":
+      return `${name}をタップ状態であなたのマナゾーンに置く。`;
+    case "addiction":
+      return `手札を1枚捨てる。捨てられないなら、あなたは${e.n}点のライフを失う。`;
     case "createMana":
       return `《${e.card.name}》(${e.card.cost} ${e.card.type}:${(e.card.text ?? []).join(" ")})を${e.n}枚生成し、あなたのマナゾーンに置く。ターン終了時に、それらを墓地に置く。`;
     case "create": {
@@ -621,6 +643,8 @@ const TRIGGER_PREFIX = {
   duelWin: () => "あなたが決闘に勝つたび、",
   castSelf: (n) => `あなたが${n}を唱えたとき、`,
   sacrifice: (n, f) => `あなたが${f ? filterPhrase(f, "permanent") : "パーマネント"}を生け贄に捧げるたび、`,
+  discarded: () => "陶酔 ― ",
+  discard: (n, f) => `あなたが${f ? filterPhrase(f, "card") : "カード"}を捨てるたび、`,
   toGraveyard: (n) => `${n}がどこからでも墓地に置かれたとき、`,
   uscita: () => "ウシータ ― ",
 };
@@ -671,6 +695,7 @@ function costSymbolsText(cost, name) {
   if (cost.sac) parts.push(`${filterPhrase(cost.sac, "creature")}を1体生け贄に捧げる`);
   if (cost.sacSelf) parts.push(`${name}を生け贄に捧げる`);
   if (cost.applause) parts.push(`喝采【${cost.applause.cat}】を${cost.applause.n}消費する`);
+  if (cost.discard) parts.push(`手札を${cost.discard}枚捨てる`);
   return parts.join(", ");
 }
 
@@ -705,6 +730,10 @@ function abilityTextBody(abil, card) {
       const cond = abil.cond === "attacked" ? "このターン、装備しているクリーチャーが攻撃したなら" : "装備しているクリーチャーに装備品が2つ以上ついているなら";
       return `組み立て【${COLOR_JA[abil.color]}】 / 武装進化 ― ${cond}、そのクリーチャーと${name}を《${abil.partnerName}》に武装進化してもよい。`;
     }
+    case "gem":
+      return `宝石獣(秘蔵庫に入る。強盗でマナゾーンに置かれ、マナ解放で唱える。マナゾーンや戦場を離れると秘蔵庫に戻る)`;
+    case "vaultCrack":
+      return `金庫破り ― あなたの秘蔵庫にカードがないなら、マナ解放のコストは{${abil.n}}少なくなる。`;
     case "buried":
       return `埋蔵 ${abil.n}(マナゾーンにあるこのカードを開拓進化で墓地に置くとき、マナ総量に+${abil.n}して数える)`;
     case "evolveOnly":

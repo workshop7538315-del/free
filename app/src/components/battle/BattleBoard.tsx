@@ -671,7 +671,7 @@ function actionLabel(g: Game, a: Action): string {
       const o = g.find(a.uid);
       const ab = o ? abilitiesOf(o.card)[a.index] : undefined;
       if (ab && ab.a === "activated")
-        return `能力を起動(${[ab.cost.mana, ab.cost.tap ? "タップ" : "", ab.cost.sac ? "生け贄" : "", ab.cost.sacSelf ? "これを生け贄" : "", ab.cost.life ? `ライフ${ab.cost.life}` : "", ab.cost.applause ? `喝采【${ab.cost.applause.cat}】${ab.cost.applause.n}` : ""]
+        return `能力を起動(${[ab.cost.mana, ab.cost.tap ? "タップ" : "", ab.cost.sac ? "生け贄" : "", ab.cost.sacSelf ? "これを生け贄" : "", ab.cost.life ? `ライフ${ab.cost.life}` : "", ab.cost.applause ? `喝采【${ab.cost.applause.cat}】${ab.cost.applause.n}` : "", ab.cost.discard ? `手札${ab.cost.discard}枚を捨てる` : ""]
           .filter(Boolean)
           .join("、")})`;
       return "能力を起動";

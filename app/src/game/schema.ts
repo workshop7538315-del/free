@@ -62,7 +62,9 @@ export type CondName =
   /** 強襲:このターン、自分がクリーチャー2体以上で攻撃した */
   | "raid"
   /** 連唱:このターン、自分がインスタントかソーサリーを2つ以上唱えた */
-  | "chain";
+  | "chain"
+  /** 金庫破り:自分の秘蔵庫にカードがない(第10弾) */
+  | "vaultEmpty";
 
 export type Cond =
   | CondName
@@ -159,6 +161,12 @@ export type Effect = Common &
     | { do: "create"; card: GeneratedCard; n: number }
     /** 喝采【cat】を N 増やす */
     | { do: "applause"; cat: Applause; n: number }
+    /** 強盗 N:自分の秘蔵庫からN枚をタップ状態でマナゾーンに置く(空なら《札束》を生成) */
+    | { do: "heist"; n: number; fallback?: GeneratedCard }
+    /** このカード(効果の発生源)をマナゾーンに置く(陶酔で、捨てられた墓地から) */
+    | { do: "selfToMana" }
+    /** 依存:手札を1枚捨てる。捨てられないなら N 点のライフを失う */
+    | { do: "addiction"; n: number }
     /** card を N 枚生成してマナゾーンに置く(ターン終了時に墓地に置かれる=消える) */
     | { do: "createMana"; card: GeneratedCard; n: number }
     /** 加護を得る(加護の枠を使う。すでに持っていれば何もしない) */
@@ -202,7 +210,11 @@ export type TriggerEvent =
   /** あなたが(filter に合う)パーマネントを生け贄に捧げるたび */
   | "sacrifice"
   /** ウシータ:この秘蔵庫のカードが戦場を離れて秘蔵庫に戻るとき */
-  | "uscita";
+  | "uscita"
+  /** 陶酔:このカードが手札から捨てられたとき */
+  | "discarded"
+  /** あなたが(filter に合う)カードを手札から捨てるたび */
+  | "discard";
 
 export type StaticSpec =
   /** 自分の(他の)クリーチャー全体の強化。filter で種族などを絞れる */
@@ -231,6 +243,8 @@ export type ActivatedCost = {
   life?: number;
   /** 喝采を消費する */
   applause?: { cat: Applause; n: number };
+  /** 手札を N 枚捨てる */
+  discard?: number;
 };
 
 export type Ability = { text?: string } & (
@@ -261,6 +275,10 @@ export type Ability = { text?: string } & (
   | { a: "assemble"; color: Color; partner: string; partnerName?: string; cond: "attacked" | "twoEquip" }
   /** 武装進化でのみ戦場に出る(秘蔵庫の合体先) */
   | { a: "evolveOnly" }
+  /** 宝石獣:秘蔵庫に入るカード(強盗でマナゾーンに置かれ、マナ解放で唱える) */
+  | { a: "gem" }
+  /** 金庫破り ― 秘蔵庫が空なら、マナ解放のコストが{n}少なくなる */
+  | { a: "vaultCrack"; n: number }
   /** 紋章 ― 埋蔵 N:マナゾーンにあるこのカードを開拓進化で墓地に置くとき、マナ総量に+Nして数える */
   | { a: "buried"; n: number; from?: "mana" }
   /** オーラ:クリーチャーにつける */

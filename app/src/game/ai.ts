@@ -108,6 +108,11 @@ function cardCreatureValue(c: Card): number {
 }
 
 /** 手札に残しておきたい度合い */
+/** 陶酔(捨てられたとき)を持つか */
+function hasDiscardTrigger(c: Card): boolean {
+  return abilitiesOf(c).some((a) => a.a === "trigger" && a.on === "discarded");
+}
+
 function keepValue(g: Game, p: PlayerId, c: Card): number {
   const rarity = { コモン: 0, アンコモン: 0.5, レア: 1, 神話レア: 1.5 }[c.rarity] ?? 0;
   const mv = manaValue(c.cost);
@@ -449,6 +454,12 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return Math.min(e.n, them.mana.length) * 2.2;
     case "applause":
       return e.n * 0.6;
+    case "heist":
+      return me.extra.length ? Math.min(e.n, me.extra.length) * 1.4 : 0.8;
+    case "selfToMana":
+      return 1;
+    case "addiction":
+      return me.hand.some((x) => hasDiscardTrigger(x.card)) ? 0.5 : -1.5;
     case "create":
       // 生成したカードの価値(軽い呪文やトークンを想定)
       return e.n * (0.9 + Math.min(manaValue(e.card.cost), 4) * 0.25);
@@ -525,6 +536,11 @@ function scoreActivate(g: Game, p: PlayerId, a: Extract<Action, { type: "activat
   // 生け贄に捧げると喝采【悲劇】が溜まる
   if ((ab.cost.sac || ab.cost.sacSelf) && applauseRoom(g, p, "悲劇")) value += 0.9;
   if (ab.cost.life) cost += ab.cost.life * (g.players[p].life < 8 ? 1 : 0.3);
+  if (ab.cost.discard) {
+    // 陶酔のカードがあれば、捨てること自体が得になる
+    const hand = g.players[p].hand.filter((x) => x.uid !== o.uid);
+    cost += hand.some((x) => hasDiscardTrigger(x.card)) ? -1 : 1.3 * ab.cost.discard;
+  }
   if (ab.cost.applause) {
     // 秘蔵庫にその喝采で出せる役者がいるなら、喝采は取っておきたい
     const cat = ab.cost.applause.cat;
@@ -678,7 +694,18 @@ function chooseCards(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseC
     case "pioneerBase":
       sorted = [...objs].sort((a, b) => creatureValue(g, a) - creatureValue(g, b));
       break;
-    case "discard":
+    case "discard": {
+      // 陶酔(捨てられたとき)を持つカードは、捨てると得をする
+      const v = (c: Card) => keepValue(g, p, c) - (hasDiscardTrigger(c) ? 4 : 0);
+      sorted = [...objs].sort((a, b) => v(a.card) - v(b.card));
+      break;
+    }
+    case "heist": {
+      // 宝石獣(マナ解放で出る)を優先してマナに置く。ほかは価値の低いものから
+      const v = (o: Obj) => (abilitiesOf(o.card).some((a) => a.a === "gem") ? -10 + manaValue(o.card.cost) * 0.1 : cardCreatureValue(o.card));
+      sorted = [...objs].sort((a, b) => v(a) - v(b));
+      break;
+    }
     case "bottom":
       sorted = [...objs].sort((a, b) => keepValue(g, p, a.card) - keepValue(g, p, b.card));
       break;
