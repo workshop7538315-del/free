@@ -6,7 +6,8 @@ import { CpuAgent } from "../../game/ai";
 import { HumanAgent } from "../../game/human";
 import { BattleBoard } from "./BattleBoard";
 
-export type StarterDeck = { id: string; name: string; colors: string[]; cards: DeckCards };
+/** legacy:旧スターター(選べるが、おまかせ対戦とティア表には入らない) */
+export type StarterDeck = { id: string; name: string; colors: string[]; cards: DeckCards; legacy?: boolean };
 
 type Props = {
   byId: Map<string, Card>;
@@ -15,7 +16,7 @@ type Props = {
   draft: { name: string; cards: DeckCards };
 };
 
-type Choice = { key: string; name: string; cards: DeckCards; kind: "starter" | "saved" | "draft" };
+type Choice = { key: string; name: string; cards: DeckCards; kind: "starter" | "legacy" | "saved" | "draft" };
 
 const expand = (cards: DeckCards, byId: Map<string, Card>): Card[] =>
   Object.entries(cards).flatMap(([id, n]) => {
@@ -30,7 +31,8 @@ export function Battle({ byId, starters, saved, draft }: Props) {
     const out: Choice[] = [];
     if (validateDeck(draft.cards, byId).length === 0) out.push({ key: "draft", name: `作成中:${draft.name}`, cards: draft.cards, kind: "draft" });
     for (const d of saved) if (validateDeck(d.cards, byId).length === 0) out.push({ key: `saved-${d.id}`, name: d.name, cards: d.cards, kind: "saved" });
-    for (const d of starters) out.push({ key: `starter-${d.id}`, name: d.name, cards: d.cards, kind: "starter" });
+    for (const d of starters) if (!d.legacy) out.push({ key: `starter-${d.id}`, name: d.name, cards: d.cards, kind: "starter" });
+    for (const d of starters) if (d.legacy) out.push({ key: `starter-${d.id}`, name: d.name, cards: d.cards, kind: "legacy" });
     return out;
   }, [draft, saved, starters, byId]);
 
@@ -109,7 +111,7 @@ export function Battle({ byId, starters, saved, draft }: Props) {
                 <label className={`deck-choice ${mine === c.key ? "is-on" : ""}`}>
                   <input type="radio" name="mine" value={c.key} checked={mine === c.key} onChange={() => setMine(c.key)} />
                   <span className="deck-choice-name">{c.name}</span>
-                  <span className="deck-choice-kind">{c.kind === "starter" ? "スターター" : c.kind === "saved" ? "保存済み" : "作成中"}</span>
+                  <span className="deck-choice-kind">{c.kind === "starter" ? "スターター" : c.kind === "legacy" ? "旧スターター" : c.kind === "saved" ? "保存済み" : "作成中"}</span>
                 </label>
               </li>
             ))}
@@ -125,7 +127,7 @@ export function Battle({ byId, starters, saved, draft }: Props) {
               </label>
             </li>
             {choices
-              .filter((c) => c.kind === "starter")
+              .filter((c) => c.kind === "starter" || c.kind === "legacy")
               .map((c) => (
                 <li key={c.key}>
                   <label className={`deck-choice ${cpu === c.key ? "is-on" : ""}`}>

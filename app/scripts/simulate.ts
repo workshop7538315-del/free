@@ -10,7 +10,7 @@ import { CpuAgent } from "../src/game/ai";
 
 const cards = cardsJson as Card[];
 const byId = new Map(cards.map((c) => [c.id, c]));
-const decks = decksJson as { id: string; name: string; cards: Record<string, number> }[];
+const decks = (decksJson as { id: string; name: string; cards: Record<string, number>; legacy?: boolean }[]).filter((d) => !d.legacy);
 
 const expand = (list: Record<string, number>) => Object.entries(list).flatMap(([id, n]) => Array.from({ length: n }, () => byId.get(id)!));
 

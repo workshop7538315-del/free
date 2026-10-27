@@ -65,6 +65,8 @@ export type Obj = {
   tokenColors?: Color[];
   /** このターンに攻撃した */
   attackedThisTurn?: boolean;
+  /** 純色払いで支払った色 */
+  paidColor?: Color;
   /** ターン終了時に墓地に置かれる、マナゾーンに生成されたカード(マナゾーンを離れると消える) */
   fleeting?: boolean;
   /** 武装進化で合体している発明品(付け替えられない。合体先が離れると一緒に秘蔵庫に戻る) */
@@ -153,6 +155,8 @@ export type Decision =
   | { kind: "attackers"; options: number[] }
   /** モード呪文:選択肢から1つ選ぶ(答えは番号) */
   | { kind: "mode"; prompt: string; options: string[]; source: Obj; modes: SpellMode[] }
+  /** 純色払いで支払う色を選ぶ */
+  | { kind: "color"; prompt: string; options: Color[]; source: Obj }
   /** リリースするカードを選ぶ:values の合計が min 以上になるように選ぶ */
   | { kind: "chooseSum"; prompt: string; options: number[]; values: number[]; min: number; target: Obj; minCount?: number; confirm?: string }
   | { kind: "blockers"; attackers: number[]; blockers: number[] };
@@ -200,6 +204,11 @@ export const isExtraCard = (c: Card) =>
   abilitiesOf(c).some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly" || a.a === "gem");
 export const pioneerOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "pioneer") as Extract<Ability, { a: "pioneer" }> | undefined;
 export const assembleOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "assemble") as Extract<Ability, { a: "assemble" }> | undefined;
+const COLOR_JA: Record<string, string> = { W: "白", U: "青", B: "黒", R: "赤", G: "緑" };
+/** 混成のマナ記号(例 {U/R})を、その色で支払う形に置き換える */
+export function withPaid(cost: string, color: Color): string {
+  return cost.replace(/\{([WUBRG])\/([WUBRG])\}/, (m, a, b) => (a === color || b === color ? `{${color}}` : m));
+}
 /** 加護《黄金郷への道》:開拓進化で、戦場とマナゾーンの代わりにライブラリーの上から墓地に置いてよい */
 export const BLESSING_ELDORADO = "黄金郷への道";
 export const entrataOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "entrata") as Extract<Ability, { a: "entrata" }> | undefined;
@@ -552,6 +561,11 @@ export class Game {
         return pl.spellsThisTurn >= 2;
       case "vaultEmpty":
         return pl.extra.length === 0;
+      case "pureColor": {
+        if (!pl.mana.length) return false;
+        const first = manaColors(pl.mana[0]);
+        return first.length === 1 && pl.mana.every((m) => { const cs = manaColors(m); return cs.length === 1 && cs[0] === first[0]; });
+      }
       case "intrigue":
         return this.players[this.other(p)].lostThisTurn > 0;
       case "fewerMana":
@@ -825,7 +839,13 @@ export class Game {
   }
 
   // ------------------------------------------------------------ マナ
-  private manaUnits(p: PlayerId, exclude?: Obj): ManaUnit[] {
+  /** only:その色を出せるマナだけを、その色として使う(純色払い) */
+  private manaUnits(p: PlayerId, exclude?: Obj, only?: Color): ManaUnit[] {
+    const all = this.allManaUnits(p, exclude);
+    return only ? all.filter((u) => u.options.includes(only)).map((u) => ({ ...u, options: [only] })) : all;
+  }
+
+  private allManaUnits(p: PlayerId, exclude?: Obj): ManaUnit[] {
     const pl = this.players[p];
     const units: ManaUnit[] = [];
     pl.pool.forEach((m, i) => units.push({ tapGroup: `pool${i}`, options: [m], priority: 0 }));
@@ -860,8 +880,8 @@ export class Game {
     return units;
   }
 
-  canPay(p: PlayerId, cost: string, x = 0, exclude?: Obj): boolean {
-    return !!findPayment(cost, x, this.manaUnits(p, exclude));
+  canPay(p: PlayerId, cost: string, x = 0, exclude?: Obj, only?: Color): boolean {
+    return !!findPayment(cost, x, this.manaUnits(p, exclude, only));
   }
 
   maxX(p: PlayerId, cost: string, exclude?: Obj): number {
@@ -870,8 +890,13 @@ export class Game {
     return x;
   }
 
-  private pay(p: PlayerId, cost: string, x: number, exclude?: Obj): boolean {
-    const units = this.manaUnits(p, exclude);
+  /** 純色払いで払える色 */
+  pureColors(p: PlayerId, cost: string, x = 0, exclude?: Obj): Color[] {
+    return (["W", "U", "B", "R", "G"] as Color[]).filter((c) => this.canPay(p, cost, x, exclude, c));
+  }
+
+  private pay(p: PlayerId, cost: string, x: number, exclude?: Obj, only?: Color): boolean {
+    const units = this.manaUnits(p, exclude, only);
     const pay = findPayment(cost, x, units);
     if (!pay) return false;
     const pl = this.players[p];
@@ -953,10 +978,13 @@ export class Game {
     if (!instantSpeed && !this.sorcerySpeed(p)) return false;
     const cost = this.effectiveCost(p, o, from);
     if (cost === null) return false;
-    if (!this.canPay(p, cost, 0, from === "mana" ? o : undefined)) return false;
+    const ex = from === "mana" ? o : undefined;
+    if (abilityOf(c, "pureCost")) {
+      if (this.pureColors(p, cost, 0, ex).length === 0) return false;
+    } else if (!this.canPay(p, cost, 0, ex)) return false;
     const sp = spellAbility(c);
     if (sp?.modes) {
-      if (!sp.modes.some((m) => (m.targets ?? []).every((t) => this.targetOptions(t, p).length > 0))) return false;
+      if (!sp.modes.some((m) => (m.targets ?? []).every((t) => this.targetOptions(t, p).length > 0) && (!m.pay || this.canPay(p, withPaid(cost, m.pay), 0, ex)))) return false;
     } else if (sp?.targets) for (const t of sp.targets) if (this.targetOptions(t, p).length === 0) return false;
     if (isAura(c) && this.targetOptions(AURA_TARGET, p).length === 0) return false;
     return true;
@@ -1090,7 +1118,7 @@ export class Game {
     let sp = spellAbility(c);
     // モード呪文:使えるモードから1つ選ぶ
     if (sp?.modes) {
-      const usable = sp.modes.filter((m) => (m.targets ?? []).every((t) => this.targetOptions(t, p).length > 0));
+      const usable = sp.modes.filter((m) => (m.targets ?? []).every((t) => this.targetOptions(t, p).length > 0) && (!m.pay || this.canPay(p, withPaid(cost, m.pay), x, exclude)));
       if (!usable.length) return;
       const idx =
         usable.length === 1
@@ -1098,6 +1126,8 @@ export class Game {
           : await this.ask<number>(p, { kind: "mode", prompt: `${c.name}:モードを1つ選んでください`, options: usable.map((m) => m.label), source: o, modes: usable });
       const mode = usable[Math.max(0, Math.min(usable.length - 1, Math.floor(idx ?? 0)))];
       this.addLog(`${c.name}:「${mode.label}」を選んだ`, p);
+      // 払った色で効果が変わるカード:混成の記号をその色で払う
+      if (mode.pay) cost = withPaid(cost, mode.pay);
       sp = { a: "spell", effects: mode.effects, ...(mode.targets ? { targets: mode.targets } : {}) };
     }
     const specs = isAura(c) ? [AURA_TARGET] : sp?.targets ?? [];
@@ -1122,7 +1152,17 @@ export class Game {
       kicked = await this.askYesNo(p, `${c.name}:追加払い ${k.cost} を支払いますか?`, "kicker", o);
       if (kicked) cost = cost + k.cost;
     }
-    if (!this.pay(p, cost, x, exclude)) return;
+    // 純色払い:同じ1色のマナだけで払う
+    let only: Color | undefined;
+    if (abilityOf(c, "pureCost")) {
+      const colors = this.pureColors(p, cost, x, exclude);
+      if (!colors.length) return;
+      only = colors.length === 1 ? colors[0] : await this.ask<Color>(p, { kind: "color", prompt: `${c.name}:純色払い。支払う色を選んでください`, options: colors, source: o });
+      if (!colors.includes(only)) only = colors[0];
+      o.paidColor = only;
+      this.addLog(`${c.name}を${COLOR_JA[only]}のマナだけで支払う`, p);
+    }
+    if (!this.pay(p, cost, x, exclude, only)) return;
     if (burned) {
       const opts = this.players[p].mana.filter((m) => m !== o);
       const picked = await this.askCards(p, `燃焼:墓地に置くマナゾーンのカードを${burnCount}枚選んでください`, opts, burnCount, "burn");
@@ -2046,6 +2086,15 @@ export class Game {
       case "blessing":
         this.gainBlessing(p, e.id);
         break;
+      case "paidColorKw": {
+        const o = ctx.item.obj;
+        const kw = o.paidColor ? ({ W: "警戒", U: "飛行", B: "接死", R: "速攻", G: "トランプル" } as Record<string, string>)[o.paidColor] : undefined;
+        if (kw && o.zone === "battlefield") {
+          o.perm.push({ p: 0, t: 0, kw: [kw] });
+          this.addLog(`${o.card.name}は${kw}を得た`, p);
+        }
+        break;
+      }
       case "heist": {
         const pool = [...pl.extra];
         if (pool.length === 0) {

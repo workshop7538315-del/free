@@ -16,7 +16,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const cards = cardsJson as Card[];
 const byId = new Map(cards.map((c) => [c.id, c]));
 type Deck = { id: string; name: string; colors: string[]; archetype?: string; cards: Record<string, number> };
-const decks = decksJson as Deck[];
+// 旧スターターは総当たりに入れない
+const decks = (decksJson as (Deck & { legacy?: boolean })[]).filter((d) => !d.legacy);
 const expand = (d: Deck) => Object.entries(d.cards).flatMap(([id, n]) => Array.from({ length: n }, () => byId.get(id)!));
 
 const perPair = Math.max(2, Math.floor(Number(process.argv[2] ?? 40) / 2) * 2);

@@ -34,6 +34,7 @@ import { GATE } from "./sets/p9-gate.mjs";
 import { COMMEDIA } from "./sets/p95-commedia.mjs";
 import { ELDORADO } from "./sets/p95-eldorado.mjs";
 import { BLACK_MARKET } from "./sets/p10-blackmarket.mjs";
+import { HEROES } from "./sets/p11-heroes.mjs";
 
 export const PACKS = [
   {
@@ -145,5 +146,15 @@ export const PACKS = [
     words: ["快楽", "強盗", "闇市"],
     theme: "港町の裏街・灰燭街が舞台。青・赤・緑だけのパック。赤緑の強盗団「鉄爪団」は自分の金庫(秘蔵庫)から宝石を盗み出してマナに換え(強盗)、宝石獣をマナ解放で目覚めさせる。青赤の密売組織「夢花会」の架空の薬は、捨てられたときに効く(陶酔)。常用者とキセルが捨てる手段で、常用者は依存に苦しむ。",
     sets: [BLACK_MARKET],
+  },
+  {
+    id: "p11",
+    number: 11,
+    name: "英雄の継承",
+    kind: "既存カード強化",
+    words: ["英雄", "継承", "物語"],
+    theme: "第8弾以前のアーキタイプのスターター28デッキに、名前のある英雄(エース)と、その関連カード2枚ずつを配る。多色デッキのカードはすべて多色。単色デッキには、次の弾の単色強化につながる「純色」を入れた。決闘のロザリンドと陰謀のヴィオレッタは宮廷の宿敵で、2人の混成カードは払った色で効果が変わる。同じ1色のマナで払う「純色払い」の欠色カードも4枚。",
+    sets: [HEROES],
+    reprints: [],
   },
 ];

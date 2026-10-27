@@ -15,7 +15,8 @@
     "matchup": "tsx scripts/matchup.ts",
     "one": "tsx scripts/one-game.ts",
     "applause": "tsx scripts/applause-stats.ts",
-    "extra": "tsx scripts/extra-stats.ts"
+    "extra": "tsx scripts/extra-stats.ts",
+    "hero-ab": "tsx scripts/hero-ab.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

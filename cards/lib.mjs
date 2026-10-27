@@ -103,6 +103,8 @@ export const entrata = (n, cat) => ({ a: "entrata", n, cat });
 export const pioneer = (n, color, grand = false) => ({ a: "pioneer", n, color, ...(grand ? { grand } : {}) });
 /** 組み立て【color】:秘蔵庫の発明品。partner(ID と名前)に武装進化する */
 export const assemble = (color, partner, partnerName, cond = "attacked") => ({ a: "assemble", color, partner, partnerName, cond });
+/** 純色払い */
+export const pureCost = () => ({ a: "pureCost" });
 /** 陶酔 ―:このカードが手札から捨てられたとき */
 export const onDiscarded = trig("discarded");
 /** あなたがカードを捨てるたび */
@@ -127,7 +129,7 @@ export const offering = (n, sub) => ({ a: "offering", n, ...(sub ? { sub } : {})
 export const modal = (modes) => ({
   a: "spell",
   effects: [],
-  modes: modes.map(([label, effects, targets]) => ({ label, effects: [effects].flat(), ...(targets ? { targets: [targets].flat() } : {}) })),
+  modes: modes.map(([label, effects, targets, pay]) => ({ label, effects: [effects].flat(), ...(targets ? { targets: [targets].flat() } : {}), ...(pay ? { pay } : {}) })),
 });
 /** 生成されるカード(カードリストには入らない) */
 export const gen = (id, name, cost, type, abilities, extra = {}) => {
@@ -255,6 +257,8 @@ export const E = {
   createMana: (card, n = 1) => ({ do: "createMana", card, n }),
   /** 強盗 N(fallback:秘蔵庫が空のときに手札に加える生成カード) */
   heist: (n, fallback) => ({ do: "heist", n, ...(fallback ? { fallback } : {}) }),
+  /** 純色払いの色に応じたキーワードを得る */
+  paidColorKw: () => ({ do: "paidColorKw" }),
   /** このカードをマナゾーンに置く */
   selfToMana: () => ({ do: "selfToMana" }),
   /** 加護を得る */
@@ -362,6 +366,7 @@ export function condLabel(c) {
       raid: "強襲",
       chain: "連唱",
       vaultEmpty: "金庫破り",
+      pureColor: "純色",
       vacuum: "真空",
     }[c] ?? null
   );
@@ -405,6 +410,7 @@ function condPlain(c) {
     raid: "このターン、あなたがクリーチャー2体以上で攻撃した",
     chain: "このターン、あなたがインスタントかソーサリーを2つ以上唱えた",
     vaultEmpty: "あなたの秘蔵庫にカードがない",
+    pureColor: "あなたのマナゾーンのカードがすべて同じ1色である",
     vacuum: "あなたのマナゾーンのカードがすべて欠色である",
     intrigue: "このターン、対戦相手がカードを捨てたか、対戦相手のクリーチャーが戦場を離れた",
     threshold: "あなたの墓地にカードが7枚以上ある",
@@ -570,6 +576,8 @@ function effectText(e, name, abil, notes) {
       return `あなたの喝采【${e.cat}】を${e.n}増やす。`;
     case "blessing":
       return `あなたは加護《${e.id}》を得る。`;
+    case "paidColorKw":
+      return `${name}は、純色払いで支払った色に応じて、白なら警戒、青なら飛行、黒なら接死、赤なら速攻、緑ならトランプルを得る。`;
     case "heist":
       return `強盗 ${e.n}(あなたの秘蔵庫からカードを${e.n}枚選び、タップ状態でマナゾーンに置く${e.fallback ? `。秘蔵庫が空なら、代わりに《${e.fallback.name}》(${e.fallback.cost} ${e.fallback.type}:${(e.fallback.text ?? []).join(" ")})を手札に加える` : ""})。`;
     case "selfToMana":
@@ -730,6 +738,8 @@ function abilityTextBody(abil, card) {
       const cond = abil.cond === "attacked" ? "このターン、装備しているクリーチャーが攻撃したなら" : "装備しているクリーチャーに装備品が2つ以上ついているなら";
       return `組み立て【${COLOR_JA[abil.color]}】 / 武装進化 ― ${cond}、そのクリーチャーと${name}を《${abil.partnerName}》に武装進化してもよい。`;
     }
+    case "pureCost":
+      return "純色払い(このカードのコストは、すべて同じ1色のマナで支払わなければならない)";
     case "gem":
       return `宝石獣(秘蔵庫に入る。強盗でマナゾーンに置かれ、マナ解放で唱える。マナゾーンや戦場を離れると秘蔵庫に戻る)`;
     case "vaultCrack":
@@ -749,6 +759,11 @@ function abilityTextBody(abil, card) {
     case "free":
       return `零式(${condPlain(abil.if)}なら、この呪文をマナを支払わずに唱えてもよい)`;
     case "spell":
+      // 払った色で効果が変わる(混成マナ)
+      if (abil.modes?.every((m) => m.pay)) {
+        const sym = (card.cost.match(/\{[WUBRG]\/[WUBRG]\}/) ?? [""])[0];
+        return abil.modes.map((m) => `${sym}を${COLOR_JA[m.pay]}で支払ったなら、${bodyText(m, name)}`).join("");
+      }
       if (abil.modes) return `次から1つを選ぶ。${abil.modes.map((m, i) => `${"①②③④"[i]}${bodyText(m, name)}`).join("")}`;
       return bodyText(abil, name);
     case "trigger": {

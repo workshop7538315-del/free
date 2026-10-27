@@ -39421,5 +39421,4066 @@
         ]
       }
     ]
+  },
+  {
+    "id": "hr01",
+    "name": "天空審問官 セラフィナ",
+    "cost": "{2}{W}{U}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "天使",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "飛行、警戒",
+      "あなたがインスタント呪文を唱えるたび、カードを1枚引く。(この能力は1ターンに1回だけ誘発する)"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "w023",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "kw",
+        "kw": "警戒"
+      },
+      {
+        "a": "trigger",
+        "on": "cast",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "filter": {
+          "type": "インスタント"
+        },
+        "oncePerTurn": true
+      }
+    ]
+  },
+  {
+    "id": "hr02",
+    "name": "セラフィナの神託",
+    "cost": "{1}{W}{U}",
+    "type": "インスタント",
+    "rarity": "レア",
+    "text": [
+      "呪文1つを対象とする。それを打ち消す。あなたのライブラリーの一番上のカードを見る。そのカードをライブラリーの一番下に置いてもよい。"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "u021",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "counter",
+            "tg": 0
+          },
+          {
+            "do": "lookTop"
+          }
+        ],
+        "targets": [
+          {
+            "t": "spell"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr03",
+    "name": "審問の白鷺",
+    "cost": "{1}{W}{U}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "鳥",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "飛行",
+      "審問の白鷺が戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。それをタップする。それは、そのコントローラーの次のアンタップ・ステップにアンタップしない。"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "w005",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "tap",
+            "tg": 0,
+            "freeze": true
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr04",
+    "name": "輪廻の庭師 オルドリク",
+    "cost": "{3}{B}{G}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "エルフ・ドルイド",
+    "power": 4,
+    "toughness": 5,
+    "text": [
+      "到達",
+      "輪廻の庭師 オルドリクが戦場に出たとき、あなたの墓地にあるクリーチャー・カード1枚を対象とする。それをあなたの手札に戻す。",
+      "あなたがコントロールするクリーチャーが死亡するたび、輪廻の庭師 オルドリクの上に+1/+1カウンターを1個置く。"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "g023",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "到達"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "returnCard",
+            "tg": 0,
+            "to": "hand"
+          }
+        ],
+        "targets": [
+          {
+            "t": "graveyard",
+            "cardType": "クリーチャー"
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "allyDies",
+        "effects": [
+          {
+            "do": "counters",
+            "self": true,
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr05",
+    "name": "オルドリクの苗床",
+    "cost": "{1}{B}{G}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "あなたの墓地にあるクリーチャー・カード1枚を対象とする。それをあなたの手札に戻す。あなたのライブラリーの一番上のカードを見る。そのカードをライブラリーの一番下に置いてもよい。"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "b017",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "returnCard",
+            "tg": 0,
+            "to": "hand"
+          },
+          {
+            "do": "lookTop"
+          }
+        ],
+        "targets": [
+          {
+            "t": "graveyard",
+            "cardType": "クリーチャー"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr06",
+    "name": "園を這う屍茸",
+    "cost": "{B}{G}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "菌類・ゾンビ",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "不屈"
+    ],
+    "tags": [
+      "カウンター"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "g005",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "不屈"
+      }
+    ]
+  },
+  {
+    "id": "hr07",
+    "name": "記憶喰らいの王 ヴェルナー",
+    "cost": "{2}{U}{B}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "ホラー",
+    "power": 2,
+    "toughness": 3,
+    "text": [
+      "飛行",
+      "記憶喰らいの王 ヴェルナーが戦場に出たとき、対戦相手は手札を1枚捨てる。",
+      "陰謀 ― あなたの終了ステップの開始時に、対戦相手は2点のライフを失う。あなたは2点のライフを得る。"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "b005",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "discard",
+            "n": 1,
+            "who": "opp"
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "endStep",
+        "effects": [
+          {
+            "do": "loseLife",
+            "n": 2,
+            "who": "opp"
+          },
+          {
+            "do": "gainLife",
+            "n": 2
+          }
+        ],
+        "if": "intrigue"
+      }
+    ]
+  },
+  {
+    "id": "hr08",
+    "name": "ヴェルナーの囁き",
+    "cost": "{1}{U}{B}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "対戦相手は手札を1枚捨てる。カードを1枚引く。"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "b014",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "discard",
+            "n": 1,
+            "who": "opp"
+          },
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr09",
+    "name": "記憶を盗む影",
+    "cost": "{U}{B}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "シェイド",
+    "power": 1,
+    "toughness": 2,
+    "text": [
+      "飛行",
+      "記憶を盗む影が戦場に出たとき、対戦相手は手札を1枚捨てる。"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "u016",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "discard",
+            "n": 1,
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr10",
+    "name": "大海と森の王 ナギサ",
+    "cost": "{3}{G}{G}{U}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "リバイアサン",
+    "power": 6,
+    "toughness": 6,
+    "text": [
+      "呪禁、トランプル",
+      "大海と森の王 ナギサが戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。それを持ち主の手札に戻す。"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "m004",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "呪禁"
+      },
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "bounce",
+            "tg": 0
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr11",
+    "name": "潮招きの巫女",
+    "cost": "{G}{U}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "subtype": "マーフォーク・ドルイド",
+    "power": 1,
+    "toughness": 3,
+    "text": [
+      "{T}:{G}か{U}を加える。",
+      "潮招きの巫女が戦場に出たとき、あなたのライブラリーの一番上のカードを見る。そのカードをライブラリーの一番下に置いてもよい。"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "g017",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "mana",
+        "produce": [
+          "{G}",
+          "{U}"
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "lookTop"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr12",
+    "name": "ナギサの大波",
+    "cost": "{2}{G}{U}",
+    "type": "インスタント",
+    "rarity": "アンコモン",
+    "text": [
+      "対戦相手がコントロールするクリーチャー1体を対象とする。それを持ち主の手札に戻す。あなたのライブラリーの一番上のカードをタップ状態であなたのマナゾーンに置く。"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "u016",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "bounce",
+            "tg": 0
+          },
+          {
+            "do": "rampTop",
+            "n": 1,
+            "tapped": true
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr13",
+    "name": "天秤の裁定者 リーヴラ",
+    "cost": "{2}{W}{B}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "天使",
+    "power": 2,
+    "toughness": 4,
+    "text": [
+      "飛行、絆魂",
+      "あなたがコントロールするクリーチャーが死亡するたび、対戦相手は1点のライフを失う。あなたは1点のライフを得る。"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "w005",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "kw",
+        "kw": "絆魂"
+      },
+      {
+        "a": "trigger",
+        "on": "allyDies",
+        "effects": [
+          {
+            "do": "loseLife",
+            "n": 1,
+            "who": "opp"
+          },
+          {
+            "do": "gainLife",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr14",
+    "name": "リーヴラの審判",
+    "cost": "{2}{W}{B}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "クリーチャー1体を対象とする。それを破壊する。あなたは3点のライフを得る。"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "w023",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "destroy",
+            "tg": 0
+          },
+          {
+            "do": "gainLife",
+            "n": 3
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr15",
+    "name": "天秤の従者",
+    "cost": "{W}{B}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・クレリック",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "絆魂",
+      "天秤の従者が死亡したとき、対戦相手は1点のライフを失う。あなたは1点のライフを得る。"
+    ],
+    "tags": [
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "b017",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "絆魂"
+      },
+      {
+        "a": "trigger",
+        "on": "dies",
+        "effects": [
+          {
+            "do": "loseLife",
+            "n": 1,
+            "who": "opp"
+          },
+          {
+            "do": "gainLife",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr16",
+    "name": "民衆の英雄 カイル",
+    "cost": "{1}{R}{W}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "人間・兵士",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "あなたがコントロールする他の人間は+1/+0の修整を受ける。",
+      "民衆の英雄 カイルが攻撃するたび、1/1の白の人間・兵士・クリーチャー・トークンを1体生成する。"
+    ],
+    "tags": [
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "hum32",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 1,
+          "t": 0,
+          "filter": {
+            "sub": "人間"
+          },
+          "others": true
+        }
+      },
+      {
+        "a": "trigger",
+        "on": "attacks",
+        "effects": [
+          {
+            "do": "token",
+            "n": 1,
+            "p": 1,
+            "t": 1,
+            "color": "W",
+            "sub": "人間・兵士"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr17",
+    "name": "カイルの蜂起の号令",
+    "cost": "{2}{R}{W}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "速攻を持つ1/1の白の人間・兵士・クリーチャー・トークンを2体生成する。ターン終了時まで、あなたがコントロールするクリーチャーは+1/+0の修整を受ける。"
+    ],
+    "tags": [
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "hum08",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "token",
+            "n": 2,
+            "p": 1,
+            "t": 1,
+            "color": "W",
+            "sub": "人間・兵士",
+            "kw": [
+              "速攻"
+            ]
+          },
+          {
+            "do": "pumpAll",
+            "who": "you",
+            "p": 1,
+            "t": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr18",
+    "name": "カイルの戦友",
+    "cost": "{R}{W}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・戦士",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "先制攻撃、速攻"
+    ],
+    "tags": [
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "rk13",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      },
+      {
+        "a": "kw",
+        "kw": "速攻"
+      }
+    ]
+  },
+  {
+    "id": "hr19",
+    "name": "星座の巫女 ステラ",
+    "cost": "{1}{G}{W}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "人間・クレリック",
+    "power": 2,
+    "toughness": 3,
+    "text": [
+      "他のエンチャントがあなたのコントロールで戦場に出るたび、あなたのライブラリーの一番上のカードを見る。そのカードをライブラリーの一番下に置いてもよい。あなたは1点のライフを得る。(この能力は1ターンに1回だけ誘発する)"
+    ],
+    "tags": [
+      "エンチャント",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "enc06",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "allyEnter",
+        "effects": [
+          {
+            "do": "lookTop"
+          },
+          {
+            "do": "gainLife",
+            "n": 1
+          }
+        ],
+        "filter": {
+          "type": "エンチャント"
+        },
+        "oncePerTurn": true
+      }
+    ]
+  },
+  {
+    "id": "hr20",
+    "name": "ステラの星図の祝詞",
+    "cost": "{G}{W}",
+    "type": "エンチャント",
+    "rarity": "レア",
+    "text": [
+      "ステラの星図の祝詞が戦場に出たとき、カードを1枚引く。あなたは2点のライフを得る。"
+    ],
+    "tags": [
+      "エンチャント"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "enc20",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          },
+          {
+            "do": "gainLife",
+            "n": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr21",
+    "name": "星座の獣",
+    "cost": "{2}{G}{W}",
+    "type": "エンチャント・クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "ビースト",
+    "power": 1,
+    "toughness": 1,
+    "text": [
+      "警戒",
+      "星座の獣は、あなたがコントロールするエンチャント1つにつき+1/+1の修整を受ける。"
+    ],
+    "tags": [
+      "エンチャント"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "enc26",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "scale",
+          "per": {
+            "count": "perm",
+            "filter": {
+              "type": "エンチャント"
+            }
+          },
+          "p": 1,
+          "t": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "hr22",
+    "name": "三刻の盟主 ルクス",
+    "cost": "{1}{W}{U}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "人間・騎士",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "飛行",
+      "あなたが唱えるマナ総量が3の呪文を唱えるためのコストは{1}少なくなる。"
+    ],
+    "tags": [
+      "マナ総量3",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "hsy11",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "discount",
+          "filter": {
+            "mv": 3
+          },
+          "n": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "hr23",
+    "name": "ルクスの三刻の鐘",
+    "cost": "{1}{W}{U}",
+    "type": "インスタント",
+    "rarity": "レア",
+    "text": [
+      "次から1つを選ぶ。①マナ総量が3以下の呪文1つを対象とする。それを打ち消す。②カードを2枚引く。"
+    ],
+    "tags": [
+      "マナ総量3"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "aw06",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [],
+        "modes": [
+          {
+            "label": "マナ総量3以下の呪文を打ち消す",
+            "effects": [
+              {
+                "do": "counter",
+                "tg": 0
+              }
+            ],
+            "targets": [
+              {
+                "t": "spell",
+                "maxMV": 3
+              }
+            ]
+          },
+          {
+            "label": "カードを2枚引く",
+            "effects": [
+              {
+                "do": "draw",
+                "n": 2
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr24",
+    "name": "盟約の騎士",
+    "cost": "{1}{W}{U}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・騎士",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "警戒",
+      "盟約の騎士が戦場に出たとき、あなたのライブラリーの一番上のカードを見る。そのカードをライブラリーの一番下に置いてもよい。"
+    ],
+    "tags": [
+      "マナ総量3",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "hig03",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "lookTop"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr25",
+    "name": "孤高の歌姫 セレス",
+    "cost": "{1}{B}{R}{G}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "人間・歌手",
+    "power": 4,
+    "toughness": 4,
+    "text": [
+      "孤高 ― 孤高の歌姫 セレスは+2/+2の修整を受け、トランプルを持つ。",
+      "孤高 ― 孤高の歌姫 セレスが戦場に出たとき、カードを1枚引く。"
+    ],
+    "tags": [
+      "孤高",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "hig12",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 2,
+          "t": 2,
+          "kw": [
+            "トランプル"
+          ]
+        },
+        "if": "highlander"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "if": "highlander"
+      }
+    ]
+  },
+  {
+    "id": "hr26",
+    "name": "セレスの独唱の終幕",
+    "cost": "{1}{B}{R}{G}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "クリーチャー1体を対象とする。それを破壊する。孤高 ― セレスの独唱の終幕は対戦相手に3点のダメージを与える。"
+    ],
+    "tags": [
+      "孤高"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "hig18",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "destroy",
+            "tg": 0
+          },
+          {
+            "do": "damage",
+            "n": 3,
+            "to": "opp",
+            "if": "highlander"
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr27",
+    "name": "セレスの使い魔",
+    "cost": "{B}{R}{G}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "ネコ",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "速攻、接死"
+    ],
+    "tags": [
+      "孤高"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "hig13",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "速攻"
+      },
+      {
+        "a": "kw",
+        "kw": "接死"
+      }
+    ]
+  },
+  {
+    "id": "hr28",
+    "name": "星詠みの大司祭 アステリア",
+    "cost": "{2}{W}{U}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "人間・クレリック",
+    "power": 2,
+    "toughness": 4,
+    "text": [
+      "星詠みの大司祭 アステリアが戦場に出たとき、カードを1枚引く。"
+    ],
+    "tags": [
+      "星詠み",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "hsy10",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr29",
+    "name": "星詠みの大星図",
+    "cost": "{W}{U}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "あなたのライブラリーの一番上のカードを見る。そのカードをライブラリーの一番下に置いてもよい。カードを1枚引く。"
+    ],
+    "tags": [
+      "星詠み"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "hsy04",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "lookTop"
+          },
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr30",
+    "name": "星詠みの若き弟子",
+    "cost": "{W}{U}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・クレリック",
+    "power": 1,
+    "toughness": 2,
+    "text": [
+      "飛行",
+      "星詠みの若き弟子が戦場に出たとき、あなたのライブラリーの一番上のカードを見る。そのカードをライブラリーの一番下に置いてもよい。"
+    ],
+    "tags": [
+      "星詠み",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "hsy02",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "lookTop"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr31",
+    "name": "鉄機将軍 ガルヴァス",
+    "cost": "{3}{R}",
+    "type": "アーティファクト・クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "構築物・兵士",
+    "power": 4,
+    "toughness": 4,
+    "text": [
+      "あなたがコントロールする他の「鉄機」と名のついたクリーチャーは+1/+1の修整を受ける。"
+    ],
+    "tags": [
+      "鉄機"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "tek22",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 1,
+          "t": 1,
+          "filter": {
+            "name": "鉄機"
+          },
+          "others": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "hr32",
+    "name": "鉄機の突撃命令",
+    "cost": "{1}{R}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "ターン終了時まで、あなたがコントロールする「鉄機」と名のついたクリーチャーは+2/+0の修整を受け、速攻を得る。"
+    ],
+    "tags": [
+      "鉄機"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "tek15",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "pumpAll",
+            "who": "you",
+            "p": 2,
+            "t": 0,
+            "kw": [
+              "速攻"
+            ],
+            "filter": {
+              "name": "鉄機"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr33",
+    "name": "鉄機の斥候",
+    "cost": "{2}",
+    "type": "アーティファクト・クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "構築物",
+    "power": 2,
+    "toughness": 1,
+    "text": [
+      "飛行"
+    ],
+    "tags": [
+      "鉄機"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "tek07",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      }
+    ]
+  },
+  {
+    "id": "hr34",
+    "name": "深淵の司書 モルガナ",
+    "cost": "{2}{U}{B}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "人間・ウィザード",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "深淵の司書 モルガナが戦場に出たとき、あなたの墓地にあるクリーチャー・カード1枚を対象とする。それをあなたの手札に戻す。",
+      "深淵 ― 深淵の司書 モルガナは+2/+2の修整を受け、飛行を持つ。"
+    ],
+    "tags": [
+      "墓地",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "grv12",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "returnCard",
+            "tg": 0,
+            "to": "hand"
+          }
+        ],
+        "targets": [
+          {
+            "t": "graveyard",
+            "cardType": "クリーチャー"
+          }
+        ]
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 2,
+          "t": 2,
+          "kw": [
+            "飛行"
+          ]
+        },
+        "if": "threshold"
+      }
+    ]
+  },
+  {
+    "id": "hr35",
+    "name": "モルガナの禁書",
+    "cost": "{1}{U}{B}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "あなたの墓地にあるクリーチャー・カード1枚を対象とする。それをあなたの手札に戻す。カードを1枚引く。"
+    ],
+    "tags": [
+      "墓地"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "grv07",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "returnCard",
+            "tg": 0,
+            "to": "hand"
+          },
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "targets": [
+          {
+            "t": "graveyard",
+            "cardType": "クリーチャー"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr36",
+    "name": "書庫の亡者",
+    "cost": "{U}{B}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "ゾンビ",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "深淵 ― 書庫の亡者は+1/+1の修整を受け、飛行を持つ。"
+    ],
+    "tags": [
+      "墓地"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "grv05",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 1,
+          "t": 1,
+          "kw": [
+            "飛行"
+          ]
+        },
+        "if": "threshold"
+      }
+    ]
+  },
+  {
+    "id": "hr37",
+    "name": "血の宴の主 ザルグ",
+    "cost": "{2}{B}{R}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "デーモン",
+    "power": 4,
+    "toughness": 3,
+    "text": [
+      "クリーチャーを1体生け贄に捧げる:クリーチャー1体かプレイヤー1人を対象とする。血の宴の主 ザルグはそれに2点のダメージを与える。",
+      "あなたがパーマネントを生け贄に捧げるたび、カードを1枚引く。(この能力は1ターンに1回だけ誘発する)"
+    ],
+    "tags": [
+      "生け贄"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "rk08",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "activated",
+        "cost": {
+          "sac": {}
+        },
+        "effects": [
+          {
+            "do": "damage",
+            "n": 2,
+            "tg": 0
+          }
+        ],
+        "targets": [
+          {
+            "t": "any"
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "sacrifice",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "oncePerTurn": true
+      }
+    ]
+  },
+  {
+    "id": "hr38",
+    "name": "ザルグの宴の生け贄",
+    "cost": "{B}{R}",
+    "type": "インスタント",
+    "rarity": "レア",
+    "text": [
+      "クリーチャー1体を対象とする。ターン終了時まで、それは-3/-3の修整を受ける。1/1の黒のゾンビ・クリーチャー・トークンを1体生成する。"
+    ],
+    "tags": [
+      "生け贄"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "arm11",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "pump",
+            "tg": 0,
+            "p": -3,
+            "t": -3
+          },
+          {
+            "do": "token",
+            "n": 1,
+            "p": 1,
+            "t": 1,
+            "color": "B",
+            "sub": "ゾンビ"
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr39",
+    "name": "ザルグの信徒",
+    "cost": "{B}{R}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・狂信者",
+    "power": 2,
+    "toughness": 1,
+    "text": [
+      "ザルグの信徒が死亡したとき、クリーチャー1体かプレイヤー1人を対象とする。ザルグの信徒はそれに1点のダメージを与える。"
+    ],
+    "tags": [
+      "生け贄",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "b005",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "dies",
+        "effects": [
+          {
+            "do": "damage",
+            "n": 1,
+            "tg": 0
+          }
+        ],
+        "targets": [
+          {
+            "t": "any"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr40",
+    "name": "命の循環者 エイラ",
+    "cost": "{1}{W}{B}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "人間・クレリック",
+    "power": 2,
+    "toughness": 3,
+    "text": [
+      "絆魂",
+      "あなたがライフを得るたび、対戦相手は1点のライフを失う。"
+    ],
+    "tags": [
+      "ライフ",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "lif05",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "絆魂"
+      },
+      {
+        "a": "trigger",
+        "on": "lifeGain",
+        "effects": [
+          {
+            "do": "loseLife",
+            "n": 1,
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr41",
+    "name": "エイラの癒しの祈り",
+    "cost": "{W}{B}",
+    "type": "インスタント",
+    "rarity": "レア",
+    "text": [
+      "あなたは4点のライフを得る。カードを1枚引く。"
+    ],
+    "tags": [
+      "ライフ"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "lif13",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "gainLife",
+            "n": 4
+          },
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr42",
+    "name": "エイラの巡礼者",
+    "cost": "{1}{W}{B}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・巡礼者",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "飛行、絆魂"
+    ],
+    "tags": [
+      "ライフ",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "lif01",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "kw",
+        "kw": "絆魂"
+      }
+    ]
+  },
+  {
+    "id": "hr43",
+    "name": "不屈の大地母 ガイエラ",
+    "cost": "{2}{B}{G}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "エレメンタル",
+    "power": 4,
+    "toughness": 4,
+    "text": [
+      "不屈",
+      "不屈の大地母 ガイエラが戦場に出たとき、あなたがコントロールする各クリーチャーの上に+1/+1カウンターを1個置く。"
+    ],
+    "tags": [
+      "カウンター"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "ctr11",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "不屈"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "countersAll",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr44",
+    "name": "ガイエラの大地の恵み",
+    "cost": "{1}{B}{G}",
+    "type": "インスタント",
+    "rarity": "レア",
+    "text": [
+      "次から1つを選ぶ。①あなたがコントロールするクリーチャー1体を対象とする。それの上に+1/+1カウンターを2個置く。カードを1枚引く。②対戦相手がコントロールするパワーが3以下のクリーチャー1体を対象とする。それを破壊する。"
+    ],
+    "tags": [
+      "カウンター"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "ctr16",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [],
+        "modes": [
+          {
+            "label": "クリーチャー1体に+1/+1カウンター2個、1枚引く",
+            "effects": [
+              {
+                "do": "counters",
+                "tg": 0,
+                "n": 2
+              },
+              {
+                "do": "draw",
+                "n": 1
+              }
+            ],
+            "targets": [
+              {
+                "t": "creature",
+                "who": "you"
+              }
+            ]
+          },
+          {
+            "label": "パワー3以下のクリーチャーを破壊する",
+            "effects": [
+              {
+                "do": "destroy",
+                "tg": 0
+              }
+            ],
+            "targets": [
+              {
+                "t": "creature",
+                "filter": {
+                  "maxPower": 3
+                },
+                "who": "opp"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr45",
+    "name": "不屈の獣",
+    "cost": "{B}{G}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "ビースト",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "不屈",
+      "不屈の獣が戦場に出たとき、不屈の獣の上に+1/+1カウンターを1個置く。"
+    ],
+    "tags": [
+      "カウンター"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "ctr20",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "不屈"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "counters",
+            "self": true,
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr46",
+    "name": "嵐の詠唱者 ラザール",
+    "cost": "{1}{U}{R}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "人間・ウィザード",
+    "power": 2,
+    "toughness": 3,
+    "text": [
+      "あなたがインスタントかソーサリーである呪文を唱えるたび、嵐の詠唱者 ラザールは対戦相手に1点のダメージを与える。"
+    ],
+    "tags": [
+      "呪文",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "rk05",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "castSpell",
+        "effects": [
+          {
+            "do": "damage",
+            "n": 1,
+            "to": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr47",
+    "name": "ラザールの嵐",
+    "cost": "{1}{U}{R}",
+    "type": "インスタント",
+    "rarity": "レア",
+    "text": [
+      "クリーチャー1体かプレイヤー1人を対象とする。ラザールの嵐はそれに2点のダメージを与える。あなたのライブラリーの一番上のカードを見る。そのカードをライブラリーの一番下に置いてもよい。"
+    ],
+    "tags": [
+      "呪文"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "spl11",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "damage",
+            "n": 2,
+            "tg": 0
+          },
+          {
+            "do": "lookTop"
+          }
+        ],
+        "targets": [
+          {
+            "t": "any"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr48",
+    "name": "ラザールの弟子",
+    "cost": "{U}{R}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・ウィザード",
+    "power": 1,
+    "toughness": 2,
+    "text": [
+      "あなたがインスタントかソーサリーである呪文を唱えるたび、ターン終了時まで、ラザールの弟子は+1/+1の修整を受ける。"
+    ],
+    "tags": [
+      "呪文",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "spl18",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "castSpell",
+        "effects": [
+          {
+            "do": "pump",
+            "self": true,
+            "p": 1,
+            "t": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr49",
+    "name": "武具の王 ベルトラン",
+    "cost": "{2}{R}{W}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "人間・騎士",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "先制攻撃",
+      "武具の王 ベルトランが戦場に出たとき、あなたのライブラリーから装備品・カードを1枚探し、公開して手札に加える。その後ライブラリーを切り直す。",
+      "あなたが装備品を1つ以上コントロールしているかぎり、武具の王 ベルトランは+2/+2の修整を受ける。"
+    ],
+    "tags": [
+      "装備",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "rk04",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "tutor",
+            "filter": {
+              "sub": "装備品"
+            },
+            "to": "hand"
+          }
+        ]
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 2,
+          "t": 2
+        },
+        "if": {
+          "control": {
+            "sub": "装備品"
+          },
+          "n": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "hr50",
+    "name": "ベルトランの宝剣",
+    "cost": "{R}{W}",
+    "type": "アーティファクト",
+    "rarity": "レア",
+    "subtype": "装備品",
+    "text": [
+      "装備しているクリーチャーは+2/+1の修整を受け、先制攻撃を持つ。",
+      "ベルトランの宝剣が戦場に出たとき、カードを1枚引く。",
+      "装備 {1}"
+    ],
+    "tags": [
+      "装備"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "eqp08",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "auraBuff",
+          "p": 2,
+          "t": 1,
+          "kw": [
+            "先制攻撃"
+          ]
+        }
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ]
+      },
+      {
+        "a": "equip",
+        "cost": "{1}"
+      }
+    ]
+  },
+  {
+    "id": "hr51",
+    "name": "ベルトランの従騎士",
+    "cost": "{R}{W}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・騎士",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "ベルトランの従騎士が戦場に出たとき、《簡易の剣》({1} アーティファクト:装備しているクリーチャーは+1/+1の修整を受ける。 装備 {1})を1枚あなたの手札に加える。"
+    ],
+    "tags": [
+      "装備",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "rk13",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "create",
+            "card": {
+              "id": "tk-kanibu",
+              "name": "簡易の剣",
+              "cost": "{1}",
+              "type": "アーティファクト",
+              "rarity": "生成",
+              "abilities": [
+                {
+                  "a": "static",
+                  "st": {
+                    "s": "auraBuff",
+                    "p": 1,
+                    "t": 1
+                  }
+                },
+                {
+                  "a": "equip",
+                  "cost": "{1}"
+                }
+              ],
+              "subtype": "装備品",
+              "text": [
+                "装備しているクリーチャーは+1/+1の修整を受ける。",
+                "装備 {1}"
+              ]
+            },
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr52",
+    "name": "大地の鼓動 ドルガン",
+    "cost": "{2}{R}{G}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "巨人",
+    "power": 4,
+    "toughness": 4,
+    "text": [
+      "トランプル",
+      "大地の鼓動 ドルガンが戦場に出たとき、あなたのライブラリーの一番上のカードをあなたのマナゾーンに置く。",
+      "鼓動 ― あなたのマナゾーンにカードが置かれるたび、大地の鼓動 ドルガンは対戦相手に1点のダメージを与える。"
+    ],
+    "tags": [
+      "鼓動"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "hrt11",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "rampTop",
+            "n": 1
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "manaEnter",
+        "effects": [
+          {
+            "do": "damage",
+            "n": 1,
+            "to": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr53",
+    "name": "ドルガンの脈動の儀",
+    "cost": "{R}{G}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "クリーチャー1体を対象とする。あなたのライブラリーの一番上のカードをあなたのマナゾーンに置く。ドルガンの脈動の儀はそれに2点のダメージを与える。"
+    ],
+    "tags": [
+      "鼓動"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "hrt03",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "rampTop",
+            "n": 1
+          },
+          {
+            "do": "damage",
+            "n": 2,
+            "tg": 0
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr54",
+    "name": "地脈の獣",
+    "cost": "{1}{R}{G}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "ビースト",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "鼓動 ― あなたのマナゾーンにカードが置かれるたび、ターン終了時まで、地脈の獣は+1/+1の修整を受ける。(この能力は1ターンに1回だけ誘発する)"
+    ],
+    "tags": [
+      "鼓動"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "hrt19",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "manaEnter",
+        "effects": [
+          {
+            "do": "pump",
+            "self": true,
+            "p": 1,
+            "t": 1
+          }
+        ],
+        "oncePerTurn": true
+      }
+    ]
+  },
+  {
+    "id": "hr55",
+    "name": "烈火の剣姫 カグラ",
+    "cost": "{2}{R}{R}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "人間・戦士",
+    "power": 4,
+    "toughness": 3,
+    "text": [
+      "速攻",
+      "マナ武装 5(赤) ― 烈火の剣姫 カグラは先制攻撃を持つ。",
+      "純色 ― 烈火の剣姫 カグラが攻撃するたび、烈火の剣姫 カグラは対戦相手に1点のダメージを与える。"
+    ],
+    "tags": [
+      "マナ武装",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "arm15",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "速攻"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 0,
+          "t": 0,
+          "kw": [
+            "先制攻撃"
+          ]
+        },
+        "if": {
+          "armed": "R",
+          "n": 5
+        }
+      },
+      {
+        "a": "trigger",
+        "on": "attacks",
+        "effects": [
+          {
+            "do": "damage",
+            "n": 1,
+            "to": "opp"
+          }
+        ],
+        "if": "pureColor"
+      }
+    ]
+  },
+  {
+    "id": "hr56",
+    "name": "カグラの烈火の一閃",
+    "cost": "{R}",
+    "type": "インスタント",
+    "rarity": "レア",
+    "text": [
+      "クリーチャー1体かプレイヤー1人を対象とする。カグラの烈火の一閃はそれに2点のダメージを与える。純色 ― 代わりに、カグラの烈火の一閃はそれに3点のダメージを与える。"
+    ],
+    "tags": [
+      "マナ武装"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "arm16",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "damage",
+            "n": 2,
+            "tg": 0,
+            "unless": "pureColor"
+          },
+          {
+            "do": "damage",
+            "n": 3,
+            "tg": 0,
+            "if": "pureColor"
+          }
+        ],
+        "targets": [
+          {
+            "t": "any"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr57",
+    "name": "カグラの剣の弟子",
+    "cost": "{1}{R}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・戦士",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "速攻",
+      "純色 ― カグラの剣の弟子は+1/+0の修整を受ける。"
+    ],
+    "tags": [
+      "マナ武装",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "spl11",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "速攻"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 1,
+          "t": 0
+        },
+        "if": "pureColor"
+      }
+    ]
+  },
+  {
+    "id": "hr58",
+    "name": "巨獣王 グラムド",
+    "cost": "{3}{G}{G}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "ビースト",
+    "power": 5,
+    "toughness": 5,
+    "text": [
+      "トランプル",
+      "純色 ― 巨獣王 グラムドは+2/+2の修整を受ける。"
+    ],
+    "tags": [
+      "マナ武装"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "arm19",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 2,
+          "t": 2
+        },
+        "if": "pureColor"
+      }
+    ]
+  },
+  {
+    "id": "hr59",
+    "name": "グラムドの大地の咆哮",
+    "cost": "{2}{G}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "あなたがコントロールするクリーチャー1体を対象とする。それの上に+1/+1カウンターを2個置く。マナ武装 5(緑) ― カードを1枚引く。"
+    ],
+    "tags": [
+      "マナ武装"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "enc20",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "counters",
+            "tg": 0,
+            "n": 2
+          },
+          {
+            "do": "draw",
+            "n": 1,
+            "if": {
+              "armed": "G",
+              "n": 5
+            }
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "you"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr60",
+    "name": "巨獣の仔",
+    "cost": "{1}{G}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "ビースト",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "純色 ― 巨獣の仔は+1/+1の修整を受け、到達を持つ。"
+    ],
+    "tags": [
+      "マナ武装"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "g005",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 1,
+          "t": 1,
+          "kw": [
+            "到達"
+          ]
+        },
+        "if": "pureColor"
+      }
+    ]
+  },
+  {
+    "id": "hr61",
+    "name": "ゴブリン大親分 ギギ",
+    "cost": "{2}{R}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "ゴブリン",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "あなたがコントロールする他のゴブリンは+1/+0の修整を受ける。",
+      "純色 ― ゴブリン大親分 ギギは+1/+1の修整を受ける。"
+    ],
+    "tags": [
+      "部族"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "rk09",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 1,
+          "t": 0,
+          "filter": {
+            "sub": "ゴブリン"
+          },
+          "others": true
+        }
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 1,
+          "t": 1
+        },
+        "if": "pureColor"
+      }
+    ]
+  },
+  {
+    "id": "hr62",
+    "name": "ギギのゴブリンの大爆発",
+    "cost": "{2}{R}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "ギギのゴブリンの大爆発は対戦相手がコントロールする各クリーチャーにそれぞれ1点のダメージを与える。純色 ― ギギのゴブリンの大爆発は対戦相手に2点のダメージを与える。"
+    ],
+    "tags": [
+      "部族"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "adv26",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "damageAll",
+            "n": 1,
+            "who": "opp"
+          },
+          {
+            "do": "damage",
+            "n": 2,
+            "to": "opp",
+            "if": "pureColor"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr63",
+    "name": "ギギの子分",
+    "cost": "{R}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "ゴブリン",
+    "power": 1,
+    "toughness": 1,
+    "text": [
+      "速攻",
+      "純色 ― ギギの子分は+1/+0の修整を受ける。"
+    ],
+    "tags": [
+      "部族"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "r021",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "速攻"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 1,
+          "t": 0
+        },
+        "if": "pureColor"
+      }
+    ]
+  },
+  {
+    "id": "hr64",
+    "name": "エルフの森長 リーフィア",
+    "cost": "{2}{G}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "エルフ・ドルイド",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "到達",
+      "純色 ― エルフの森長 リーフィアが戦場に出たとき、1/1の緑のエルフ・戦士・クリーチャー・トークンを1体生成する。"
+    ],
+    "tags": [
+      "部族"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "rk15",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "到達"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "token",
+            "n": 1,
+            "p": 1,
+            "t": 1,
+            "color": "G",
+            "sub": "エルフ・戦士"
+          }
+        ],
+        "if": "pureColor"
+      }
+    ]
+  },
+  {
+    "id": "hr65",
+    "name": "リーフィアの森の祝歌",
+    "cost": "{1}{G}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "1/1の緑のエルフ・戦士・クリーチャー・トークンを1体生成する。純色 ― 1/1の緑のエルフ・戦士・クリーチャー・トークンを1体生成する。"
+    ],
+    "tags": [
+      "部族"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "adv32",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "token",
+            "n": 1,
+            "p": 1,
+            "t": 1,
+            "color": "G",
+            "sub": "エルフ・戦士"
+          },
+          {
+            "do": "token",
+            "n": 1,
+            "p": 1,
+            "t": 1,
+            "color": "G",
+            "sub": "エルフ・戦士",
+            "if": "pureColor"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr66",
+    "name": "リーフィアの森の射手",
+    "cost": "{1}{G}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "エルフ・射手",
+    "power": 1,
+    "toughness": 2,
+    "text": [
+      "到達",
+      "リーフィアの森の射手が戦場に出たとき、対戦相手がコントロールする飛行を持つクリーチャー1体を対象とする。リーフィアの森の射手はそれに1点のダメージを与える。"
+    ],
+    "tags": [
+      "部族"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "rk06",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "到達"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "damage",
+            "n": 1,
+            "tg": 0
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp",
+            "flying": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr67",
+    "name": "屍の侯爵 マルヴォロ",
+    "cost": "{3}{B}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "ゾンビ・貴族",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "あなたがコントロールする他のゾンビは+1/+0の修整を受ける。",
+      "純色 ― 屍の侯爵 マルヴォロが戦場に出たとき、あなたの墓地にあるゾンビ・カード1枚を対象とする。それをあなたの手札に戻す。"
+    ],
+    "tags": [
+      "部族"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "b017",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 1,
+          "t": 0,
+          "filter": {
+            "sub": "ゾンビ"
+          },
+          "others": true
+        }
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "returnCard",
+            "tg": 0,
+            "to": "hand"
+          }
+        ],
+        "targets": [
+          {
+            "t": "graveyard",
+            "filter": {
+              "sub": "ゾンビ"
+            }
+          }
+        ],
+        "if": "pureColor"
+      }
+    ]
+  },
+  {
+    "id": "hr68",
+    "name": "マルヴォロの死者の行軍",
+    "cost": "{2}{B}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "2/2の黒のゾンビ・クリーチャー・トークンを1体生成する。純色 ― 2/2の黒のゾンビ・クリーチャー・トークンを1体生成する。"
+    ],
+    "tags": [
+      "部族"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "grv30",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "token",
+            "n": 1,
+            "p": 2,
+            "t": 2,
+            "color": "B",
+            "sub": "ゾンビ"
+          },
+          {
+            "do": "token",
+            "n": 1,
+            "p": 2,
+            "t": 2,
+            "color": "B",
+            "sub": "ゾンビ",
+            "if": "pureColor"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr69",
+    "name": "マルヴォロの屍の兵",
+    "cost": "{B}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "ゾンビ",
+    "power": 1,
+    "toughness": 1,
+    "text": [
+      "不屈",
+      "純色 ― マルヴォロの屍の兵は+1/+0の修整を受ける。"
+    ],
+    "tags": [
+      "部族",
+      "カウンター"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "ctr11",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "不屈"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 1,
+          "t": 0
+        },
+        "if": "pureColor"
+      }
+    ]
+  },
+  {
+    "id": "hr70",
+    "name": "大地の刻印師 テラ",
+    "cost": "{2}{G}{W}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "人間・ドルイド",
+    "power": 4,
+    "toughness": 4,
+    "text": [
+      "大地の刻印師 テラが戦場に出たとき、あなたのライブラリーの一番上のカードをあなたのマナゾーンに置く。",
+      "紋章 ― あなたがコントロールするクリーチャーは+0/+1の修整を受ける。"
+    ],
+    "tags": [
+      "紋章",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "aw06",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "rampTop",
+            "n": 1
+          }
+        ]
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 0,
+          "t": 1,
+          "filter": {
+            "type": "クリーチャー"
+          },
+          "others": false
+        },
+        "from": "mana"
+      }
+    ]
+  },
+  {
+    "id": "hr71",
+    "name": "テラの刻印の儀",
+    "cost": "{G}{W}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "あなたのライブラリーの一番上のカードをあなたのマナゾーンに置く。あなたは2点のライフを得る。"
+    ],
+    "tags": [
+      "紋章"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "aw02",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "rampTop",
+            "n": 1
+          },
+          {
+            "do": "gainLife",
+            "n": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr72",
+    "name": "刻印獣",
+    "cost": "{1}{G}{W}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "ビースト",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "紋章 ― あなたがコントロールするクリーチャーは警戒を持つ。"
+    ],
+    "tags": [
+      "紋章"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "aw26",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 0,
+          "t": 0,
+          "filter": {
+            "type": "クリーチャー"
+          },
+          "others": false,
+          "kw": [
+            "警戒"
+          ]
+        },
+        "from": "mana"
+      }
+    ]
+  },
+  {
+    "id": "hr73",
+    "name": "顕現の潮巫女 ミナモ",
+    "cost": "{2}{G}{U}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "マーフォーク・ドルイド",
+    "power": 2,
+    "toughness": 4,
+    "text": [
+      "顕現の潮巫女 ミナモが戦場に出たとき、顕現 4。"
+    ],
+    "tags": [
+      "紋章"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "aw37",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "manifest",
+            "maxMV": 4
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr74",
+    "name": "ミナモの潮の招き",
+    "cost": "{1}{G}{U}",
+    "type": "インスタント",
+    "rarity": "レア",
+    "text": [
+      "次から1つを選ぶ。①マナ総量が2以下の呪文1つを対象とする。それを打ち消す。②顕現 3。"
+    ],
+    "tags": [
+      "紋章"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "aw10",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [],
+        "modes": [
+          {
+            "label": "マナ総量2以下の呪文を打ち消す",
+            "effects": [
+              {
+                "do": "counter",
+                "tg": 0
+              }
+            ],
+            "targets": [
+              {
+                "t": "spell",
+                "maxMV": 2
+              }
+            ]
+          },
+          {
+            "label": "顕現 3",
+            "effects": [
+              {
+                "do": "manifest",
+                "maxMV": 3
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr75",
+    "name": "潮の精",
+    "cost": "{G}{U}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "エレメンタル",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "潮の精が戦場に出たとき、あなたのライブラリーの一番上のカードを見る。そのカードをライブラリーの一番下に置いてもよい。",
+      "紋章 ― あなたがコントロールするクリーチャーは+1/+0の修整を受ける。"
+    ],
+    "tags": [
+      "紋章"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "aw08",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "lookTop"
+          }
+        ]
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 1,
+          "t": 0,
+          "filter": {
+            "type": "クリーチャー"
+          },
+          "others": false
+        },
+        "from": "mana"
+      }
+    ]
+  },
+  {
+    "id": "hr76",
+    "name": "薔薇の決闘者 ロザリンド",
+    "cost": "{2}{R}{W}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "人間・騎士",
+    "power": 4,
+    "toughness": 4,
+    "text": [
+      "先制攻撃",
+      "薔薇の決闘者 ロザリンドが戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。薔薇の決闘者 ロザリンドはそれと決闘する。薔薇の決闘者 ロザリンドが勝ったなら、薔薇の決闘者 ロザリンドの上に+1/+1カウンターを1個置く。",
+      "あなたが決闘に勝つたび、カードを1枚引く。(この能力は1ターンに1回だけ誘発する)"
+    ],
+    "tags": [
+      "決闘",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "ct05",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "duel",
+            "tg": [
+              0
+            ],
+            "self": true,
+            "win": [
+              {
+                "do": "counters",
+                "self": true,
+                "n": 1
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "duelWin",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "oncePerTurn": true
+      }
+    ]
+  },
+  {
+    "id": "hr77",
+    "name": "ロザリンドの挑戦状",
+    "cost": "{R}{W}",
+    "type": "インスタント",
+    "rarity": "レア",
+    "text": [
+      "あなたがコントロールするクリーチャー1体と、対戦相手がコントロールするクリーチャー1体を対象とする。前者は後者と決闘する。前者が勝ったなら、カードを1枚引く。"
+    ],
+    "tags": [
+      "決闘"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "ct22",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "duel",
+            "tg": [
+              0,
+              1
+            ],
+            "win": [
+              {
+                "do": "draw",
+                "n": 1
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "you"
+          },
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr78",
+    "name": "ロザリンドの介添人",
+    "cost": "{R}{W}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・騎士",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "先制攻撃",
+      "ロザリンドの介添人が戦場に出たとき、あなたがコントロールするクリーチャー1体を対象とする。ターン終了時まで、それは+1/+1の修整を受け、先制攻撃を得る。"
+    ],
+    "tags": [
+      "決闘",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "ct05",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "pump",
+            "tg": 0,
+            "p": 1,
+            "t": 1,
+            "kw": [
+              "先制攻撃"
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "you"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr79",
+    "name": "影の宰相 ヴィオレッタ",
+    "cost": "{2}{U}{B}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "人間・貴族",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "飛行",
+      "影の宰相 ヴィオレッタが戦場に出たとき、対戦相手は手札を1枚捨てる。",
+      "陰謀 ― あなたの終了ステップの開始時に、カードを1枚引く。"
+    ],
+    "tags": [
+      "陰謀",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "ct10",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "discard",
+            "n": 1,
+            "who": "opp"
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "endStep",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "if": "intrigue"
+      }
+    ]
+  },
+  {
+    "id": "hr80",
+    "name": "ヴィオレッタの密告",
+    "cost": "{U}{B}",
+    "type": "インスタント",
+    "rarity": "レア",
+    "text": [
+      "クリーチャー1体を対象とする。ターン終了時まで、それは-2/-2の修整を受ける。陰謀 ― カードを1枚引く。"
+    ],
+    "tags": [
+      "陰謀"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "ct16",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "pump",
+            "tg": 0,
+            "p": -2,
+            "t": -2
+          },
+          {
+            "do": "draw",
+            "n": 1,
+            "if": "intrigue"
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr81",
+    "name": "ヴィオレッタの間者",
+    "cost": "{U}{B}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・ならず者",
+    "power": 1,
+    "toughness": 2,
+    "text": [
+      "ヴィオレッタの間者が戦場に出たとき、対戦相手は手札を1枚捨てる。"
+    ],
+    "tags": [
+      "陰謀",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "ct34",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "discard",
+            "n": 1,
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr82",
+    "name": "虚無の預言者 ネル",
+    "cost": "{2}{C}{C}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "虚無・人間",
+    "power": 4,
+    "toughness": 5,
+    "text": [
+      "虚無の預言者 ネルが戦場に出たとき、カードを1枚引く。",
+      "虚空 ― 虚無の預言者 ネルは+2/+2の修整を受ける。"
+    ],
+    "tags": [
+      "虚無",
+      "人間"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "vd41",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ]
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 2,
+          "t": 2
+        },
+        "if": "void"
+      }
+    ]
+  },
+  {
+    "id": "hr83",
+    "name": "ネルの虚無の託宣",
+    "cost": "{1}{C}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "カードを2枚引く。虚空 ― あなたのライブラリーの一番上のカードを見る。そのカードをライブラリーの一番下に置いてもよい。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "vd42",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 2
+          },
+          {
+            "do": "lookTop",
+            "if": "void"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr84",
+    "name": "ネルの落とし子の群れ",
+    "cost": "{2}{C}",
+    "type": "ソーサリー",
+    "rarity": "アンコモン",
+    "text": [
+      "0/1の無色の虚無・落とし子・クリーチャー・トークンを2体生成する。それは「このクリーチャーを生け贄に捧げる:{C}を加える。」を持つ。カードを1枚引く。"
+    ],
+    "tags": [
+      "虚無"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "vd16",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "token",
+            "n": 2,
+            "p": 0,
+            "t": 1,
+            "color": "C",
+            "sub": "虚無・落とし子",
+            "spawn": true
+          },
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr85",
+    "name": "宮廷の舞踏会",
+    "cost": "{1}{U/R}",
+    "type": "インスタント",
+    "rarity": "レア",
+    "text": [
+      "{U/R}を赤で支払ったなら、あなたがコントロールするクリーチャー1体と、対戦相手がコントロールするクリーチャー1体を対象とする。前者は後者と決闘する。{U/R}を青で支払ったなら、対戦相手がコントロールするクリーチャー1体を対象とする。それを持ち主の手札に戻す。陰謀 ― カードを1枚引く。"
+    ],
+    "tags": [
+      "陰謀",
+      "決闘"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "ct10",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [],
+        "modes": [
+          {
+            "label": "赤で支払う:決闘",
+            "effects": [
+              {
+                "do": "duel",
+                "tg": [
+                  0,
+                  1
+                ]
+              }
+            ],
+            "targets": [
+              {
+                "t": "creature",
+                "who": "you"
+              },
+              {
+                "t": "creature",
+                "who": "opp"
+              }
+            ],
+            "pay": "R"
+          },
+          {
+            "label": "青で支払う:手札に戻す",
+            "effects": [
+              {
+                "do": "bounce",
+                "tg": 0
+              },
+              {
+                "do": "draw",
+                "n": 1,
+                "if": "intrigue"
+              }
+            ],
+            "targets": [
+              {
+                "t": "creature",
+                "who": "opp"
+              }
+            ],
+            "pay": "U"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr86",
+    "name": "ふたりの誓約",
+    "cost": "{2}{W/B}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "{W/B}を白で支払ったなら、あなたがコントロールするクリーチャー1体を対象とする。それの上に+1/+1カウンターを2個置く。ターン終了時まで、それは先制攻撃を得る。{W/B}を黒で支払ったなら、クリーチャー1体を対象とする。対戦相手は手札を1枚捨てる。ターン終了時まで、それは-2/-2の修整を受ける。"
+    ],
+    "tags": [
+      "陰謀",
+      "決闘"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "ct05",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [],
+        "modes": [
+          {
+            "label": "白で支払う:+1/+1カウンターと先制攻撃",
+            "effects": [
+              {
+                "do": "counters",
+                "tg": 0,
+                "n": 2
+              },
+              {
+                "do": "pump",
+                "tg": 0,
+                "p": 0,
+                "t": 0,
+                "kw": [
+                  "先制攻撃"
+                ]
+              }
+            ],
+            "targets": [
+              {
+                "t": "creature",
+                "who": "you"
+              }
+            ],
+            "pay": "W"
+          },
+          {
+            "label": "黒で支払う:捨てさせて弱らせる",
+            "effects": [
+              {
+                "do": "discard",
+                "n": 1,
+                "who": "opp"
+              },
+              {
+                "do": "pump",
+                "tg": 0,
+                "p": -2,
+                "t": -2
+              }
+            ],
+            "targets": [
+              {
+                "t": "creature"
+              }
+            ],
+            "pay": "B"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr87",
+    "name": "単色の王冠",
+    "cost": "{3}",
+    "type": "アーティファクト",
+    "rarity": "レア",
+    "text": [
+      "純色払い(このカードのコストは、すべて同じ1色のマナで支払わなければならない)",
+      "あなたがコントロールするクリーチャーは+1/+0の修整を受ける。",
+      "純色 ― あなたがコントロールするクリーチャーは+0/+1の修整を受け、警戒を持つ。"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "c001",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "pureCost"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 1,
+          "t": 0,
+          "filter": {
+            "type": "クリーチャー"
+          },
+          "others": false
+        }
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 0,
+          "t": 1,
+          "filter": {
+            "type": "クリーチャー"
+          },
+          "others": false,
+          "kw": [
+            "警戒"
+          ]
+        },
+        "if": "pureColor"
+      }
+    ]
+  },
+  {
+    "id": "hr88",
+    "name": "一色の奔流",
+    "cost": "{4}",
+    "type": "ソーサリー",
+    "rarity": "アンコモン",
+    "text": [
+      "純色払い(このカードのコストは、すべて同じ1色のマナで支払わなければならない)",
+      "カードを3枚引く。"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "c001",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "pureCost"
+      },
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 3
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr89",
+    "name": "純色の巨像",
+    "cost": "{6}",
+    "type": "アーティファクト・クリーチャー",
+    "rarity": "神話レア",
+    "subtype": "構築物",
+    "power": 6,
+    "toughness": 6,
+    "text": [
+      "純色払い(このカードのコストは、すべて同じ1色のマナで支払わなければならない)",
+      "純色の巨像が戦場に出たとき、純色の巨像は、純色払いで支払った色に応じて、白なら警戒、青なら飛行、黒なら接死、赤なら速攻、緑ならトランプルを得る。"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "c001",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "pureCost"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "paidColorKw"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hr90",
+    "name": "染め上げの儀",
+    "cost": "{3}",
+    "type": "インスタント",
+    "rarity": "アンコモン",
+    "text": [
+      "純色払い(このカードのコストは、すべて同じ1色のマナで支払わなければならない)",
+      "クリーチャー1体を対象とする。それを破壊する。純色 ― カードを1枚引く。"
+    ],
+    "pack": "p11",
+    "packs": [
+      "p11"
+    ],
+    "basedOn": {
+      "id": "c001",
+      "kind": "サポート"
+    },
+    "abilities": [
+      {
+        "a": "pureCost"
+      },
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "destroy",
+            "tg": 0
+          },
+          {
+            "do": "draw",
+            "n": 1,
+            "if": "pureColor"
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature"
+          }
+        ]
+      }
+    ]
   }
 ]

@@ -553,6 +553,19 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
           </div>
         </>
       );
+    case "color":
+      return (
+        <>
+          <p className="prompt-text">{d.prompt}</p>
+          <div className="prompt-actions">
+            {d.options.map((c) => (
+              <button key={c} type="button" className="btn btn-primary" onClick={() => answer(c)}>
+                {({ W: "白", U: "青", B: "黒", R: "赤", G: "緑" } as Record<string, string>)[c]}で支払う
+              </button>
+            ))}
+          </div>
+        </>
+      );
     case "chooseSum": {
       const sum = d.options.reduce((s, u, i) => s + (chosen.includes(u) ? d.values[i] : 0), 0);
       return (

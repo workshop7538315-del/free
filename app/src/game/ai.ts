@@ -88,6 +88,12 @@ export class CpuAgent implements Agent {
         return chooseMode(g, p, d);
       case "chooseSum":
         return chooseSum(g, p, d);
+      case "color": {
+        // 出せるマナがいちばん多い色で払う(ほかの色を残す)
+        const me = g.players[p];
+        const count = (c: string) => me.mana.filter((o) => !o.tapped && manaColors(o).includes(c as never)).length;
+        return [...d.options].sort((a, b) => count(b) - count(a))[0];
+      }
     }
   }
 }

@@ -64,7 +64,9 @@ export type CondName =
   /** 連唱:このターン、自分がインスタントかソーサリーを2つ以上唱えた */
   | "chain"
   /** 金庫破り:自分の秘蔵庫にカードがない(第10弾) */
-  | "vaultEmpty";
+  | "vaultEmpty"
+  /** 純色:自分のマナゾーンのカードがすべて同じ1色(1枚以上。第11弾) */
+  | "pureColor";
 
 export type Cond =
   | CondName
@@ -161,6 +163,8 @@ export type Effect = Common &
     | { do: "create"; card: GeneratedCard; n: number }
     /** 喝采【cat】を N 増やす */
     | { do: "applause"; cat: Applause; n: number }
+    /** 純色払いで支払った色に応じたキーワードを、このパーマネントが得る */
+    | { do: "paidColorKw" }
     /** 強盗 N:自分の秘蔵庫からN枚をタップ状態でマナゾーンに置く(空なら《札束》を生成) */
     | { do: "heist"; n: number; fallback?: GeneratedCard }
     /** このカード(効果の発生源)をマナゾーンに置く(陶酔で、捨てられた墓地から) */
@@ -275,6 +279,8 @@ export type Ability = { text?: string } & (
   | { a: "assemble"; color: Color; partner: string; partnerName?: string; cond: "attacked" | "twoEquip" }
   /** 武装進化でのみ戦場に出る(秘蔵庫の合体先) */
   | { a: "evolveOnly" }
+  /** 純色払い:コストのすべてを同じ1色のマナで支払わなければならない */
+  | { a: "pureCost" }
   /** 宝石獣:秘蔵庫に入るカード(強盗でマナゾーンに置かれ、マナ解放で唱える) */
   | { a: "gem" }
   /** 金庫破り ― 秘蔵庫が空なら、マナ解放のコストが{n}少なくなる */
@@ -300,7 +306,8 @@ export type Ability = { text?: string } & (
 );
 
 /** モード呪文の選択肢 */
-export type SpellMode = { label: string; targets?: TargetSpec[]; effects: Effect[] };
+/** pay:混成マナ記号をその色で支払ったときだけ選べるモード(払った色で効果が変わるカード) */
+export type SpellMode = { label: string; targets?: TargetSpec[]; effects: Effect[]; pay?: Color };
 
 /** 生成されるカード(カードリストには入らない) */
 export type GeneratedCard = {
