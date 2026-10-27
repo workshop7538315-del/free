@@ -17,6 +17,7 @@ const PATS: [string, RegExp][] = [
   ["エントラータ", /エントラータ\(登場\)/],
   ["リリース", /をリリース召喚した/],
   ["加護", /加護《.+》を得た/],
+  ["カーテンコール", /カーテンコールで現れた/],
 ];
 for (const a of process.env.A!.split(",")) {
   let games = 0, wins = 0;

@@ -673,6 +673,11 @@ function actionLabel(g: Game, a: Action): string {
       }
       if (a.via === "assemble") return "組み立てる(コストを払い、クリーチャーをタップしてつける)";
       if (a.via === "evolve") return "武装進化する";
+      if (a.via === "curtain") {
+        const o = g.find(a.uid);
+        const cc = o ? abilitiesOf(o.card).find((ab) => ab.a === "curtainCall") : undefined;
+        return cc && cc.a === "curtainCall" ? `カーテンコール(喝采【${cc.cat}】を${cc.n}消費し、化身の上に重ねて登場)` : "カーテンコール";
+      }
       if (a.via !== "entrata") return "リリース召喚する";
       const o = g.find(a.uid);
       const en = o ? abilitiesOf(o.card).find((ab) => ab.a === "entrata") : undefined;

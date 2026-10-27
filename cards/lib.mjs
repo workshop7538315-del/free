@@ -119,6 +119,8 @@ export const addiction = (n = 2) => ({ a: "trigger", on: "upkeep", effects: [{ d
 export const buried = (n) => ({ a: "buried", n, from: "mana" });
 /** 武装進化でのみ戦場に出る */
 export const evolveOnly = () => ({ a: "evolveOnly" });
+/** カーテンコール N【cat】:戦場の base の上に重ねて出す */
+export const curtainCall = (n, cat, base, baseName) => ({ a: "curtainCall", n, cat, base, baseName });
 /** ウシータ(退場):秘蔵庫に戻るとき */
 export const uscita = trig("uscita");
 /** 喝采 */
@@ -732,6 +734,8 @@ function abilityTextBody(abil, card) {
       return `装備 ${abil.cost}`;
     case "entrata":
       return `エントラータ ${abil.n}【${abil.cat}】`;
+    case "curtainCall":
+      return `カーテンコール ${abil.n}【${abil.cat}】(あなたの《${abil.baseName}》の上に重ねる。喝采【${abil.cat}】を${abil.n}消費して、秘蔵庫からこのクリーチャーを出す。《${abil.baseName}》は秘蔵庫に戻る)`;
     case "pioneer":
       return abil.grand ? `大開拓進化【${COLOR_JA[abil.color]}】${abil.n}(あなたの開拓者1体の上に重ねる。3枚以上)` : `開拓進化【${COLOR_JA[abil.color]}】${abil.n}`;
     case "assemble": {

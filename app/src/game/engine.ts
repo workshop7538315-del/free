@@ -144,7 +144,7 @@ export type Action =
   | { type: "cycle"; uid: number }
   | { type: "equip"; uid: number }
   /** 秘蔵庫からリリース召喚する(via: "entrata" ならエントラータ) */
-  | { type: "summon"; uid: number; via?: "entrata" | "pioneer" | "assemble" | "evolve" };
+  | { type: "summon"; uid: number; via?: "entrata" | "pioneer" | "assemble" | "evolve" | "curtain" };
 
 export type Decision =
   | { kind: "action"; options: Action[] }
@@ -201,7 +201,8 @@ export const isAura = (c: Card) => abilitiesOf(c).some((a) => a.a === "enchant")
 export const isEquipment = (c: Card) => abilitiesOf(c).some((a) => a.a === "equip");
 /** 秘蔵庫のカード(リリース召喚を持つ) */
 export const isExtraCard = (c: Card) =>
-  abilitiesOf(c).some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly" || a.a === "gem");
+  abilitiesOf(c).some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly" || a.a === "gem" || a.a === "curtainCall");
+export const curtainOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "curtainCall") as Extract<Ability, { a: "curtainCall" }> | undefined;
 export const pioneerOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "pioneer") as Extract<Ability, { a: "pioneer" }> | undefined;
 export const assembleOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "assemble") as Extract<Ability, { a: "assemble" }> | undefined;
 const COLOR_JA: Record<string, string> = { W: "白", U: "青", B: "黒", R: "赤", G: "緑" };
@@ -1040,6 +1041,7 @@ export class Game {
       for (const o of pl.extra) if (this.canPioneer(p, o)) out.push({ type: "summon", uid: o.uid, via: "pioneer" });
       for (const o of pl.extra) if (this.canAssemble(p, o)) out.push({ type: "summon", uid: o.uid, via: "assemble" });
       for (const o of pl.battlefield) if (this.canEvolve(p, o)) out.push({ type: "summon", uid: o.uid, via: "evolve" });
+      for (const o of pl.extra) if (this.canCurtain(p, o)) out.push({ type: "summon", uid: o.uid, via: "curtain" });
     }
     return out;
   }
@@ -1063,6 +1065,7 @@ export class Game {
       else if (a.via === "pioneer") await this.pioneer(p, a.uid);
       else if (a.via === "assemble") await this.assemble(p, a.uid);
       else if (a.via === "evolve") this.evolve(p, a.uid);
+      else if (a.via === "curtain") this.curtainCall(p, a.uid);
       else await this.releaseSummon(p, a.uid);
     } else if (a.type === "cycle") {
       const o = this.players[p].hand.find((x) => x.uid === a.uid);
@@ -1525,6 +1528,27 @@ export class Game {
     const en = entrataOf(o.card);
     const pl = this.players[p];
     return !!en && o.zone === "extra" && !pl.enteredThisTurn.has(o.uid) && (pl.applause[en.cat] ?? 0) >= en.n;
+  }
+
+  /** カーテンコール:戦場の化身(base)の上に重ねて、座長本人を出す */
+  canCurtain(p: PlayerId, o: Obj): boolean {
+    const cc = curtainOf(o.card);
+    const pl = this.players[p];
+    return !!cc && o.zone === "extra" && !pl.enteredThisTurn.has(o.uid) && (pl.applause[cc.cat] ?? 0) >= cc.n && pl.battlefield.some((x) => x.card.id === cc.base);
+  }
+
+  private curtainCall(p: PlayerId, uid: number) {
+    const pl = this.players[p];
+    const o = pl.extra.find((x) => x.uid === uid);
+    if (!o || !this.sorcerySpeed(p) || !this.canCurtain(p, o)) return;
+    const cc = curtainOf(o.card)!;
+    const base = pl.battlefield.find((x) => x.card.id === cc.base)!;
+    this.spendApplause(p, cc.cat, cc.n);
+    pl.enteredThisTurn.add(o.uid);
+    this.addLog(`喝采【${cc.cat}】を${cc.n}消費し、${base.card.name}の上に重ねて、${o.card.name}がカーテンコールで現れた`, p);
+    this.move(base, "extra");
+    this.usedCards.add(o.card.id);
+    this.enterBattlefield(o, p);
   }
 
   private entrata(p: PlayerId, uid: number) {

@@ -226,6 +226,7 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
         : a.via === "pioneer" ? scorePioneer(g, p, a.uid)
         : a.via === "assemble" ? scoreAssemble(g, p, a.uid)
         : a.via === "evolve" ? scoreEvolve(g, p, a.uid)
+        : a.via === "curtain" ? scoreCurtain(g, p, a.uid)
         : scoreSummon(g, p, a.uid);
     if (s > 0 && (!best || s > best.s)) best = { a, s };
   }
@@ -1017,12 +1018,22 @@ function applauseRoom(g: Game, p: PlayerId, cat: Applause): boolean {
   return pl.applause[cat] !== undefined && (pl.applauseThisTurn[cat] ?? 0) < APPLAUSE_CAP[cat];
 }
 
+function scoreCurtain(g: Game, p: PlayerId, uid: number): number {
+  const o = g.players[p].extra.find((x) => x.uid === uid);
+  const cc = o ? (abilitiesOf(o.card).find((a) => a.a === "curtainCall") as { base: string } | undefined) : undefined;
+  const base = cc ? g.players[p].battlefield.find((x) => x.card.id === cc.base) : undefined;
+  if (!o || !base || !(g.step === "main1" || g.step === "main2")) return -1;
+  return cardCreatureValue(o.card) - creatureValue(g, base) + 3;
+}
+
 function scoreEntrata(g: Game, p: PlayerId, uid: number): number {
   const o = g.players[p].extra.find((x) => x.uid === uid);
   if (!o || !(g.step === "main1" || g.step === "main2")) return -1;
   const en = abilitiesOf(o.card).find((a) => a.a === "entrata") as { n: number } | undefined;
   if (!en) return -1;
-  return cardCreatureValue(o.card) + 1.5 - en.n * 0.1;
+  // 座長(カーテンコール)の土台になる化身は、早めに出しておく
+  const base = g.players[p].extra.some((x) => abilitiesOf(x.card).some((a) => a.a === "curtainCall" && a.base === o.card.id)) ? 3 : 0;
+  return cardCreatureValue(o.card) + 1.5 - en.n * 0.1 + base;
 }
 
 function scoreSummon(g: Game, p: PlayerId, uid: number): number {
