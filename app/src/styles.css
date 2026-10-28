@@ -1602,6 +1602,44 @@ textarea {
 
 /* 召喚:神話レアはひっくり返す(裏=枠の色 → 表) */
 .field .mini.fx-enter.is-mythic { animation: fx-flip-in 0.7s cubic-bezier(0.76, 0, 0.25, 0.97) both; }
+
+/* 召喚演出をサイズで切り替える */
+/* 動きの参考: yui540/css-animations (MIT) 飛び出す(push / jump)・潜る(ball-squash) */
+
+/* 大きいクリーチャー(マナ総量5以上):ジャンプ(合計 約1.0秒) */
+.field .mini.fx-enter.is-creature.is-big {
+  transform-origin: bottom center;
+  animation:
+    fx-push 0.5s ease-in-out both,
+    fx-jump 0.7s ease-in-out 0.3s both;
+}
+@keyframes fx-push {
+  0%   { transform: scaleY(0); }
+  60%  { transform: scaleY(1.2); }
+  100% { transform: none; }
+}
+@keyframes fx-jump {
+  0%   { transform: translateY(0); }
+  40%  { transform: translateY(-40%) rotate(6deg); }
+  60%  { transform: translateY(0); }
+  80%  { transform: translateY(-20%) rotate(-3deg); }
+  100% { transform: none; }
+}
+
+/* 通常のクリーチャー(トークンを含む):潜る(逆再生) */
+.field .mini.fx-enter.is-creature {
+  transform-origin: bottom center;
+  animation: fx-rise 0.65s ease-in-out both;
+}
+@keyframes fx-rise {
+  0%   { transform: translateY(70px); opacity: 0; }
+  40%  { transform: translateY(0) scale(1.2, 0.45); opacity: 1; }
+  70%  { transform: scale(0.9, 1.2); }
+  100% { transform: none; opacity: 1; }
+}
+
+/* 神話レアは常にこちらを優先(is-big と同じ強さにして、最後に書く) */
+.field .mini.fx-enter.is-mythic.is-mythic { animation: fx-flip-in 0.7s cubic-bezier(0.76, 0, 0.25, 0.97) both; }
 @keyframes fx-flip-in {
   0%   { transform: perspective(400px) rotateY(-180deg) scale(0.6); background: var(--frame); color: transparent; }
   49%  { background: var(--frame); color: transparent; }
@@ -1982,15 +2020,30 @@ textarea {
 /* ======================================================== 画面の演出(ui-) */
 /* 動きの参考: yui540/css-animations (MIT) */
 
-/* アコーディオン:積み木(行ごとに animation-delay: calc(var(--i) * 0.08s)) */
+/* アコーディオンの矢印は 0.3 秒で180°回る */
 .ui-acc-chevron { transition: transform 0.3s cubic-bezier(0.76, 0, 0.25, 0.97); }
 .ui-acc[open] .ui-acc-chevron, .ui-acc.is-open .ui-acc-chevron { transform: rotate(180deg); }
-.ui-acc.is-open .ui-acc-row { animation: ui-tsumi 0.5s ease-in calc(var(--i, 0) * 0.08s) both; }
-@keyframes ui-tsumi {
-  0%   { transform: translateY(-40px); opacity: 0; }
-  50%  { transform: translateY(0) scale(1.06, 0.9); opacity: 1; }
-  75%  { transform: scale(0.98, 1.03); }
-  100% { transform: none; }
+/* アコーディオン:シャッター(行ごとに animation-delay: calc(var(--i) * 0.08s))
+   帯が左から右へ横切り、帯が抜けたあとに中身が現れる。行の切り抜きと帯は同じ速さで動く */
+.ui-acc.is-open .ui-acc-row,
+.ui-filter-chip {
+  position: relative;
+  animation: ui-acc-reveal 0.7s cubic-bezier(0.76, 0, 0.25, 0.97) calc(var(--i, 0) * 0.08s) backwards;
+}
+.ui-acc.is-open .ui-acc-row::after,
+.ui-filter-chip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background: var(--accent);
+  pointer-events: none;
+  transform: scaleX(0);
+  animation: ui-sweep 0.7s cubic-bezier(0.76, 0, 0.25, 0.97) calc(var(--i, 0) * 0.08s) backwards;
+}
+@keyframes ui-acc-reveal {
+  0%       { clip-path: inset(0 100% 0 0); }
+  45%, 100% { clip-path: inset(0); }
 }
 
 /* 設定パネル:ひっくり返す */
@@ -2003,13 +2056,12 @@ textarea {
   100% { transform: none; }
 }
 
-/* 絞り込みの見出し:積み木(新しく増えた条件が上から落ちて、少し潰れて積まる) */
+/* 絞り込みの見出し:新しく増えた条件だけ、シャッターで現れる(アニメーションはアコーディオンと共通) */
 .ui-filter-summary {
   display: inline;
 }
 .ui-filter-chip {
   display: inline-block;
-  animation: ui-tsumi 0.5s ease-in calc(var(--i, 0) * 0.08s) both;
 }
 
 /* 詳細シート:ドミノ */

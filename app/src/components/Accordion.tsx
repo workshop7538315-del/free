@@ -3,7 +3,7 @@ import { usePersistent } from "../lib/motion";
 
 /**
  * 開閉できる見出しつきの欄。開閉の状態はこのブラウザに残す(初期状態は閉じる)。
- * 中の行に ui-acc-row と --i(並び順)を付けると、開いたときに上から順に積み上がる。
+ * 中の行に ui-acc-row と --i(並び順)を付けると、開いたときに上から順にシャッターで現れる。
  */
 export function Accordion({ id, title, meta, children, className = "" }: { id: string; title: ReactNode; meta?: ReactNode; children: ReactNode; className?: string }) {
   const [open, setOpen] = usePersistent(`ui.acc.${id}.v1`, false);

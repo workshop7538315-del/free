@@ -26,11 +26,11 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
   const rangeCount = activeRangeCount(f);
   const parts = filterParts(f, packShort);
   const items = parts.length ? parts : ["なし"];
-  // 新しく増えた条件だけが、上から落ちて積み上がる(既にある条件は動かさない)
+  // 新しく増えた条件だけがシャッターで現れる(既にある条件は動かさない)
   const shownBefore = useRef<Set<string>>(new Set());
   const fresh = items.filter((x) => !shownBefore.current.has(x));
   shownBefore.current = new Set(items);
-  // 中の行は、開いたときに上から順に積み上がる
+  // 中の行は、開いたときに上から順にシャッターで現れる
   let row = 0;
   const rowStyle = () => ({ "--i": row++ }) as React.CSSProperties;
 

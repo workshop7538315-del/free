@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { Action, BlockAnswer, Decision, Game, Obj, Player, PlayerId, TargetRef } from "../../game/engine";
 import { STEP_NAMES, abilitiesOf, isCreatureCard, manaColors, releaseAbility } from "../../game/engine";
 import type { HumanAgent } from "../../game/human";
-import { cardColors } from "../../lib/mana";
+import { cardColors, manaValue } from "../../lib/mana";
 import { useIsMobile, useMotion } from "../../lib/motion";
 import { ManaCost } from "../ManaCost";
 import { RulesText } from "../CardTile";
@@ -71,7 +71,7 @@ function useLater() {
 function useEnter(): [string, (e: React.AnimationEvent) => void] {
   const fx = useContext(FxContext);
   const [entering, setEntering] = useState(fx);
-  return [entering ? "fx-enter" : "", (e) => e.target === e.currentTarget && /^fx-(pop|flip-in|dive)$/.test(e.animationName) && setEntering(false)];
+  return [entering ? "fx-enter" : "", (e) => e.target === e.currentTarget && /^fx-(pop|flip-in|dive|rise|jump)$/.test(e.animationName) && setEntering(false)];
 }
 
 type Props = {
@@ -721,7 +721,7 @@ function MiniCard({
   return (
     <button
       type="button"
-      className={`mini ${o.tapped && !dying ? "is-tapped" : ""} ${attacking ? "is-attacking" : ""} ${blocking ? "is-blocking" : ""} ${sick ? "is-sick" : ""} ${mark} ${inHand ? "in-hand" : `${dying ? "" : enter} ${o.card.rarity === "神話レア" ? "is-mythic" : ""}`}`}
+      className={`mini ${o.tapped && !dying ? "is-tapped" : ""} ${attacking ? "is-attacking" : ""} ${blocking ? "is-blocking" : ""} ${sick ? "is-sick" : ""} ${mark} ${inHand ? "in-hand" : `${dying ? "" : enter} ${o.card.rarity === "神話レア" ? "is-mythic" : ""} ${creature ? "is-creature" : ""} ${creature && manaValue(o.card.cost) >= 5 ? "is-big" : ""}`}`}
       style={{ "--frame": frame } as React.CSSProperties}
       onClick={() => !lp.consumed() && onClick()}
       onAnimationEnd={onAnimationEnd}
