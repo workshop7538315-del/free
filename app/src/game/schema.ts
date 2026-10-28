@@ -168,6 +168,7 @@ export type Effect = Common &
     /** 強盗 N:自分の秘蔵庫からN枚をタップ状態でマナゾーンに置く(空なら《札束》を生成) */
     | { do: "heist"; n: number; fallback?: GeneratedCard }
     | { do: "handBlast"; per?: { cat: Applause; div: number } }
+    | { do: "perApplause"; cat: Applause; div: number; effects: Effect[] }
     /** このカード(効果の発生源)をマナゾーンに置く(陶酔で、捨てられた墓地から) */
     | { do: "selfToMana" }
     /** 依存:手札を1枚捨てる。捨てられないなら N 点のライフを失う */

@@ -1778,6 +1778,13 @@ export class Game {
     const src = ctx.item.obj;
     const pl = this.players[p];
     switch (e.do) {
+      case "perApplause": {
+        // このゲームで得た喝采の累計 div ごとに1回、効果をくり返す
+        const rounds = Math.floor((pl.applauseTotal[e.cat] ?? 0) / e.div);
+        if (rounds > 0) this.addLog(`喝采【${e.cat}】の累計に応えて${rounds}回`, p);
+        for (let r = 0; r < rounds; r++) for (const sub of e.effects) await this.runEffect(sub, ctx);
+        break;
+      }
       case "handBlast": {
         // 手札をすべて捨て、その枚数だけ、対戦相手か対戦相手のクリーチャーにランダムに1点ずつ
         // per があれば、その喝采の累計 div ごとに1回くり返す

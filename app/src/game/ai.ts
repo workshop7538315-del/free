@@ -463,6 +463,10 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return Math.min(e.n, them.mana.length) * 2.2;
     case "applause":
       return e.n * 0.6;
+    case "perApplause": {
+      const rounds = Math.floor((me.applauseTotal[e.cat] ?? 0) / e.div);
+      return rounds * e.effects.reduce((s, x) => s + effectValue(g, p, x, targets, inCombat), 0);
+    }
     case "handBlast": {
       // 手札の枚数ぶんのランダムなダメージ。とどめを刺せるなら最優先、手札が少ないなら損が小さい
       const n = me.hand.length * (e.per ? Math.floor((me.applauseTotal[e.per.cat] ?? 0) / e.per.div) : 1);

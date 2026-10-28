@@ -258,6 +258,7 @@ export const E = {
   /** card を N 枚生成してマナゾーンに置く(ターン終了時に墓地に置かれる) */
   createMana: (card, n = 1) => ({ do: "createMana", card, n }),
   /** 強盗 N(fallback:秘蔵庫が空のときに手札に加える生成カード) */
+  perApplause: (cat, div, effects) => ({ do: "perApplause", cat, div, effects: [effects].flat() }),
   handBlast: (per) => ({ do: "handBlast", ...(per ? { per } : {}) }),
   heist: (n, fallback) => ({ do: "heist", n, ...(fallback ? { fallback } : {}) }),
   /** 純色払いの色に応じたキーワードを得る */
@@ -581,6 +582,8 @@ function effectText(e, name, abil, notes) {
       return `あなたは加護《${e.id}》を得る。`;
     case "paidColorKw":
       return `${name}は、純色払いで支払った色に応じて、白なら警戒、青なら飛行、黒なら接死、赤なら速攻、緑ならトランプルを得る。`;
+    case "perApplause":
+      return `このゲームで得た喝采【${e.cat}】の累計${e.div}につき1回、次を行う:「${e.effects.map((x) => effectText(x, name, abil, notes)).join("")}」`;
     case "handBlast":
       return e.per
         ? `このゲームで得た喝采【${e.per.cat}】の累計${e.per.div}につき1回、次を行う(0回なら何もしない):あなたの手札をすべて捨て、捨てた枚数に等しい回数、対戦相手か対戦相手のクリーチャーをランダムに1つ選び、1点のダメージを与える。(2回目以降は最初に捨てた枚数を使う)`
