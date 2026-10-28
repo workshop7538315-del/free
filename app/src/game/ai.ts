@@ -463,6 +463,13 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return Math.min(e.n, them.mana.length) * 2.2;
     case "applause":
       return e.n * 0.6;
+    case "handBlast": {
+      // 手札の枚数ぶんのランダムなダメージ。とどめを刺せるなら最優先、手札が少ないなら損が小さい
+      const n = me.hand.length * (e.per ? Math.floor((me.applauseTotal[e.per.cat] ?? 0) / e.per.div) : 1);
+      if (n === 0) return -1;
+      if (them.life <= n && g.creatures(g.other(p)).length === 0) return 50;
+      return n * 1.2 - n * 0.9 + (them.life <= n * 2 ? 3 : 0) - (n <= 1 ? 1 : 0);
+    }
     case "heist":
       return me.extra.length ? Math.min(e.n, me.extra.length) * 1.4 : 0.8;
     case "selfToMana":

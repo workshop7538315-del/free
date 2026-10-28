@@ -1778,6 +1778,29 @@ export class Game {
     const src = ctx.item.obj;
     const pl = this.players[p];
     switch (e.do) {
+      case "handBlast": {
+        // 手札をすべて捨て、その枚数だけ、対戦相手か対戦相手のクリーチャーにランダムに1点ずつ
+        // per があれば、その喝采の累計 div ごとに1回くり返す
+        const rounds = e.per ? Math.floor((pl.applauseTotal[e.per.cat] ?? 0) / e.per.div) : 1;
+        const hand = [...pl.hand];
+        if (hand.length === 0 || rounds === 0) break;
+        for (const o of hand) this.move(o, "graveyard");
+        this.addLog(`手札を${hand.length}枚すべて捨てた${rounds > 1 ? `(${rounds}回分)` : ""}`, p);
+        let toPlayer = 0;
+        const hit = new Map<Obj, number>();
+        for (let i = 0; i < hand.length * rounds; i++) {
+          const alive = this.creatures(opp).filter((c) => c.damage < this.toughness(c) || this.hasKw(c, "破壊不能"));
+          const k = Math.floor(this.rng() * (alive.length + 1));
+          if (k === alive.length) toPlayer++;
+          else {
+            this.dealDamage(src, alive[k], 1);
+            hit.set(alive[k], (hit.get(alive[k]) ?? 0) + 1);
+          }
+        }
+        for (const [o, n] of hit) this.addLog(`${o.card.name}に${n}点のダメージ`, p);
+        if (toPlayer) this.dealDamage(src, { kind: "player", id: opp }, toPlayer);
+        break;
+      }
       case "damage": {
         const n = this.amount(e.n, ctx);
         if (e.to === "opp") this.dealDamage(src, { kind: "player", id: opp }, n);

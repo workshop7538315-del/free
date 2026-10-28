@@ -96,7 +96,7 @@ export const COMMEDIA = [
   ]))),
   // ================================================================ 座長本人(カーテンコール)
   tagged(cr("cm52", "狂気派の座長 ニコ=フォッリア・ルッチョラ", "{4}{U}{U}{R}{R}", "神・役者", 6, 6, "M", [
-    curtainCall(3, MAD, "cm04", "狂気の座長", OV.MAD, 3), kw("飛行", "呪禁"), etb([E.bounceAll("opp"), E.draw(2)]), castSpell(E.dmgOpp(2)),
+    curtainCall(3, MAD, "cm04", "狂気の座長", OV.MAD, 3), kw("飛行", "呪禁"), etb([E.draw(2), E.handBlast({ cat: MAD, div: 4 })]),
   ], { flavor: "「悲劇? 泣き顔って退屈なのよね。喜劇? 笑い声がうるさいだけ。ねえ、もっと狂おしいのを見せて?」" })),
   tagged(cr("cm53", "悲劇派の座長 オッタヴィア・ラ・クリマ", "{5}{B}{B}{B}", "神・役者", 7, 8, "M", [
     curtainCall(3, TRAGEDY, "cm08", "悲劇の歌姫", OV.TRAGEDY, 3), kw("飛行", "絆魂"), etb([E.sac(2), E.lose(3)]), allyDies([E.lose(3), E.gain(3)]),
