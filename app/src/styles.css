@@ -1765,6 +1765,7 @@ textarea {
 }
 .ui-filter-summary {
   margin-left: 0.3rem;
+  white-space: nowrap;
   font-weight: 400;
   color: var(--muted);
   font-size: var(--step--1);
@@ -2002,16 +2003,14 @@ textarea {
   100% { transform: none; }
 }
 
-/* 絞り込みの見出し:カキカキ(--n に文字数、文字が変わるたび key を変えて再生) */
+/* 絞り込みの見出し:積み木(新しく増えた条件が上から落ちて、少し潰れて積まる) */
 .ui-filter-summary {
-  display: inline-block;
-  vertical-align: bottom;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  animation: ui-type calc(min(var(--n, 6), 12) * 0.08s) steps(var(--n, 6)) both;
+  display: inline;
 }
-@keyframes ui-type { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+.ui-filter-chip {
+  display: inline-block;
+  animation: ui-tsumi 0.5s ease-in calc(var(--i, 0) * 0.08s) both;
+}
 
 /* 詳細シート:ドミノ */
 .ui-sheet-backdrop { position: fixed; inset: 0; z-index: 30; background: rgba(0, 0, 0, 0.35); animation: ui-fade-in 0.3s ease-out both; }

@@ -110,9 +110,9 @@ const COLOR_JA: Record<Color, string> = { W: "白", U: "青", B: "黒", R: "赤"
 const rangeText = (label: string, r: Range) =>
   !rangeActive(r) ? "" : r.min !== null && r.max !== null ? (r.min === r.max ? `${label}${r.min}` : `${label}${r.min}〜${r.max}`) : r.min !== null ? `${label}${r.min}以上` : `${label}${r.max}以下`;
 
-/** 今かけている条件の短い説明(絞り込みの見出し用)。条件がなければ「なし」 */
-export function filterSummary(f: FilterState, packName: (id: string) => string): string {
-  const parts = [
+/** 今かけている条件を短い言葉で並べる(絞り込みの見出し用) */
+export function filterParts(f: FilterState, packName: (id: string) => string): string[] {
+  return [
     ...f.colors.map((c) => COLOR_JA[c]),
     f.colorless ? "欠色" : "",
     f.multi ? (f.multiMatch === "exact" && f.colors.length ? "ちょうど多色" : "多色") : "",
@@ -126,6 +126,11 @@ export function filterSummary(f: FilterState, packName: (id: string) => string):
     rangeText("タフネス", f.toughness),
     f.onlyInDeck ? "デッキ内" : "",
   ].filter(Boolean);
+}
+
+/** 条件の説明を1行にしたもの。条件がなければ「なし」 */
+export function filterSummary(f: FilterState, packName: (id: string) => string): string {
+  const parts = filterParts(f, packName);
   return parts.length ? parts.join("・") : "なし";
 }
 

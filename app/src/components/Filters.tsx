@@ -1,7 +1,8 @@
 import { PACKS, packById } from "../lib/packs";
 import { COLORS, COLOR_NAMES, type Color } from "../lib/mana";
 import { KEYWORDS } from "../lib/keywords";
-import { activeRangeCount, emptyRange, filterSummary, initialFilters, isFiltering, type FilterState, type Range } from "../lib/filters";
+import { useRef } from "react";
+import { activeRangeCount, emptyRange, filterParts, initialFilters, isFiltering, type FilterState, type Range } from "../lib/filters";
 import { Accordion } from "./Accordion";
 import { packShort } from "../lib/packs";
 
@@ -23,7 +24,15 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
     set({ colors: f.colors.includes(c) ? f.colors.filter((x) => x !== c) : COLORS.filter((x) => x === c || f.colors.includes(x)) });
 
   const rangeCount = activeRangeCount(f);
-  const summary = filterSummary(f, packShort);
+  const parts = filterParts(f, packShort);
+  const items = parts.length ? parts : ["なし"];
+  // 新しく増えた条件だけが、上から落ちて積み上がる(既にある条件は動かさない)
+  const shownBefore = useRef<Set<string>>(new Set());
+  const fresh = items.filter((x) => !shownBefore.current.has(x));
+  shownBefore.current = new Set(items);
+  // 中の行は、開いたときに上から順に積み上がる
+  let row = 0;
+  const rowStyle = () => ({ "--i": row++ }) as React.CSSProperties;
 
   return (
     <Accordion
@@ -32,16 +41,20 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
       title={
         <>
           絞り込み{" "}
-          {/* 条件が変わるたびに、文字が1つずつ現れる */}
-          <span key={summary} className="ui-filter-summary" style={{ "--n": [...summary].length } as React.CSSProperties}>
-            {summary}
+          <span className="ui-filter-summary">
+            {items.map((x, i) => (
+              <span key={x} className="ui-filter-chip" style={{ "--i": Math.max(0, fresh.indexOf(x)) } as React.CSSProperties}>
+                {i > 0 && "・"}
+                {x}
+              </span>
+            ))}
           </span>
         </>
       }
       meta={`${shown} / ${total}種類`}
     >
-    <div className="filters ui-acc-row" style={{ "--i": 0 } as React.CSSProperties}>
-      <fieldset className="color-filter">
+    <div className="filters">
+      <fieldset className="color-filter ui-acc-row" style={rowStyle()}>
         <legend className="visually-hidden">色で絞り込む</legend>
         {COLORS.map((c) => (
           <button key={c} type="button" className="chip" aria-pressed={f.colors.includes(c)} onClick={() => toggleColor(c)}>
@@ -73,7 +86,7 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
       </fieldset>
 
       {f.multi && (
-        <div className="multi-mode">
+        <div className="multi-mode ui-acc-row" style={rowStyle()}>
           <div className="segmented" role="radiogroup" aria-label="多色の色の合わせ方">
             <button
               type="button"
@@ -97,7 +110,7 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
         </div>
       )}
 
-      <fieldset className="type-filter">
+      <fieldset className="type-filter ui-acc-row" style={rowStyle()}>
         <legend className="visually-hidden">カードタイプで絞り込む(複数選べます)</legend>
         {TYPE_FILTERS.map((t) => (
           <label key={t} className="type-check">
@@ -111,7 +124,7 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
         ))}
       </fieldset>
 
-      <div className="filter-row">
+      <div className="filter-row ui-acc-row" style={rowStyle()}>
         <label>
           <span className="visually-hidden">キーワード</span>
           <select value={f.keyword} onChange={(e) => set({ keyword: e.target.value })}>
@@ -160,7 +173,7 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
         </label>
       </div>
 
-      <details className="ranges" open={rangeCount > 0 || undefined}>
+      <details className="ranges ui-acc-row" style={rowStyle()} open={rangeCount > 0 || undefined}>
         <summary>
           数値で絞り込む
           {rangeCount > 0 && <span className="ranges-count">{rangeCount}件指定中</span>}
@@ -176,7 +189,7 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
       {f.pack && packById(f.pack) && (() => {
         const p = packById(f.pack)!;
         return (
-          <p className="pack-info">
+          <p className="pack-info ui-acc-row" style={rowStyle()}>
             <strong>
               第{p.number}弾「{p.name}」
             </strong>
@@ -185,7 +198,7 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
         );
       })()}
 
-      <div className="filter-foot">
+      <div className="filter-foot ui-acc-row" style={rowStyle()}>
         <label className="check">
           <input type="checkbox" checked={f.onlyInDeck} onChange={(e) => set({ onlyInDeck: e.target.checked })} />
           デッキに入っているカードだけ
