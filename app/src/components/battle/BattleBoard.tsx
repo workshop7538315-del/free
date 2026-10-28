@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { Action, BlockAnswer, Decision, Game, Obj, Player, PlayerId, TargetRef } from "../../game/engine";
 import { STEP_NAMES, abilitiesOf, isCreatureCard, manaColors, releaseAbility } from "../../game/engine";
 import type { HumanAgent } from "../../game/human";
@@ -9,6 +9,31 @@ import { copyText, deckText, logText, resultLine, type DeckInfo } from "../../li
 
 const ME: PlayerId = 0;
 const CPU: PlayerId = 1;
+
+// ---------------------------------------------------------------- 演出
+/** 演出を出してよいか。対戦開始直後(初期配置)と、動きを減らす設定では出さない */
+const FxContext = createContext(false);
+const reducedMotion = () => typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+const CURTAIN_MS = 3800;
+const DYING_MS = 600;
+const FLOAT_MS = 1000;
+const DOT_COLORS = ["W", "U", "B", "R", "G"];
+
+/** 後で片付ける用のタイマー。再描画では止めず、画面から外れるときだけまとめて止める */
+function useLater() {
+  const timers = useRef<number[]>([]);
+  useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
+  return (fn: () => void, ms: number) => {
+    timers.current.push(window.setTimeout(fn, ms));
+  };
+}
+
+/** 出た瞬間だけ fx-enter を付ける。アニメーションが終わったら外す(アンタップなどで再生し直さない) */
+function useEnter(): [string, (e: React.AnimationEvent) => void] {
+  const fx = useContext(FxContext);
+  const [entering, setEntering] = useState(fx);
+  return [entering ? "fx-enter" : "", (e) => e.target === e.currentTarget && /^fx-(pop|flip-in|dive)$/.test(e.animationName) && setEntering(false)];
+}
 
 type Props = {
   game: Game;
@@ -23,9 +48,26 @@ type Props = {
 export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }: Props) {
   // 結果の画面を閉じて、盤面とログを見られるようにする
   const [showResult, setShowResult] = useState(true);
+  // 勝敗の幕:結果ダイアログの前に出す。引き分けと、動きを減らす設定では出さない
+  const [curtain, setCurtain] = useState<"win" | "lose" | null>(null);
   useEffect(() => {
-    if (result !== undefined) setShowResult(true);
+    if (result === undefined) {
+      setCurtain(null);
+      return;
+    }
+    setShowResult(true);
+    if (result === null || reducedMotion()) return;
+    setCurtain(result === ME ? "win" : "lose");
+    const t = window.setTimeout(() => setCurtain(null), CURTAIN_MS);
+    return () => window.clearTimeout(t);
   }, [result]);
+  // 対戦開始直後は、初期配置が一斉に動かないよう演出を切っておく
+  const [fxOn, setFxOn] = useState(false);
+  useEffect(() => {
+    if (reducedMotion()) return;
+    const t = window.setTimeout(() => setFxOn(true), 400);
+    return () => window.clearTimeout(t);
+  }, [g]);
   const pending = human.pending;
   const d = pending?.decision ?? null;
   const [selected, setSelected] = useState<number | null>(null);
@@ -127,6 +169,7 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
   const playerTargetable = (id: PlayerId) => d?.kind === "target" && d.options.some((r) => r.kind === "player" && r.id === id);
 
   return (
+    <FxContext.Provider value={fxOn}>
     <div className="battle">
       <div className="battle-main">
         <PlayerBar g={g} p={cpu} targetable={playerTargetable(CPU)} onClick={() => onPlayer(CPU)} />
@@ -203,7 +246,9 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
         </div>
       )}
 
-      {result !== undefined && showResult && (
+      {curtain && <Curtain kind={curtain} onSkip={() => setCurtain(null)} />}
+
+      {result !== undefined && showResult && !curtain && (
         <div className="result" role="dialog" aria-labelledby="result-title">
           <div className="result-box">
             <h2 id="result-title" className={`result-title ${result === ME ? "is-win" : ""}`}>
@@ -228,17 +273,73 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
         </div>
       )}
     </div>
+    </FxContext.Provider>
+  );
+}
+
+/** 勝敗の幕。クリックで飛ばせる */
+function Curtain({ kind, onSkip }: { kind: "win" | "lose"; onSkip: () => void }) {
+  return (
+    <div className={`fx-curtain is-${kind}`} onClick={onSkip} role="presentation" aria-hidden="true">
+      {kind === "win" ? (
+        <div className="fx-curtain-panels">
+          <div />
+          <div />
+        </div>
+      ) : (
+        <div className="fx-shutter" />
+      )}
+      {kind === "win" &&
+        Array.from({ length: 12 }, (_, k) => {
+          const a = (k / 12) * 2 * Math.PI;
+          return (
+            <span
+              key={k}
+              className="fx-dot"
+              style={{ "--x": `${Math.cos(a) * 110}px`, "--y": `${Math.sin(a) * 60}px`, background: `var(--mana-${DOT_COLORS[k % 5]})` } as React.CSSProperties}
+            />
+          );
+        })}
+      <span className="fx-curtain-text">{kind === "win" ? "勝利" : "敗北"}</span>
+    </div>
   );
 }
 
 // ---------------------------------------------------------------- プレイヤー情報
 function PlayerBar({ g, p, targetable, onClick }: { g: Game; p: Player; targetable: boolean; onClick: () => void }) {
   const isTurn = g.active === p.id;
+  // ライフが減ったら、差分を浮かせて数字を跳ねさせる(回復は演出なし)
+  const fx = useContext(FxContext);
+  const later = useLater();
+  const prevLife = useRef(p.life);
+  const [hits, setHits] = useState<{ id: number; n: number }[]>([]);
+  // 数字を跳ねさせる回数(key にして毎回再生する)と、赤くしている間かどうか
+  const [hitKey, setHitKey] = useState(0);
+  const [hitting, setHitting] = useState(false);
+  useEffect(() => {
+    const diff = p.life - prevLife.current;
+    prevLife.current = p.life;
+    if (diff >= 0 || !fx) return;
+    const id = Date.now() + Math.random();
+    setHits((h) => [...h, { id, n: diff }]);
+    setHitKey((k) => k + 1);
+    setHitting(true);
+    later(() => setHits((h) => h.filter((x) => x.id !== id)), FLOAT_MS);
+    later(() => setHitting(false), 500);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.life, fx]);
   return (
     <div className={`player-bar ${p.id === ME ? "is-me" : "is-cpu"} ${isTurn ? "is-turn" : ""}`}>
       <button type="button" className={`life ${targetable ? "is-targetable" : ""}`} onClick={onClick} disabled={!targetable} aria-label={`${p.name}のライフ ${p.life}`}>
-        <span className="life-n">{p.life}</span>
+        <span key={hitKey} className={`life-n ${hitting ? "is-hit" : ""}`}>
+          {p.life}
+        </span>
         <span className="life-label">ライフ</span>
+        {hits.map((h) => (
+          <span key={h.id} className="life-float" aria-hidden="true">
+            {h.n}
+          </span>
+        ))}
       </button>
       <span className="player-name">{p.name}</span>
       <span className="player-stats">
@@ -282,16 +383,14 @@ function ManaRow({ p, markOf, onCard, hidden = false }: { p: Player; markOf: (o:
           const secretNo = secret ? p.mana.filter((q) => q.faceDown).indexOf(o) + 1 : 0;
           const label = o.faceDown ? (secret ? `裏向き${secretNo}` : `裏:${o.card.name}`) : o.card.name;
           return (
-            <button
+            <ManaChip
               key={o.uid}
-              type="button"
               className={`mana-chip ${o.tapped ? "is-tapped" : ""} ${o.faceDown ? "is-facedown" : ""} ${markOf(o)} ${!o.faceDown && releaseAbility(o.card) ? "has-release" : ""}`}
               onClick={() => onCard(o)}
               title={o.faceDown ? `${secret ? "裏向きのカード" : o.card.name}(裏向き:欠色のマナを出す。能力は働かない)` : o.card.name}
-            >
-              <span className="mana-chip-color" style={{ background: bg }} />
-              <span className="mana-chip-name">{label}</span>
-            </button>
+              bg={bg}
+              label={label}
+            />
           );
         })}
       </div>
@@ -299,20 +398,54 @@ function ManaRow({ p, markOf, onCard, hidden = false }: { p: Player; markOf: (o:
   );
 }
 
+function ManaChip({ className, onClick, title, bg, label }: { className: string; onClick: () => void; title: string; bg: string; label: string }) {
+  const [enter, onAnimationEnd] = useEnter();
+  return (
+    <button type="button" className={`${className} ${enter}`} onClick={onClick} title={title} onAnimationEnd={onAnimationEnd}>
+      <span className="mana-chip-color" style={{ background: bg }} />
+      <span className="mana-chip-name">{label}</span>
+    </button>
+  );
+}
+
 // ---------------------------------------------------------------- 場
 function Field({ g, p, markOf, onCard, label }: { g: Game; p: Player; markOf: (o: Obj) => string; onCard: (o: Obj) => void; label: string }) {
   const hosts = p.battlefield.filter((o) => o.attachedTo === null);
+  // 場から消えたカードは、少しのあいだ「残像」として倒れて消える演出を見せる
+  const fx = useContext(FxContext);
+  const later = useLater();
+  const prev = useRef<Obj[]>(hosts);
+  const [ghosts, setGhosts] = useState<{ o: Obj; at: number }[]>([]);
+  const ids = hosts.map((o) => o.uid).join(",");
+  useEffect(() => {
+    const before = prev.current;
+    prev.current = hosts;
+    if (!fx) return;
+    const now = new Set(hosts.map((o) => o.uid));
+    const gone = before.flatMap((o, i) => (now.has(o.uid) ? [] : [{ o, at: i }]));
+    if (!gone.length) return;
+    setGhosts((gs) => [...gs.filter((x) => !now.has(x.o.uid)), ...gone]);
+    later(() => setGhosts((gs) => gs.filter((x) => !gone.some((y) => y.o.uid === x.o.uid))), DYING_MS);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ids, fx]);
+  const shown: { o: Obj; dying: boolean }[] = hosts.map((o) => ({ o, dying: false }));
+  for (const gh of [...ghosts].sort((a, b) => a.at - b.at)) if (!hosts.some((o) => o.uid === gh.o.uid)) shown.splice(Math.min(gh.at, shown.length), 0, { o: gh.o, dying: true });
   return (
     <section className={`field ${p.id === ME ? "is-me" : "is-cpu"}`} aria-label={label}>
-      {hosts.length === 0 && <span className="zone-empty">{label}にはまだ何もありません</span>}
-      {hosts.map((o) => (
-        <MiniCard key={o.uid} g={g} o={o} mark={markOf(o)} onClick={() => onCard(o)} />
-      ))}
+      {shown.length === 0 && <span className="zone-empty">{label}にはまだ何もありません</span>}
+      {shown.map(({ o, dying }) =>
+        dying ? (
+          <MiniCard key={`dying-${o.uid}`} g={g} o={o} mark="is-dying" onClick={() => {}} />
+        ) : (
+          <MiniCard key={o.uid} g={g} o={o} mark={markOf(o)} onClick={() => onCard(o)} />
+        ),
+      )}
     </section>
   );
 }
 
 function MiniCard({ g, o, mark, onClick, inHand = false }: { g: Game; o: Obj; mark: string; onClick: () => void; inHand?: boolean }) {
+  const [enter, onAnimationEnd] = useEnter();
   const cs = o.tokenColors ?? cardColors(o.card.cost);
   const frame = cs.length === 0 ? "var(--mana-C)" : cs.length === 1 ? `var(--mana-${cs[0]})` : `linear-gradient(135deg, ${cs.map((c) => `var(--mana-${c})`).join(",")})`;
   const creature = isCreatureCard(o.card);
@@ -327,9 +460,12 @@ function MiniCard({ g, o, mark, onClick, inHand = false }: { g: Game; o: Obj; ma
   return (
     <button
       type="button"
-      className={`mini ${o.tapped ? "is-tapped" : ""} ${mark} ${inHand ? "in-hand" : ""}`}
+      className={`mini ${o.tapped && mark !== "is-dying" ? "is-tapped" : ""} ${mark} ${inHand ? "in-hand" : `${mark === "is-dying" ? "" : enter} ${o.card.rarity === "神話レア" ? "is-mythic" : ""}`}`}
       style={{ "--frame": frame } as React.CSSProperties}
       onClick={onClick}
+      onAnimationEnd={onAnimationEnd}
+      tabIndex={mark === "is-dying" ? -1 : undefined}
+      aria-hidden={mark === "is-dying" || undefined}
     >
       <span className="mini-head">
         <span className="mini-name">{o.card.name}</span>

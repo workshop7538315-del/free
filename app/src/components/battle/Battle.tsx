@@ -24,7 +24,10 @@ const expand = (cards: DeckCards, byId: Map<string, Card>): Card[] =>
     return c ? Array.from({ length: n }, () => c) : [];
   });
 
-type Running = { game: Game; human: HumanAgent; myDeck: Choice; cpuDeck: Choice; result: PlayerId | null | undefined };
+/** 対戦ごとに別の番号。再戦で盤面(と演出の記憶)を作り直すために key に使う */
+let battleSeq = 0;
+type Running = {
+  seq: number; game: Game; human: HumanAgent; myDeck: Choice; cpuDeck: Choice; result: PlayerId | null | undefined };
 
 export function Battle({ byId, starters, saved, draft }: Props) {
   const choices = useMemo<Choice[]>(() => {
@@ -70,7 +73,7 @@ export function Battle({ byId, starters, saved, draft }: Props) {
       onUpdate: rerender,
     });
     human.subscribe(rerender);
-    const r: Running = { game, human, myDeck, cpuDeck, result: undefined };
+    const r: Running = { seq: ++battleSeq, game, human, myDeck, cpuDeck, result: undefined };
     setRunning(r);
     game.run().then((w) => {
       r.result = w;
@@ -81,6 +84,7 @@ export function Battle({ byId, starters, saved, draft }: Props) {
   if (running) {
     return (
       <BattleBoard
+        key={running.seq}
         game={running.game}
         human={running.human}
         result={running.result}
