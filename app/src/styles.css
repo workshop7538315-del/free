@@ -2521,3 +2521,49 @@ textarea {
     font-size: 0.7rem;
   }
 }
+
+/* ---------- 幅の狭いカード(スマホの2列など):名前が押しつぶされないよう、コストを名前の上に出す ---------- */
+.card {
+  container-type: inline-size;
+}
+.card-head {
+  flex-wrap: wrap;
+}
+.card-head .card-name {
+  flex: 1 1 7em;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.card-head .mana-cost {
+  flex: none;
+  margin-left: auto;
+}
+@container (max-width: 13rem) {
+  .card:not(.card-compact) .card-head {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  .card:not(.card-compact) .card-head .mana-cost {
+    margin-left: 0;
+    font-size: 0.9rem;
+  }
+  .card:not(.card-compact) .card-name {
+    flex: none;
+    font-size: 1rem;
+  }
+}
+/* コストの記号が5つ以上のカードは、中くらいの幅でも名前の上にコストを出す */
+@container (max-width: 20rem) {
+  .card:not(.card-compact):has(.card-head .mana-cost .pip:nth-child(5)) .card-head {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  .card:not(.card-compact):has(.card-head .mana-cost .pip:nth-child(5)) .card-head .mana-cost {
+    margin-left: 0;
+  }
+  .card:not(.card-compact):has(.card-head .mana-cost .pip:nth-child(5)) .card-name {
+    flex: none;
+  }
+}
