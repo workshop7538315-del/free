@@ -30,7 +30,7 @@ function PlainRules({ text }: { text: string }) {
  * デッキの一覧のカード名。ホバー・フォーカス・タップでカードの内容を出す。
  * 一覧は画面の右側にあるので、できればカード名の左に出す。
  */
-export function CardTip({ card }: { card: Card }) {
+export function CardTip({ card, className = "deck-row-name" }: { card: Card; className?: string }) {
   const id = useId();
   const ref = useRef<HTMLButtonElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
@@ -63,7 +63,7 @@ export function CardTip({ card }: { card: Card }) {
       <button
         ref={ref}
         type="button"
-        className="deck-row-name card-tip-trigger"
+        className={`${className} card-tip-trigger`}
         aria-describedby={pos ? id : undefined}
         onMouseEnter={show}
         onMouseLeave={hide}

@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import rawCards from "../../cards/cards.json";
 import rawDecks from "../../cards/decks.json";
 import type { Card, DeckDraft, SavedDeck } from "./types";
 import { DECK_SIZE, addCard, deckCount } from "./lib/deck";
 import { COLORS } from "./lib/mana";
-import { applyFilters, initialFilters, type FilterState } from "./lib/filters";
+import { applyFilters, initialFilters, sortCards, type FilterState } from "./lib/filters";
+import { MotionContext, useIsMobile, usePersistent } from "./lib/motion";
+import { PACKS } from "./lib/packs";
+import { Pager } from "./components/Pager";
+import { DEFAULT_PREFS, ListSettings, type ListPrefs } from "./components/ListSettings";
 import { supabase } from "./lib/supabase";
 import { localStore, supabaseStore, type DeckStore } from "./lib/storage";
 import { CardTile } from "./components/CardTile";
@@ -22,6 +26,9 @@ const ARCHETYPES = (() => {
   for (const c of CARDS) for (const t of c.tags ?? []) counts.set(t, (counts.get(t) ?? 0) + 1);
   return [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
 })();
+
+const PACK_ORDER = new Map(PACKS.map((p, i) => [p.id, i]));
+const packOrder = (id: string) => PACK_ORDER.get(id) ?? 999;
 
 const emptyDraft = (): DeckDraft => ({ name: "新しいデッキ", note: "", cards: {} });
 
@@ -46,6 +53,13 @@ export default function App() {
 
   const [filters, setFilters] = useState<FilterState>(initialFilters);
   const [mode, setMode] = useState<"build" | "battle">("build");
+  // 演出のオン・オフ(画面右上)
+  const [motion, setMotion] = usePersistent("ui.motion.v1", true);
+  // カード一覧の表示設定とページ
+  const [prefs, setPrefs] = usePersistent<ListPrefs>("ui.list.v1", DEFAULT_PREFS);
+  const [page, setPage] = usePersistent("ui.page.v1", 1);
+  const mobile = useIsMobile();
+  const listTop = useRef<HTMLDivElement>(null);
 
   // ログイン状態
   useEffect(() => {
@@ -140,10 +154,33 @@ export default function App() {
     }
   };
 
-  const visible = useMemo(() => applyFilters(CARDS, filters, draft.cards), [filters, draft.cards]);
+  const visible = useMemo(() => sortCards(applyFilters(CARDS, filters, draft.cards), prefs.sort, packOrder), [filters, draft.cards, prefs.sort]);
+
+  // 絞り込み・並び順・表示設定を変えたら1ページ目に戻す(読み込み直後は残したページのまま)
+  const resetKey = JSON.stringify([filters, prefs]);
+  const lastKey = useRef(resetKey);
+  useEffect(() => {
+    if (lastKey.current === resetKey) return;
+    lastKey.current = resetKey;
+    setPage(1);
+  }, [resetKey, setPage]);
+  const perPage = prefs.perPage;
+  const pages = Math.max(1, Math.ceil(visible.length / perPage));
+  const cur = Math.min(Math.max(1, page), pages);
+  const pageCards = visible.slice((cur - 1) * perPage, cur * perPage);
+  const range = visible.length ? `${(cur - 1) * perPage + 1}–${Math.min(cur * perPage, visible.length)} / ${visible.length}種類` : `0 / ${visible.length}種類`;
+  const goPage = (p: number) => {
+    setPage(Math.min(Math.max(1, p), pages));
+    // ページを替えたら一覧の先頭へ(ページ送りは動かさない)
+    listTop.current?.scrollIntoView({ block: "start" });
+  };
+  // スマホでは4列・6列は出さない
+  const cols = mobile && typeof prefs.cols === "number" && prefs.cols > 3 ? "auto" : prefs.cols;
+  const compact = prefs.view === "name" || (typeof cols === "number" && cols >= 3);
 
   return (
-    <div className="app">
+    <MotionContext.Provider value={motion}>
+    <div className={`app ${motion ? "" : "no-motion"}`}>
       <header className="topbar">
         <h1 className="title">
           <span className="title-pips" aria-hidden="true">
@@ -161,6 +198,9 @@ export default function App() {
             対戦する
           </button>
         </nav>
+        <button type="button" className="motion-toggle" aria-pressed={motion} onClick={() => setMotion(!motion)} title="アニメーションの演出をオン・オフする">
+          演出 {motion ? "オン" : "オフ"}
+        </button>
         <Account session={session} />
       </header>
 
@@ -173,18 +213,28 @@ export default function App() {
         <section className="pool" aria-label="カード一覧">
           <Filters archetypes={ARCHETYPES} value={filters} onChange={setFilters} shown={visible.length} total={CARDS.length} />
 
+          <div className="list-head" ref={listTop}>
+            <Pager page={cur} pages={pages} onChange={goPage} range={range} label="カード一覧のページ(上)" />
+            <ListSettings prefs={prefs} onChange={setPrefs} mobile={mobile} />
+          </div>
           {visible.length === 0 ? (
             <p className="empty">条件に合うカードがありません。絞り込みを外してみてください。</p>
           ) : (
-            <div className="card-grid">
-              {visible.map((card) => (
+            <div className={`card-grid ${compact ? "is-compact" : ""} ${cols === "auto" ? "" : `cols-${cols}`}`}>
+              {pageCards.map((card) => (
                 <CardTile
                   key={card.id}
                   card={card}
                   count={draft.cards[card.id] ?? 0}
+                  compact={compact}
                   onChange={(delta) => changeDraft({ ...draft, cards: addCard(draft.cards, card.id, delta, card) })}
                 />
               ))}
+            </div>
+          )}
+          {pages > 1 && (
+            <div className="list-foot">
+              <Pager page={cur} pages={pages} onChange={goPage} range={range} label="カード一覧のページ(下)" />
             </div>
           )}
         </section>
@@ -217,6 +267,7 @@ export default function App() {
       </a>
       )}
     </div>
+    </MotionContext.Provider>
   );
 }
 

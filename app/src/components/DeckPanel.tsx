@@ -5,6 +5,7 @@ import { DECK_SIZE, EXTRA_SIZE, addCard, deckCount, deckStats, deckToText, extra
 import { manaValue } from "../lib/mana";
 import { ManaCost } from "./ManaCost";
 import { ManaBalance, ManaCurve } from "./ManaBalance";
+import { Accordion } from "./Accordion";
 
 type Props = {
   draft: DeckDraft;
@@ -167,16 +168,13 @@ export function DeckPanel(p: Props) {
         />
       </label>
 
-      <section aria-labelledby="saved-title" className="saved">
-        <h3 id="saved-title" className="panel-sub">
-          保存したデッキ
-        </h3>
+      <Accordion id="saved" className="saved" title="作成済みデッキ" meta={`${p.saved.length}件`}>
         {p.saved.length === 0 ? (
-          <p className="hint">まだありません。</p>
+          <p className="hint ui-acc-row">まだありません。</p>
         ) : (
           <ul>
-            {p.saved.map((d) => (
-              <li key={d.id} className={`saved-row ${d.id === draft.id ? "is-current" : ""}`}>
+            {p.saved.map((d, i) => (
+              <li key={d.id} className={`saved-row ui-acc-row ${d.id === draft.id ? "is-current" : ""}`} style={{ "--i": i } as React.CSSProperties}>
                 <button type="button" className="saved-open" onClick={() => p.onLoad(d)}>
                   <span className="saved-name">{d.name}</span>
                   <span className="saved-meta">
@@ -190,7 +188,7 @@ export function DeckPanel(p: Props) {
             ))}
           </ul>
         )}
-      </section>
+      </Accordion>
     </aside>
   );
 }

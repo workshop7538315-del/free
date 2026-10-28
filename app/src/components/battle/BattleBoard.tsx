@@ -3,6 +3,7 @@ import type { Action, BlockAnswer, Decision, Game, Obj, Player, PlayerId, Target
 import { STEP_NAMES, abilitiesOf, isCreatureCard, manaColors, releaseAbility } from "../../game/engine";
 import type { HumanAgent } from "../../game/human";
 import { cardColors } from "../../lib/mana";
+import { useIsMobile, useMotion } from "../../lib/motion";
 import { ManaCost } from "../ManaCost";
 import { RulesText } from "../CardTile";
 import { copyText, deckText, logText, resultLine, type DeckInfo } from "../../lib/battleLog";
@@ -13,11 +14,49 @@ const CPU: PlayerId = 1;
 // ---------------------------------------------------------------- 演出
 /** 演出を出してよいか。対戦開始直後(初期配置)と、動きを減らす設定では出さない */
 const FxContext = createContext(false);
-const reducedMotion = () => typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 const CURTAIN_MS = 3800;
 const DYING_MS = 600;
 const FLOAT_MS = 1000;
 const DOT_COLORS = ["W", "U", "B", "R", "G"];
+const LONG_PRESS_MS = 500;
+const SHEET_CLOSE_MS = 200;
+
+/** 長押し(約0.5秒)を拾う。長押しのあとのクリックは無視する */
+function useLongPress(onLongPress: (() => void) | undefined) {
+  const timer = useRef<number | null>(null);
+  const fired = useRef(false);
+  const clear = () => {
+    if (timer.current !== null) window.clearTimeout(timer.current);
+    timer.current = null;
+  };
+  useEffect(() => clear, []);
+  if (!onLongPress) return { handlers: {}, consumed: () => false };
+  return {
+    handlers: {
+      onPointerDown: () => {
+        fired.current = false;
+        clear();
+        timer.current = window.setTimeout(() => {
+          fired.current = true;
+          onLongPress();
+        }, LONG_PRESS_MS);
+      },
+      onPointerUp: clear,
+      onPointerLeave: clear,
+      onPointerCancel: clear,
+      onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+    },
+    /** 直前が長押しだったか(だったらクリックとして扱わない) */
+    consumed: () => {
+      const f = fired.current;
+      fired.current = false;
+      return f;
+    },
+  };
+}
+
+/** スマホの下から出るシートの中身 */
+type SheetContent = { kind: "card"; uid: number } | { kind: "graves" } | { kind: "log" } | { kind: "menu" } | { kind: "info"; text: string } | { kind: "extra" };
 
 /** 後で片付ける用のタイマー。再描画では止めず、画面から外れるときだけまとめて止める */
 function useLater() {
@@ -50,13 +89,15 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
   const [showResult, setShowResult] = useState(true);
   // 勝敗の幕:結果ダイアログの前に出す。引き分けと、動きを減らす設定では出さない
   const [curtain, setCurtain] = useState<"win" | "lose" | null>(null);
+  const motion = useMotion();
+  const mobile = useIsMobile();
   useEffect(() => {
     if (result === undefined) {
       setCurtain(null);
       return;
     }
     setShowResult(true);
-    if (result === null || reducedMotion()) return;
+    if (result === null || !motion) return;
     setCurtain(result === ME ? "win" : "lose");
     const t = window.setTimeout(() => setCurtain(null), CURTAIN_MS);
     return () => window.clearTimeout(t);
@@ -64,10 +105,40 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
   // 対戦開始直後は、初期配置が一斉に動かないよう演出を切っておく
   const [fxOn, setFxOn] = useState(false);
   useEffect(() => {
-    if (reducedMotion()) return;
+    if (!motion) return;
     const t = window.setTimeout(() => setFxOn(true), 400);
     return () => window.clearTimeout(t);
-  }, [g]);
+  }, [g, motion]);
+
+  // スマホの詳細シート。閉じるときは少し下がってから消す
+  const [sheet, setSheet] = useState<SheetContent | null>(null);
+  const [closing, setClosing] = useState(false);
+  const openSheet = (c: SheetContent) => {
+    setClosing(false);
+    setSheet(c);
+  };
+  const closeSheet = () => {
+    if (!sheet) return;
+    if (!motion) {
+      setSheet(null);
+      return;
+    }
+    setClosing(true);
+    window.setTimeout(() => {
+      setSheet(null);
+      setClosing(false);
+    }, SHEET_CLOSE_MS);
+  };
+  // パソコン:カードにマウスを乗せたら全文のツールチップ
+  const [hover, setHover] = useState<{ o: Obj; x: number; y: number } | null>(null);
+  const canHover = !mobile && typeof window !== "undefined" && !!window.matchMedia?.("(hover: hover)").matches;
+  const hoverOn = canHover
+    ? (o: Obj, e: React.MouseEvent) => {
+        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setHover({ o, x: r.right + 8 + 280 > window.innerWidth ? r.left - 288 : r.right + 8, y: Math.min(r.top, window.innerHeight - 220) });
+      }
+    : undefined;
+  const hoverOff = () => setHover(null);
   const pending = human.pending;
   const d = pending?.decision ?? null;
   const [selected, setSelected] = useState<number | null>(null);
@@ -92,6 +163,13 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
     setSelected(null);
     pending?.answer(a);
   };
+  /** 長押し:スマホで、選ぶ場面でも詳細シートを開く */
+  const onLong = mobile
+    ? (o: Obj) => {
+        setDetail(o);
+        openSheet({ kind: "card", uid: o.uid });
+      }
+    : undefined;
 
   // ---------------------------------------------------------------- 盤面のクリック
   const actionsFor = (uid: number): Action[] => (d?.kind === "action" ? d.options.filter((a) => a.type !== "pass" && a.uid === uid) : []);
@@ -100,6 +178,13 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
 
   const onCard = (o: Obj) => {
     setDetail(o);
+    setHover(null);
+    // スマホ:選ぶ場面でなければ、タップで詳細シート(できることのボタンつき)
+    if (mobile && (!d || d.kind === "action" || d.kind === "yesno" || d.kind === "number" || d.kind === "mode" || d.kind === "color")) {
+      if (d?.kind === "action") setSelected(actionsFor(o.uid).length ? o.uid : null);
+      openSheet({ kind: "card", uid: o.uid });
+      return;
+    }
     if (!d) return;
     switch (d.kind) {
       case "action":
@@ -170,11 +255,11 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
 
   return (
     <FxContext.Provider value={fxOn}>
-    <div className="battle">
+    <div className={`battle ${mobile ? "is-mobile" : ""}`}>
       <div className="battle-main">
-        <PlayerBar g={g} p={cpu} targetable={playerTargetable(CPU)} onClick={() => onPlayer(CPU)} />
-        <ManaRow p={cpu} markOf={markOf} onCard={onCard} hidden />
-        <Field g={g} p={cpu} markOf={markOf} onCard={onCard} label="相手の場" />
+        <PlayerBar g={g} p={cpu} targetable={playerTargetable(CPU)} onClick={() => onPlayer(CPU)} onOpen={openSheet} />
+        <ManaRow p={cpu} markOf={markOf} onCard={onCard} onLong={onLong} hidden />
+        <Field g={g} p={cpu} markOf={markOf} onCard={onCard} onLong={onLong} hoverOn={hoverOn} hoverOff={hoverOff} label="相手の場" />
 
         <Center
           g={g}
@@ -189,31 +274,32 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
           setChosen={setChosen}
           answer={answer}
           onPickAll={() => d?.kind === "attackers" && setAttackSel(d.options)}
+          onInfo={(text) => openSheet({ kind: "info", text })}
         />
 
-        <Field g={g} p={me} markOf={markOf} onCard={onCard} label="あなたの場" />
-        <ManaRow p={me} markOf={markOf} onCard={onCard} />
+        <Field g={g} p={me} markOf={markOf} onCard={onCard} onLong={onLong} hoverOn={hoverOn} hoverOff={hoverOff} label="あなたの場" />
+        <ManaRow p={me} markOf={markOf} onCard={onCard} onLong={onLong} />
         <section className="hand" aria-label="あなたの手札">
           <h3 className="zone-label">手札 {me.hand.length}枚</h3>
           <div className="hand-cards">
             {me.hand.map((o) => (
-              <MiniCard key={o.uid} g={g} o={o} mark={markOf(o)} onClick={() => onCard(o)} inHand />
+              <MiniCard key={o.uid} g={g} o={o} mark={markOf(o)} onClick={() => onCard(o)} onLong={onLong} hoverOn={hoverOn} hoverOff={hoverOff} inHand />
             ))}
           </div>
         </section>
-        {me.extra.length > 0 && (
+        {me.extra.length > 0 && !mobile && (
           <section className="hand extra-zone" aria-label="あなたの秘蔵庫">
             <h3 className="zone-label">
               秘蔵庫 {me.extra.length}枚<span className="zone-hint">(リリース召喚・エントラータ・開拓進化・組み立てで出す)</span>
             </h3>
             <div className="hand-cards">
               {me.extra.map((o) => (
-                <MiniCard key={o.uid} g={g} o={o} mark={markOf(o)} onClick={() => onCard(o)} inHand />
+                <MiniCard key={o.uid} g={g} o={o} mark={markOf(o)} onClick={() => onCard(o)} hoverOn={hoverOn} hoverOff={hoverOff} inHand />
               ))}
             </div>
           </section>
         )}
-        <PlayerBar g={g} p={me} targetable={playerTargetable(ME)} onClick={() => onPlayer(ME)} />
+        <PlayerBar g={g} p={me} targetable={playerTargetable(ME)} onClick={() => onPlayer(ME)} onOpen={openSheet} />
       </div>
 
       <aside className="battle-side">
@@ -244,6 +330,69 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
             </button>
           </span>
         </div>
+      )}
+
+      {hover && <HoverTip g={g} o={hover.o} x={hover.x} y={hover.y} />}
+
+      {sheet && (
+        <BottomSheet closing={closing} onClose={closeSheet} label={sheetLabel(g, sheet)}>
+          {sheet.kind === "card" && (() => {
+            const o = g.find(sheet.uid);
+            if (!o) return <p className="hint">このカードはもう見えないところへ移りました。</p>;
+            const acts = actionsFor(o.uid);
+            return (
+              <>
+                <CardDetail g={g} o={o} />
+                {acts.length > 0 && (
+                  <div className="sheet-actions">
+                    {acts.map((a, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => {
+                          answer(a);
+                          closeSheet();
+                        }}
+                      >
+                        {actionLabel(g, a)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+          })()}
+          {sheet.kind === "graves" && <Graveyards g={g} onCard={onCard} open />}
+          {sheet.kind === "log" && <Log g={g} decks={decks} />}
+          {sheet.kind === "info" && <p className="sheet-info">{sheet.text}</p>}
+          {sheet.kind === "extra" && (
+            <div className="hand-cards sheet-cards">
+              {me.extra.map((o) => (
+                <MiniCard key={o.uid} g={g} o={o} mark={markOf(o)} onClick={() => onCard(o)} onLong={onLong} inHand />
+              ))}
+            </div>
+          )}
+          {sheet.kind === "menu" && (
+            <div className="sheet-menu">
+              {result === undefined ? (
+                <button type="button" className="btn" onClick={() => window.confirm("対戦をやめてデッキ選択に戻りますか?") && onExit()}>
+                  対戦をやめる
+                </button>
+              ) : (
+                <>
+                  <button type="button" className="btn btn-primary" onClick={onRematch}>
+                    もう一度対戦する
+                  </button>
+                  <button type="button" className="btn" onClick={onExit}>
+                    デッキを選び直す
+                  </button>
+                </>
+              )}
+              <CopyButtons g={g} decks={decks} />
+            </div>
+          )}
+        </BottomSheet>
       )}
 
       {curtain && <Curtain kind={curtain} onSkip={() => setCurtain(null)} />}
@@ -277,6 +426,55 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
   );
 }
 
+function sheetLabel(g: Game, s: SheetContent): string {
+  switch (s.kind) {
+    case "card":
+      return g.find(s.uid)?.card.name ?? "カード";
+    case "graves":
+      return "墓地";
+    case "log":
+      return "ログ";
+    case "menu":
+      return "メニュー";
+    case "info":
+      return "案内";
+    case "extra":
+      return "秘蔵庫";
+  }
+}
+
+/** 画面下から起き上がる詳細シート(スマホ)。外をタップすると閉じる */
+function BottomSheet({ closing, onClose, label, children }: { closing: boolean; onClose: () => void; label: string; children: React.ReactNode }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <>
+      <div className="ui-sheet-backdrop" onClick={onClose} aria-hidden="true" />
+      <div className={`ui-sheet ${closing ? "is-closing" : ""}`} role="dialog" aria-modal="true" aria-label={label}>
+        <div className="sheet-head">
+          <strong>{label}</strong>
+          <button type="button" className="sheet-close" onClick={onClose} aria-label="閉じる">
+            ×
+          </button>
+        </div>
+        {children}
+      </div>
+    </>
+  );
+}
+
+/** パソコンで、カードにマウスを乗せたときの全文 */
+function HoverTip({ g, o, x, y }: { g: Game; o: Obj; x: number; y: number }) {
+  return (
+    <div className="battle-tip" style={{ left: Math.max(8, x), top: Math.max(8, y) }} role="tooltip">
+      <CardDetail g={g} o={o} />
+    </div>
+  );
+}
+
 /** 勝敗の幕。クリックで飛ばせる */
 function Curtain({ kind, onSkip }: { kind: "win" | "lose"; onSkip: () => void }) {
   return (
@@ -306,7 +504,7 @@ function Curtain({ kind, onSkip }: { kind: "win" | "lose"; onSkip: () => void })
 }
 
 // ---------------------------------------------------------------- プレイヤー情報
-function PlayerBar({ g, p, targetable, onClick }: { g: Game; p: Player; targetable: boolean; onClick: () => void }) {
+function PlayerBar({ g, p, targetable, onClick, onOpen }: { g: Game; p: Player; targetable: boolean; onClick: () => void; onOpen: (c: SheetContent) => void }) {
   const isTurn = g.active === p.id;
   // ライフが減ったら、差分を浮かせて数字を跳ねさせる(回復は演出なし)
   const fx = useContext(FxContext);
@@ -361,12 +559,40 @@ function PlayerBar({ g, p, targetable, onClick }: { g: Game; p: Player; targetab
         {p.pool.length > 0 && <span>浮きマナ {p.pool.join("")}</span>}
       </span>
       {isTurn && <span className="turn-flag">{STEP_NAMES[g.step]}</span>}
+      {/* スマホ:墓地・ログ・メニューは上のバーのアイコンから、秘蔵庫は自分のバーから */}
+      {p.id === CPU ? (
+        <span className="bar-icons">
+          <button type="button" className="bar-icon" aria-label="墓地を見る" onClick={() => onOpen({ kind: "graves" })}>
+            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M5 17V8a5 5 0 0 1 10 0v9zM3 17h14M10 7v5M8 9h4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <button type="button" className="bar-icon" aria-label="ログを見る" onClick={() => onOpen({ kind: "log" })}>
+            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M5 3h10v14H5zM8 7h4M8 10h4M8 13h3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <button type="button" className="bar-icon" aria-label="メニュー" onClick={() => onOpen({ kind: "menu" })}>
+            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M4 10h.01M10 10h.01M16 10h.01" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+            </svg>
+          </button>
+        </span>
+      ) : (
+        p.extra.length > 0 && (
+          <span className="bar-icons">
+            <button type="button" className="bar-icon bar-icon-text" onClick={() => onOpen({ kind: "extra" })}>
+              秘蔵庫 {p.extra.length}
+            </button>
+          </span>
+        )
+      )}
     </div>
   );
 }
 
 // ---------------------------------------------------------------- マナゾーン
-function ManaRow({ p, markOf, onCard, hidden = false }: { p: Player; markOf: (o: Obj) => string; onCard: (o: Obj) => void; hidden?: boolean }) {
+function ManaRow({ p, markOf, onCard, onLong, hidden = false }: { p: Player; markOf: (o: Obj) => string; onCard: (o: Obj) => void; onLong?: (o: Obj) => void; hidden?: boolean }) {
   const untapped = p.mana.filter((o) => !o.tapped).length;
   return (
     <section className="mana-row" aria-label={`${p.name}のマナゾーン`}>
@@ -394,7 +620,26 @@ function ManaRow({ p, markOf, onCard, hidden = false }: { p: Player; markOf: (o:
           );
         })}
       </div>
+      {/* スマホ:名前を出さず、色の丸を1行に並べる(使用済みは薄く) */}
+      <div className="mana-dots">
+        {p.mana.map((o) => {
+          const cs = o.faceDown ? [] : manaColors(o);
+          const bg = cs.length === 0 ? "var(--mana-C)" : cs.length === 1 ? `var(--mana-${cs[0]})` : `conic-gradient(${cs.map((c, i) => `var(--mana-${c}) ${(i / cs.length) * 100}% ${((i + 1) / cs.length) * 100}%`).join(",")})`;
+          const name = o.faceDown && hidden ? "裏向きのカード" : o.card.name;
+          return <ManaDot key={o.uid} className={`mana-dot ${o.tapped ? "is-tapped" : ""} ${markOf(o)}`} bg={bg} label={`${name}${o.tapped ? "(使用済み)" : ""}`} onClick={() => onCard(o)} onLong={onLong ? () => onLong(o) : undefined} />;
+        })}
+      </div>
     </section>
+  );
+}
+
+function ManaDot({ className, bg, label, onClick, onLong }: { className: string; bg: string; label: string; onClick: () => void; onLong?: () => void }) {
+  const [enter, onAnimationEnd] = useEnter();
+  const lp = useLongPress(onLong);
+  return (
+    <button type="button" className={`${className} ${enter}`} aria-label={label} title={label} onClick={() => !lp.consumed() && onClick()} onAnimationEnd={onAnimationEnd} {...lp.handlers}>
+      <span className="mana-dot-pip" style={{ background: bg }} />
+    </button>
   );
 }
 
@@ -409,7 +654,9 @@ function ManaChip({ className, onClick, title, bg, label }: { className: string;
 }
 
 // ---------------------------------------------------------------- 場
-function Field({ g, p, markOf, onCard, label }: { g: Game; p: Player; markOf: (o: Obj) => string; onCard: (o: Obj) => void; label: string }) {
+type HoverFns = { hoverOn?: (o: Obj, e: React.MouseEvent) => void; hoverOff?: () => void };
+
+function Field({ g, p, markOf, onCard, onLong, hoverOn, hoverOff, label }: { g: Game; p: Player; markOf: (o: Obj) => string; onCard: (o: Obj) => void; onLong?: (o: Obj) => void; label: string } & HoverFns) {
   const hosts = p.battlefield.filter((o) => o.attachedTo === null);
   // 場から消えたカードは、少しのあいだ「残像」として倒れて消える演出を見せる
   const fx = useContext(FxContext);
@@ -437,62 +684,65 @@ function Field({ g, p, markOf, onCard, label }: { g: Game; p: Player; markOf: (o
         dying ? (
           <MiniCard key={`dying-${o.uid}`} g={g} o={o} mark="is-dying" onClick={() => {}} />
         ) : (
-          <MiniCard key={o.uid} g={g} o={o} mark={markOf(o)} onClick={() => onCard(o)} />
+          <MiniCard key={o.uid} g={g} o={o} mark={markOf(o)} onClick={() => onCard(o)} onLong={onLong} hoverOn={hoverOn} hoverOff={hoverOff} />
         ),
       )}
     </section>
   );
 }
 
-function MiniCard({ g, o, mark, onClick, inHand = false }: { g: Game; o: Obj; mark: string; onClick: () => void; inHand?: boolean }) {
+/** 場・手札のカード:名前(2行まで)・コスト・パワー/タフネス(なければタイプ)だけ。全文は詳細で */
+function MiniCard({
+  g,
+  o,
+  mark,
+  onClick,
+  onLong,
+  hoverOn,
+  hoverOff,
+  inHand = false,
+}: { g: Game; o: Obj; mark: string; onClick: () => void; onLong?: (o: Obj) => void; inHand?: boolean } & HoverFns) {
   const [enter, onAnimationEnd] = useEnter();
+  const lp = useLongPress(onLong ? () => onLong(o) : undefined);
+  const dying = mark === "is-dying";
   const cs = o.tokenColors ?? cardColors(o.card.cost);
-  const frame = cs.length === 0 ? "var(--mana-C)" : cs.length === 1 ? `var(--mana-${cs[0]})` : `linear-gradient(135deg, ${cs.map((c) => `var(--mana-${c})`).join(",")})`;
+  // 枠は background-image に重ねるので、単色でもグラデーションの形にする
+  const one = (c: string) => `linear-gradient(var(--mana-${c}), var(--mana-${c}))`;
+  const frame = cs.length === 0 ? one("C") : cs.length === 1 ? one(cs[0]) : `linear-gradient(135deg, ${cs.map((c) => `var(--mana-${c})`).join(",")})`;
   const creature = isCreatureCard(o.card);
   const onField = o.zone === "battlefield";
   const pw = onField ? g.power(o) : o.card.power;
   const tg = onField ? g.toughness(o) : o.card.toughness;
-  const kws = onField ? [...g.keywords(o)] : [];
   const attacking = !!g.combat?.attackers.includes(o.uid);
-  const blocking = g.combat ? Object.entries(g.combat.blocks).find(([, bs]) => bs.includes(o.uid)) : undefined;
-  const auras = onField ? [...g.players[0].battlefield, ...g.players[1].battlefield].filter((a) => a.attachedTo === o.uid) : [];
+  const blocking = !!g.combat && Object.values(g.combat.blocks).some((bs) => bs.includes(o.uid));
+  const sick = onField && o.sick && creature && !g.hasKw(o, "速攻");
   const buffed = onField && creature && (pw !== o.card.power || tg !== o.card.toughness);
+  const state = [o.tapped && "タップ", attacking && "攻撃中", blocking && "ブロック中", sick && "召喚酔い", o.token && "トークン"].filter(Boolean).join("・");
   return (
     <button
       type="button"
-      className={`mini ${o.tapped && mark !== "is-dying" ? "is-tapped" : ""} ${mark} ${inHand ? "in-hand" : `${mark === "is-dying" ? "" : enter} ${o.card.rarity === "神話レア" ? "is-mythic" : ""}`}`}
+      className={`mini ${o.tapped && !dying ? "is-tapped" : ""} ${attacking ? "is-attacking" : ""} ${blocking ? "is-blocking" : ""} ${sick ? "is-sick" : ""} ${mark} ${inHand ? "in-hand" : `${dying ? "" : enter} ${o.card.rarity === "神話レア" ? "is-mythic" : ""}`}`}
       style={{ "--frame": frame } as React.CSSProperties}
-      onClick={onClick}
+      onClick={() => !lp.consumed() && onClick()}
       onAnimationEnd={onAnimationEnd}
-      tabIndex={mark === "is-dying" ? -1 : undefined}
-      aria-hidden={mark === "is-dying" || undefined}
+      onMouseEnter={hoverOn && !dying ? (e) => hoverOn(o, e) : undefined}
+      onMouseLeave={hoverOff}
+      tabIndex={dying ? -1 : undefined}
+      aria-hidden={dying || undefined}
+      aria-label={`${o.card.name}${creature ? ` ${pw}/${onField && o.damage > 0 ? (tg ?? 0) - o.damage : tg}` : ""}${state ? `(${state})` : ""}`}
+      {...(dying ? {} : lp.handlers)}
     >
       <span className="mini-head">
         <span className="mini-name">{o.card.name}</span>
         {o.card.cost && <ManaCost cost={o.card.cost} size="sm" />}
       </span>
-      <span className="mini-type">{o.card.subtype ?? o.card.type}</span>
-      {inHand && <span className="mini-text">{o.card.text.join(" / ")}</span>}
-      {kws.length > 0 && <span className="mini-kws">{kws.join("・")}</span>}
-      {auras.map((a) => (
-        <span key={a.uid} className="mini-aura">
-          {a.card.name}
-        </span>
-      ))}
       <span className="mini-foot">
-        <span className="mini-flags">
-          {onField && o.sick && creature && !g.hasKw(o, "速攻") && <span>召喚酔い</span>}
-          {o.tapped && <span>タップ</span>}
-          {attacking && <span className="flag-attack">攻撃中</span>}
-          {blocking && <span className="flag-block">ブロック中</span>}
-          {o.counters > 0 && <span>+1/+1×{o.counters}</span>}
-          {o.token && <span>トークン</span>}
-          {o.generated && <span className="flag-generated">生成</span>}
-        </span>
-        {creature && (
+        {creature ? (
           <span className={`mini-pt ${buffed ? "is-buffed" : ""} ${o.damage > 0 ? "is-damaged" : ""}`}>
             {pw}/{onField && o.damage > 0 ? `${(tg ?? 0) - o.damage}` : tg}
           </span>
+        ) : (
+          <span className="mini-type">{o.card.type}</span>
         )}
       </span>
     </button>
@@ -513,15 +763,20 @@ type CenterProps = {
   setChosen: (f: (s: number[]) => number[]) => void;
   answer: (a: unknown) => void;
   onPickAll: () => void;
+  /** スマホ:案内文の全文をシートで出す */
+  onInfo: (text: string) => void;
 };
 
 function Center(props: CenterProps) {
   const { g } = props;
+  const promptRef = useRef<HTMLDivElement>(null);
+  const phase = g.turn > 0 ? `${g.active === ME ? "あなた" : "相手"}のターン${Math.ceil(g.turn / 2)}・${STEP_NAMES[g.step]}` : "対戦の準備";
   return (
     <section className="center" aria-live="polite">
       <div className="center-status">
-        <span className="center-turn">
-          {g.turn > 0 ? `${g.active === ME ? "あなた" : "相手"}のターン${Math.ceil(g.turn / 2)}・${STEP_NAMES[g.step]}` : "対戦の準備"}
+        {/* フェーズが変わるたびに、帯が横切って文字が切り替わる */}
+        <span key={phase} className="center-turn ui-phase">
+          <span className="ui-phase-text">{phase}</span>
         </span>
         {g.active === ME && (g.step === "main1" || g.step === "main2") && (
           <span className="center-charge">
@@ -540,14 +795,22 @@ function Center(props: CenterProps) {
           ))}
         </ol>
       )}
-      <div className="prompt">
+      <div className="prompt" ref={promptRef}>
         <Prompt {...props} />
+        <button
+          type="button"
+          className="prompt-info"
+          aria-label="案内の全文を見る"
+          onClick={() => props.onInfo([...(promptRef.current?.querySelectorAll(".prompt-text") ?? [])].map((x) => x.textContent ?? "").join("\n"))}
+        >
+          i
+        </button>
       </div>
     </section>
   );
 }
 
-function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNum, setChosen, answer, onPickAll }: CenterProps) {
+function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNum, setChosen, answer, onPickAll }: Omit<CenterProps, "onInfo">) {
   if (g.winner !== undefined) return <p className="prompt-text">対戦が終わりました。</p>;
   if (!d) {
     return <p className="prompt-text prompt-wait">{g.waitingFor === CPU ? "相手が考えています…" : "処理しています…"}</p>;
@@ -569,7 +832,7 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
                 : "使えるカードがあります。使うならカードを選んでください。"}
           </p>
           {o && acts.length > 0 && (
-            <div className="prompt-actions">
+            <div className="prompt-actions prompt-card-actions">
               <span className="prompt-card">{o.card.name}</span>
               {acts.map((a, i) => (
                 <button key={i} type="button" className="btn btn-primary" onClick={() => answer(a)}>
@@ -872,6 +1135,7 @@ function CardDetail({ g, o }: { g: Game; o: Obj | null }) {
       <p className="detail-type">
         {c.type}
         {c.subtype && ` ― ${c.subtype}`}
+        <span className="detail-rarity">{c.rarity}</span>
       </p>
       <div className="detail-text">
         {c.text.length === 0 ? <p className="card-vanilla">(能力なし)</p> : c.text.map((t, i) => <p key={i}><RulesText text={t} /></p>)}
@@ -886,9 +1150,9 @@ function CardDetail({ g, o }: { g: Game; o: Obj | null }) {
   );
 }
 
-function Graveyards({ g, onCard }: { g: Game; onCard: (o: Obj) => void }) {
+function Graveyards({ g, onCard, open = false }: { g: Game; onCard: (o: Obj) => void; open?: boolean }) {
   return (
-    <details className="graves">
+    <details className="graves" open={open || undefined}>
       <summary>墓地を見る</summary>
       {[ME, CPU].map((id) => (
         <div key={id}>

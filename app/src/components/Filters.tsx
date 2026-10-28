@@ -1,7 +1,9 @@
 import { PACKS, packById } from "../lib/packs";
 import { COLORS, COLOR_NAMES, type Color } from "../lib/mana";
 import { KEYWORDS } from "../lib/keywords";
-import { activeRangeCount, emptyRange, initialFilters, isFiltering, type FilterState, type Range } from "../lib/filters";
+import { activeRangeCount, emptyRange, filterSummary, initialFilters, isFiltering, type FilterState, type Range } from "../lib/filters";
+import { Accordion } from "./Accordion";
+import { packShort } from "../lib/packs";
 
 const TYPE_FILTERS = ["クリーチャー", "インスタント", "ソーサリー", "エンチャント", "アーティファクト"];
 
@@ -21,9 +23,24 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
     set({ colors: f.colors.includes(c) ? f.colors.filter((x) => x !== c) : COLORS.filter((x) => x === c || f.colors.includes(x)) });
 
   const rangeCount = activeRangeCount(f);
+  const summary = filterSummary(f, packShort);
 
   return (
-    <div className="filters">
+    <Accordion
+      id="filters"
+      className="filters-acc"
+      title={
+        <>
+          絞り込み{" "}
+          {/* 条件が変わるたびに、文字が1つずつ現れる */}
+          <span key={summary} className="ui-filter-summary" style={{ "--n": [...summary].length } as React.CSSProperties}>
+            {summary}
+          </span>
+        </>
+      }
+      meta={`${shown} / ${total}種類`}
+    >
+    <div className="filters ui-acc-row" style={{ "--i": 0 } as React.CSSProperties}>
       <fieldset className="color-filter">
         <legend className="visually-hidden">色で絞り込む</legend>
         {COLORS.map((c) => (
@@ -173,9 +190,6 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
           <input type="checkbox" checked={f.onlyInDeck} onChange={(e) => set({ onlyInDeck: e.target.checked })} />
           デッキに入っているカードだけ
         </label>
-        <p className="hint filter-count">
-          {shown} / {total}種類
-        </p>
         {isFiltering(f) && (
           <button type="button" className="btn btn-quiet" onClick={() => onChange(initialFilters())}>
             条件をクリア
@@ -183,6 +197,7 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
         )}
       </div>
     </div>
+    </Accordion>
   );
 }
 

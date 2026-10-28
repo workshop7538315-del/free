@@ -105,3 +105,42 @@ export function applyFilters(cards: Card[], f: FilterState, deck: DeckCards): Ca
     .filter((c) => !q || [c.name, c.type, c.subtype ?? "", ...c.text].join(" ").toLowerCase().includes(q))
     .sort((a, b) => manaValue(a.cost) - manaValue(b.cost) || a.id.localeCompare(b.id));
 }
+
+const COLOR_JA: Record<Color, string> = { W: "白", U: "青", B: "黒", R: "赤", G: "緑" };
+const rangeText = (label: string, r: Range) =>
+  !rangeActive(r) ? "" : r.min !== null && r.max !== null ? (r.min === r.max ? `${label}${r.min}` : `${label}${r.min}〜${r.max}`) : r.min !== null ? `${label}${r.min}以上` : `${label}${r.max}以下`;
+
+/** 今かけている条件の短い説明(絞り込みの見出し用)。条件がなければ「なし」 */
+export function filterSummary(f: FilterState, packName: (id: string) => string): string {
+  const parts = [
+    ...f.colors.map((c) => COLOR_JA[c]),
+    f.colorless ? "欠色" : "",
+    f.multi ? (f.multiMatch === "exact" && f.colors.length ? "ちょうど多色" : "多色") : "",
+    ...f.types,
+    f.keyword,
+    f.archetype,
+    f.pack ? packName(f.pack) : "",
+    f.query.trim() ? `「${f.query.trim()}」` : "",
+    rangeText("コスト", f.cost),
+    rangeText("パワー", f.power),
+    rangeText("タフネス", f.toughness),
+    f.onlyInDeck ? "デッキ内" : "",
+  ].filter(Boolean);
+  return parts.length ? parts.join("・") : "なし";
+}
+
+export type SortKey = "cost" | "name" | "color" | "pack";
+const COLOR_ORDER = ["W", "U", "B", "R", "G", "M", "C"];
+
+/** 一覧の並び順。同じならコスト→ID */
+export function sortCards(cards: Card[], key: SortKey, packOrder: (id: string) => number): Card[] {
+  if (key === "cost") return cards;
+  const byCost = (a: Card, b: Card) => manaValue(a.cost) - manaValue(b.cost) || a.id.localeCompare(b.id);
+  const cmp =
+    key === "name"
+      ? (a: Card, b: Card) => a.name.localeCompare(b.name, "ja") || byCost(a, b)
+      : key === "color"
+        ? (a: Card, b: Card) => COLOR_ORDER.indexOf(colorCategory(a.cost)) - COLOR_ORDER.indexOf(colorCategory(b.cost)) || byCost(a, b)
+        : (a: Card, b: Card) => packOrder(a.pack ?? "") - packOrder(b.pack ?? "") || byCost(a, b);
+  return [...cards].sort(cmp);
+}
