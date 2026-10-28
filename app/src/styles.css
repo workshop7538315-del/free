@@ -1591,7 +1591,8 @@ textarea {
 /* 登場の演出は、場に出た瞬間だけ付く .fx-enter に当てる(アンタップで再生し直さないため) */
 
 /* 召喚:飛び出す */
-.field .mini.fx-enter { animation: fx-pop 0.6s ease-in-out both; }
+/* 場に出たカード(エンチャント・アーティファクトなども)は、潜る(逆再生)。大きいクリーチャーと神話レアは下で切り替える */
+.field .mini.fx-enter { transform-origin: bottom center; animation: fx-rise 0.65s ease-in-out both; }
 @keyframes fx-pop {
   0%   { transform: scale(0); opacity: 0; }
   20%  { opacity: 1; }
