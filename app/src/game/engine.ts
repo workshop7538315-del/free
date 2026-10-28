@@ -104,6 +104,8 @@ export type Player = {
   applause: Partial<Record<Applause, number>>;
   /** このターンに行動で溜めた喝采(上限の判定用) */
   applauseThisTurn: Partial<Record<Applause, number>>;
+  /** このゲーム中に得た喝采の累計(消費しても減らない) */
+  applauseTotal: Partial<Record<Applause, number>>;
   /** このターンにエントラータしたカード */
   enteredThisTurn: Set<number>;
   /** 加護(第9.5弾)。喝采と同じ加護の枠を使う */
@@ -134,7 +136,7 @@ export type StackItem = {
   x: number;
 };
 
-export type CastFrom = "hand" | "mana" | "graveyard" | "dash";
+export type CastFrom = "hand" | "mana" | "graveyard" | "dash" | "extra";
 
 export type Action =
   | { type: "pass" }
@@ -333,6 +335,7 @@ export class Game {
       // 喝采:デッキ(メインか秘蔵庫)に関係するカードがあるカテゴリーだけ、加護の枠を使って0から溜まる
       applause: Object.fromEntries([...new Set(opts.decks[id].flatMap(applauseCatsOf))].slice(0, BLESSING_SLOTS).map((c) => [c, 0])),
       applauseThisTurn: {},
+      applauseTotal: {},
       enteredThisTurn: new Set(),
       blessings: [],
       pioneeredThisTurn: false,
@@ -951,6 +954,11 @@ export class Game {
       const fb = abilityOf(c, "flashback");
       if (!fb) return null;
       cost = fb.cost;
+    } else if (from === "extra") {
+      // 大喝采(喝采の累計)を満たすと、座長を秘蔵庫からコストを少なくして唱えられる
+      const cc = curtainOf(c);
+      if (!cc || o.zone !== "extra" || !this.ovationMet(p, c)) return null;
+      cost = reduceGeneric(cost, cc.cut ?? 0);
     } else if (from === "dash") {
       const d = abilityOf(c, "dash");
       if (!d) return null;
@@ -1019,6 +1027,7 @@ export class Game {
     }
     for (const o of pl.hand) if (this.canCast(p, o, "hand")) out.push({ type: "cast", uid: o.uid, from: "hand" });
     for (const o of pl.mana) if (!o.faceDown && releaseAbility(o.card) && this.canCast(p, o, "mana")) out.push({ type: "cast", uid: o.uid, from: "mana" });
+    for (const o of pl.extra) if (curtainOf(o.card) && this.canCast(p, o, "extra")) out.push({ type: "cast", uid: o.uid, from: "extra" });
     for (const o of pl.graveyard) if (abilityOf(o.card, "flashback") && this.canCast(p, o, "graveyard")) out.push({ type: "cast", uid: o.uid, from: "graveyard" });
     for (const o of pl.hand) if (abilityOf(o.card, "dash") && this.canCast(p, o, "dash")) out.push({ type: "cast", uid: o.uid, from: "dash" });
     for (const o of pl.hand) {
@@ -1057,7 +1066,7 @@ export class Game {
       this.putIntoMana(o, p);
     } else if (a.type === "cast") {
       const pl = this.players[p];
-      const zone = a.from === "hand" || a.from === "dash" ? pl.hand : a.from === "mana" ? pl.mana : pl.graveyard;
+      const zone = a.from === "hand" || a.from === "dash" ? pl.hand : a.from === "mana" ? pl.mana : a.from === "extra" ? pl.extra : pl.graveyard;
       const o = zone.find((x) => x.uid === a.uid);
       if (o && this.canCast(p, o, a.from)) await this.cast(p, o, a.from);
     } else if (a.type === "summon") {
@@ -1196,7 +1205,7 @@ export class Game {
     };
     this.stack.push(item);
     const tgt = targets.length ? `(対象:${targets.map((t) => this.describeRef(t)).join("、")})` : "";
-    const how = from === "mana" ? "マナ解放で" : from === "graveyard" ? "再演で" : from === "dash" ? "疾駆で" : cost === "" && c.cost !== "" ? (abilityOf(c, "free") && this.cond(abilityOf(c, "free")!.if, p) ? "零式で" : "コスト0で") : "";
+    const how = from === "extra" ? "大喝采に応えて秘蔵庫から" : from === "mana" ? "マナ解放で" : from === "graveyard" ? "再演で" : from === "dash" ? "疾駆で" : cost === "" && c.cost !== "" ? (abilityOf(c, "free") && this.cond(abilityOf(c, "free")!.if, p) ? "零式で" : "コスト0で") : "";
     this.addLog(`${c.name}を${how}唱えた${burned ? `(燃焼${burnCount}枚)` : ""}${kicked ? "(追加払い)" : ""}${x ? `(X=${x})` : ""}${tgt}`, p);
     for (const src of this.sources(p))
       for (const ab of this.activeAbilities(src)) {
@@ -1516,6 +1525,7 @@ export class Game {
       pl.applauseThisTurn[cat] = (pl.applauseThisTurn[cat] ?? 0) + add;
     }
     pl.applause[cat] = (pl.applause[cat] ?? 0) + add;
+    pl.applauseTotal[cat] = (pl.applauseTotal[cat] ?? 0) + add;
     this.addLog(`喝采【${cat}】+${add}(${pl.applause[cat]})`, p);
   }
 
@@ -1528,6 +1538,12 @@ export class Game {
     const en = entrataOf(o.card);
     const pl = this.players[p];
     return !!en && o.zone === "extra" && !pl.enteredThisTurn.has(o.uid) && (pl.applause[en.cat] ?? 0) >= en.n;
+  }
+
+  /** 大喝采:このゲームで得た喝采の累計が規定値以上か */
+  ovationMet(p: PlayerId, c: Card): boolean {
+    const cc = curtainOf(c);
+    return !!cc?.ovation && (this.players[p].applauseTotal[cc.cat] ?? 0) >= cc.ovation;
   }
 
   /** カーテンコール:戦場の化身(base)の上に重ねて、座長本人を出す */
@@ -1808,8 +1824,8 @@ export class Game {
         break;
       }
       case "bounceAll":
-        for (const o of [...this.creatures(0), ...this.creatures(1)]) this.move(o, "hand");
-        this.addLog("すべてのクリーチャーが手札に戻った", p);
+        for (const o of e.who === "opp" ? this.creatures(opp) : [...this.creatures(0), ...this.creatures(1)]) this.move(o, "hand");
+        this.addLog(e.who === "opp" ? "相手のクリーチャーがすべて手札に戻った" : "すべてのクリーチャーが手札に戻った", p);
         break;
       case "tuck": {
         const o = this.refObj(ctx, e.tg);
@@ -1985,10 +2001,12 @@ export class Game {
         break;
       }
       case "sacrifice": {
-        const cs = this.creatures(opp);
-        if (cs.length === 0) break;
-        const [o] = await this.askCards(opp, "生け贄に捧げるクリーチャーを選んでください", cs, 1, "sacrifice");
-        this.sacrifice(o, opp);
+        for (let i = 0; i < (e.n ?? 1); i++) {
+          const cs = this.creatures(opp);
+          if (cs.length === 0) break;
+          const [o] = await this.askCards(opp, "生け贄に捧げるクリーチャーを選んでください", cs, 1, "sacrifice");
+          this.sacrifice(o, opp);
+        }
         break;
       }
       case "fight":

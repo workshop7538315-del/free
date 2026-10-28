@@ -8,7 +8,7 @@ const cards = cardsJson as Card[];
 const byId = new Map(cards.map((c) => [c.id, c]));
 const decks = decksJson as { id: string; name: string; cards: Record<string, number> }[];
 const expand = (l: Record<string, number>) => Object.entries(l).flatMap(([id, n]) => Array.from({ length: n }, () => byId.get(id)!));
-const OPP = ["wu", "ub", "rg", "t-zombie", "gw", "t-hoshiyomi", "bg", "t-goblin"];
+const OPP = ["wu", "ub", "bg", "t-zombie", "t-goblin", "t-hoshiyomi", "t-elf", "gu"];
 for (const a of process.env.A!.split(",")) {
   let games = 0, wins = 0, entr = 0, turns = 0, firstEnt = 0, firstN = 0;
   const gained: Record<string, number> = {};

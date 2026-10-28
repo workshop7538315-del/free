@@ -120,7 +120,7 @@ export type Effect = Common &
     | { do: "destroyAll"; maxPower?: number; filter?: Filter }
     | { do: "exile"; tg: number }
     | { do: "bounce"; tg: number }
-    | { do: "bounceAll" }
+    | { do: "bounceAll"; who?: "opp" }
     | { do: "tuck"; tg: number }
     | { do: "tap"; tg: number; freeze?: boolean }
     | { do: "untap"; tg?: number; all?: boolean }
@@ -142,7 +142,7 @@ export type Effect = Common &
     | { do: "extraCharge"; n: number }
     | { do: "reclaim"; then?: Effect[] }
     | { do: "erode"; n: number }
-    | { do: "sacrifice" }
+    | { do: "sacrifice"; n?: number }
     | { do: "fight"; tg: [number, number] }
     | { do: "bite"; tg: [number, number] }
     | { do: "lookTop" }
@@ -263,7 +263,7 @@ export type Ability = { text?: string } & (
   /** リリース召喚 N:秘蔵庫のクリーチャー。エンチャントと奉納を持つクリーチャーをマナ総量の合計がN以上になるようにリリースし、マナを払わずに出す */
   | { a: "releaseSummon"; n: number; from?: Filter[] }
   /** カーテンコール N【cat】:戦場にある自分の base(カードID)の上に重ね、喝采【cat】をN消費して秘蔵庫から出す。base は秘蔵庫に戻る */
-  | { a: "curtainCall"; n: number; cat: Applause; base: string; baseName?: string }
+  | { a: "curtainCall"; n: number; cat: Applause; base: string; baseName?: string; ovation?: number; cut?: number }
   /** エントラータ N【cat】:喝采【cat】をN消費して、秘蔵庫からこのクリーチャーを戦場に出す(同じカードは1ターンに1回) */
   | { a: "entrata"; n: number; cat: Applause }
   /** 奉納 N(sub):リリース召喚に使うとき、マナ総量を+Nとして数える(sub があれば、その種族のリリース召喚のときだけ) */

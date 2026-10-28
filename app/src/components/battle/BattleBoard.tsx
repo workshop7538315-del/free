@@ -252,8 +252,9 @@ function PlayerBar({ g, p, targetable, onClick }: { g: Game; p: Player; targetab
           </span>
         ))}
         {Object.entries(p.applause).map(([cat, n]) => (
-          <span key={cat} className="applause" title={`喝采【${cat}】:加護の枠を1つ使う`}>
+          <span key={cat} className="applause" title={`喝采【${cat}】:加護の枠を1つ使う。( )内はこのゲームで得た累計(大喝采の判定に使う)`}>
             喝采【{cat}】{n}
+            <small>(累計{p.applauseTotal[cat as keyof typeof p.applauseTotal] ?? 0})</small>
           </span>
         ))}
         {p.pool.length > 0 && <span>浮きマナ {p.pool.join("")}</span>}
@@ -657,6 +658,7 @@ function actionLabel(g: Game, a: Action): string {
       if (a.from === "mana") return "マナ解放で唱える";
       if (a.from === "graveyard") return "再演で唱える";
       if (a.from === "dash") return "疾駆で唱える(速攻、終了時に手札へ)";
+      if (a.from === "extra") return "大喝采に応えて秘蔵庫から唱える(コスト軽減)";
       const o = g.find(a.uid);
       if (!o || o.card.cost === "" || g.effectiveCost(ME, o, "hand") !== "") return "唱える";
       // 零式を持ち、その条件を満たしているときだけ「零式」。コスト軽減で0になっただけなら「コスト0」

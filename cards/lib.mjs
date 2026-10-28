@@ -120,7 +120,7 @@ export const buried = (n) => ({ a: "buried", n, from: "mana" });
 /** 武装進化でのみ戦場に出る */
 export const evolveOnly = () => ({ a: "evolveOnly" });
 /** カーテンコール N【cat】:戦場の base の上に重ねて出す */
-export const curtainCall = (n, cat, base, baseName) => ({ a: "curtainCall", n, cat, base, baseName });
+export const curtainCall = (n, cat, base, baseName, ovation, cut = 4) => ({ a: "curtainCall", n, cat, base, baseName, ...(ovation ? { ovation, cut } : {}) });
 /** ウシータ(退場):秘蔵庫に戻るとき */
 export const uscita = trig("uscita");
 /** 喝采 */
@@ -209,7 +209,7 @@ export const E = {
   destroyAll: (maxPower, filter) => ({ do: "destroyAll", ...(maxPower !== undefined ? { maxPower } : {}), ...(filter ? { filter } : {}) }),
   exile: (tg = 0) => ({ do: "exile", tg }),
   bounce: (tg = 0) => ({ do: "bounce", tg }),
-  bounceAll: () => ({ do: "bounceAll" }),
+  bounceAll: (who) => ({ do: "bounceAll", ...(who ? { who } : {}) }),
   tuck: (tg = 0) => ({ do: "tuck", tg }),
   tap: (tg = 0, freeze = false) => ({ do: "tap", tg, ...(freeze ? { freeze } : {}) }),
   untap: (tg = 0) => ({ do: "untap", tg }),
@@ -233,7 +233,7 @@ export const E = {
   extraCharge: (n = 1) => ({ do: "extraCharge", n }),
   reclaim: (then) => ({ do: "reclaim", ...(then ? { then } : {}) }),
   erode: (n) => ({ do: "erode", n }),
-  sac: () => ({ do: "sacrifice" }),
+  sac: (n = 1) => ({ do: "sacrifice", ...(n > 1 ? { n } : {}) }),
   fight: () => ({ do: "fight", tg: [0, 1] }),
   bite: () => ({ do: "bite", tg: [0, 1] }),
   lookTop: () => ({ do: "lookTop" }),
@@ -492,7 +492,7 @@ function effectText(e, name, abil, notes) {
     case "bounce":
       return `${it(e.tg)}を持ち主の手札に戻す。`;
     case "bounceAll":
-      return "すべてのクリーチャーを持ち主の手札に戻す。";
+      return e.who === "opp" ? "対戦相手のクリーチャーをすべて持ち主の手札に戻す。" : "すべてのクリーチャーを持ち主の手札に戻す。";
     case "tuck":
       return `${it(e.tg)}を持ち主のライブラリーの一番上に置く。`;
     case "tap":
@@ -546,7 +546,7 @@ function effectText(e, name, abil, notes) {
     case "erode":
       return `侵食 ${e.n}。`;
     case "sacrifice":
-      return "対戦相手はクリーチャー1体を生け贄に捧げる。";
+      return `対戦相手はクリーチャー${e.n ?? 1}体を生け贄に捧げる。`;
     case "fight":
       return "それらはそれぞれ、自身のパワーに等しいダメージを互いに与える。";
     case "bite":
@@ -735,7 +735,7 @@ function abilityTextBody(abil, card) {
     case "entrata":
       return `エントラータ ${abil.n}【${abil.cat}】`;
     case "curtainCall":
-      return `カーテンコール ${abil.n}【${abil.cat}】(あなたの《${abil.baseName}》の上に重ねる。喝采【${abil.cat}】を${abil.n}消費して、秘蔵庫からこのクリーチャーを出す。《${abil.baseName}》は秘蔵庫に戻る)`;
+      return `カーテンコール ${abil.n}【${abil.cat}】(あなたの《${abil.baseName}》の上に重ねる。喝采【${abil.cat}】を${abil.n}消費して、秘蔵庫からこのクリーチャーを出す。《${abil.baseName}》は秘蔵庫に戻る)${abil.ovation ? `\n大喝采 ${abil.ovation}(このゲームで得た喝采【${abil.cat}】が累計${abil.ovation}以上なら、あなたは秘蔵庫からこのクリーチャーを、コストを{${abil.cut}}少なくして唱えてもよい)` : ""}`;
     case "pioneer":
       return abil.grand ? `大開拓進化【${COLOR_JA[abil.color]}】${abil.n}(あなたの開拓者1体の上に重ねる。3枚以上)` : `開拓進化【${COLOR_JA[abil.color]}】${abil.n}`;
     case "assemble": {

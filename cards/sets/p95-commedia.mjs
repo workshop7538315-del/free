@@ -25,6 +25,8 @@ const tagged = (c) => ({ ...c, tags: [...new Set([...(c.tags ?? []), "喝采"])]
 const MAD = "狂気";
 const TRAGEDY = "悲劇";
 const COMEDY = "喜劇";
+// 大喝采:このゲームで得た喝采の累計がこの値以上なら、座長を秘蔵庫から{3}安く唱えられる
+const OV = { MAD: 6, TRAGEDY: 6, COMEDY: 3 };
 const CREATURES = [{ type: "クリーチャー" }];
 const zanni = (n, haste = true) => E.token(n, 1, 1, "R", "役者・ザンニ", haste ? ["速攻"] : undefined);
 const extra = (n) => E.token(n, 1, 1, "B", "役者・端役");
@@ -93,14 +95,14 @@ export const COMMEDIA = [
     ["喝采【喜劇】を3増やし、1枚引く", [E.applause(COMEDY, 3), E.draw(1)]],
   ]))),
   // ================================================================ 座長本人(カーテンコール)
-  tagged(cr("cm52", "狂気派の座長 ニコ=フォッリア・ルッチョラ", "{4}{U}{U}{R}{R}", "神・役者", 5, 5, "M", [
-    curtainCall(3, MAD, "cm04", "狂気の座長"), kw("飛行"), etb([E.bounce(), E.draw(2)], T.opp), castSpell(E.dmgOpp(1)),
+  tagged(cr("cm52", "狂気派の座長 ニコ=フォッリア・ルッチョラ", "{4}{U}{U}{R}{R}", "神・役者", 6, 6, "M", [
+    curtainCall(3, MAD, "cm04", "狂気の座長", OV.MAD, 3), kw("飛行", "呪禁"), etb([E.bounceAll("opp"), E.draw(2)]), castSpell(E.dmgOpp(2)),
   ], { flavor: "「悲劇? 泣き顔って退屈なのよね。喜劇? 笑い声がうるさいだけ。ねえ、もっと狂おしいのを見せて?」" })),
-  tagged(cr("cm53", "悲劇派の座長 オッタヴィア・ラ・クリマ", "{5}{B}{B}{B}", "神・役者", 6, 7, "M", [
-    curtainCall(3, TRAGEDY, "cm08", "悲劇の歌姫"), kw("飛行"), etb(E.sac()), allyDies(E.lose(2)),
+  tagged(cr("cm53", "悲劇派の座長 オッタヴィア・ラ・クリマ", "{5}{B}{B}{B}", "神・役者", 7, 8, "M", [
+    curtainCall(3, TRAGEDY, "cm08", "悲劇の歌姫", OV.TRAGEDY, 3), kw("飛行", "絆魂"), etb([E.sac(2), E.lose(3)]), allyDies([E.lose(3), E.gain(3)]),
   ], { flavor: "「あの男の舞台には中身がないわ。筋肉と同じね。あの子の舞台には……そもそも筋書きがないけれど」" })),
-  tagged(cr("cm54", "喜劇派の座長 レオーネ・ジョコンド", "{4}{R}{R}{R}", "神・役者", 7, 6, "M", [
-    curtainCall(2, COMEDY, "cm12", "一座の花形"), kw("速攻", "トランプル"), etb(zanni(3)), lord({ type: "クリーチャー" }, 1, 0),
+  tagged(cr("cm54", "喜劇派の座長 レオーネ・ジョコンド", "{4}{R}{R}{R}", "神・役者", 8, 7, "M", [
+    curtainCall(2, COMEDY, "cm12", "一座の花形", OV.COMEDY, 3), kw("速攻", "トランプル"), etb(zanni(3)), lord({ type: "クリーチャー" }, 1, 0, ["トランプル"]), attacks(zanni(1)),
   ], { flavor: "「チビの悪ふざけも、のっぽの辛気くさい涙も、俺の笑いには勝てん! はっはっは!」" })),
 
   // ================================================================ 眷属と小道具(フレーバーつき)

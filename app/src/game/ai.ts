@@ -366,7 +366,7 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return bestOpp >= 4 ? bestOpp * 0.6 : 0;
     case "bounceAll": {
       const theirs = oppCreatures.reduce((s, o) => s + creatureValue(g, o), 0);
-      const mine = myCreatures.reduce((s, o) => s + creatureValue(g, o), 0);
+      const mine = e.who === "opp" ? 0 : myCreatures.reduce((s, o) => s + creatureValue(g, o), 0);
       return (theirs - mine) * 0.6 - 2;
     }
     case "tap":
@@ -420,8 +420,10 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return 0.8;
     case "erode":
       return Math.min(e.n, them.mana.length) * 1.6;
-    case "sacrifice":
-      return oppCreatures.length ? Math.min(...oppCreatures.map((o) => creatureValue(g, o))) + 1 : 0;
+    case "sacrifice": {
+      const vs = oppCreatures.map((o) => creatureValue(g, o)).sort((a, b) => a - b).slice(0, e.n ?? 1);
+      return vs.length ? vs.reduce((a, b) => a + b, 0) + vs.length : 0;
+    }
     case "fight":
     case "bite": {
       let best = 0;
