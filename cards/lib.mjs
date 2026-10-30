@@ -110,7 +110,7 @@ export const anchor = () => ({ a: "anchor" });
 /** 元のパワー(と、指定があればタフネス)が n 以下のクリーチャーしかブロックできない */
 export const blockOnly = (maxPower, maxToughness) => ({ a: "blockOnly", maxPower, ...(maxToughness !== undefined ? { maxToughness } : {}) });
 /** 開拓進化の素材に相手のクリーチャーも使える */
-export const pioneerOppBase = (maxStat, minOpp) => ({ a: "pioneerOppBase", maxStat, minOpp });
+export const pioneerOppBase = (maxSum, minOpp) => ({ a: "pioneerOppBase", maxSum, minOpp });
 /** 対戦相手のクリーチャーが攻撃するたび */
 export const oppAttack = trig("oppAttack");
 /** 原色 ―:マナゾーンの color の単色カード1枚につきコスト{1}軽減(第11.5弾) */
@@ -813,7 +813,7 @@ function abilityTextBody(abil, card) {
         ? `${name}は、元のパワーが${abil.maxPower}以下で元のタフネスが${abil.maxToughness}以下のクリーチャーしかブロックできない(修整は数えない)。`
         : `${name}は、元のパワーが${abil.maxPower}以下のクリーチャーしかブロックできない(修整は数えない)。`;
     case "pioneerOppBase":
-      return `対戦相手がコントロールするクリーチャーが${abil.minOpp}体以上いるなら、元のパワーとタフネスがどちらも${abil.maxStat}以下の対戦相手のクリーチャー1体も、${name}の開拓進化の素材にできる。`;
+      return `対戦相手がコントロールするクリーチャーが${abil.minOpp}体以上いるなら、元のパワーとタフネスの合計が${abil.maxSum}以下の対戦相手のクリーチャー1体も、${name}の開拓進化の素材にできる。`;
     case "costDown": {
       const amount = abil.per !== undefined ? `${perText(abil.per)}{${abil.mult ?? 1}}` : `{${abil.n}}`;
       const body = `この呪文を唱えるためのコストは${amount}少なくなる。`;

@@ -10,7 +10,8 @@ export const EXTRA_COPIES = 2;
 /** 秘蔵庫のカード(リリース召喚を持つ) */
 export const isExtra = (c: Card | undefined) =>
   !!c?.abilities?.some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly" || a.a === "gem" || a.a === "curtainCall" || a.a === "vaultCast");
-export const maxCopies = (c: Card | undefined) => (isExtra(c) ? EXTRA_COPIES : MAX_COPIES);
+/** 同名カードの上限。制限カード(limit)はそれより少ない */
+export const maxCopies = (c: Card | undefined) => Math.min(isExtra(c) ? EXTRA_COPIES : MAX_COPIES, c?.limit ?? 99);
 
 /** メインデッキの枚数(byId があれば秘蔵庫のカードを除く) */
 export function deckCount(cards: DeckCards, byId?: Map<string, Card>): number {
@@ -41,7 +42,8 @@ export function validateDeck(cards: DeckCards, byId: Map<string, Card>): string[
   for (const [id, n] of Object.entries(cards)) {
     const card = byId.get(id);
     if (!card) issues.push(`カードID「${id}」はカードリストにありません。`);
-    else if (n > maxCopies(card)) issues.push(`「${card.name}」が${n}枚あります(${isExtra(card) ? "秘蔵庫の" : ""}同名カードは${maxCopies(card)}枚まで)。`);
+    else if (n > maxCopies(card))
+      issues.push(card.limit !== undefined ? `「${card.name}」は制限カードで、${card.limit}枚までです(いま${n}枚)。` : `「${card.name}」が${n}枚あります(${isExtra(card) ? "秘蔵庫の" : ""}同名カードは${maxCopies(card)}枚まで)。`);
   }
   return issues;
 }

@@ -1661,7 +1661,7 @@ export class Game {
     if (!pi) return [];
     // 相手のクリーチャーも素材にできる開拓者(苔むす防人):相手の場のクリーチャーが minOpp 体以上なら、元のパワーとタフネスが maxStat 以下のもの
     const opp = abilityOf(target.card, "pioneerOppBase");
-    const oppCs = opp && this.creatures(this.other(p)).length >= opp.minOpp ? this.creatures(this.other(p)).filter((o) => (o.card.power ?? 0) <= opp.maxStat && (o.card.toughness ?? 0) <= opp.maxStat && !this.anchored(o)) : [];
+    const oppCs = opp && this.creatures(this.other(p)).length >= opp.minOpp ? this.creatures(this.other(p)).filter((o) => (o.card.power ?? 0) + (o.card.toughness ?? 0) <= opp.maxSum && !this.anchored(o)) : [];
     // 防衛を持つクリーチャー(苔むす防人など)は、開拓進化の素材にならない
     return [...this.creatures(p).filter((o) => !this.hasKw(o, "防衛") && !this.anchored(o)).filter((o) =>
       pi.grand ? isExtraCard(o.card) && !!pioneerOf(o.card) && !pioneerOf(o.card)!.grand : this.colorsOf(o).includes(pi.color),

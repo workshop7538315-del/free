@@ -324,7 +324,7 @@ export type Ability = { text?: string } & (
   /** パワーが maxPower 以下のクリーチャーしかブロックできない */
   | { a: "blockOnly"; maxPower: number; maxToughness?: number }
   /** 開拓進化の素材に、相手のクリーチャーも使える(相手の場に minOpp 体以上いるとき、元のパワーとタフネスが maxStat 以下のもの) */
-  | { a: "pioneerOppBase"; maxStat: number; minOpp: number }
+  | { a: "pioneerOppBase"; maxSum: number; minOpp: number }
   /** 留まる:次の対戦相手のターンの終了時まで戦場を離れず、その終了時にマナゾーンに置かれる */
   | { a: "anchor" }
   /** 一度秘蔵庫から出たら、秘蔵庫には戻らない */

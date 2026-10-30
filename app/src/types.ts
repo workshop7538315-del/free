@@ -11,6 +11,8 @@ export type Card = {
   power?: number;
   toughness?: number;
   rarity: string;
+  /** 制限カード:デッキに入れられる枚数の上限 */
+  limit?: number;
   text: string[];
   flavor?: string;
   /** アーキタイプ(人間、エンチャント、星詠み など) */

@@ -6,6 +6,10 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { cardText } from "./lib.mjs";
 import { PACKS } from "./packs.mjs";
+import { RESTRICTED as RESTRICTED_BASE } from "./restricted.mjs";
+
+/** 制限カード(検証用に RESTRICT 環境変数で一時的に足せる) */
+const RESTRICTED = { ...RESTRICTED_BASE, ...(process.env.RESTRICT ? JSON.parse(process.env.RESTRICT) : {}) };
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -125,6 +129,11 @@ const out = CARDS.map((c) => {
     abilities,
   };
 });
+for (const c of out) {
+  if (RESTRICTED[c.id] !== undefined) c.limit = RESTRICTED[c.id];
+  else delete c.limit;
+}
+for (const id of Object.keys(RESTRICTED)) if (!out.some((c) => c.id === id)) throw new Error(`制限カード ${id} がありません`);
 writeFileSync(join(here, "cards.json"), JSON.stringify(out, null, 2) + "\n");
 
 // パックの一覧(アプリの絞り込みと表示に使う)
@@ -148,7 +157,7 @@ function isInteraction(c) {
 }
 const isCre = (c) => c.type.includes("クリーチャー");
 const copiesFor = (c, themed, highlander) =>
-  highlander ? 1 : themed ? { コモン: 4, アンコモン: 4, レア: 3, 神話レア: 2 }[c.rarity] : { コモン: 4, アンコモン: 3, レア: 2, 神話レア: 1 }[c.rarity];
+  Math.min(highlander ? 1 : themed ? { コモン: 4, アンコモン: 4, レア: 3, 神話レア: 2 }[c.rarity] : { コモン: 4, アンコモン: 3, レア: 2, 神話レア: 1 }[c.rarity], RESTRICTED[c.id] ?? 99);
 
 /**
  * デッキを自動で組む。
@@ -248,7 +257,7 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
     const c = out.find((x) => x.id === id);
     if (!c || !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast"].includes(a.a))) throw new Error(`秘蔵庫のカード ${id} がありません`);
     if (n > 2) throw new Error(`秘蔵庫の ${id} は2枚まで`);
-    deck[id] = n;
+    deck[id] = Math.min(n, RESTRICTED[id] ?? n);
     ex += n;
   }
   if (ex > 8) throw new Error("秘蔵庫は8枚まで");
