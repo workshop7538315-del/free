@@ -83,7 +83,7 @@ for (const c of CARDS) {
     }
   }
   // 秘蔵庫のカードはクリーチャーで、リリース召喚の数値を持つ
-  if (c.abilities.some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "evolveOnly" || a.a === "gem" || a.a === "curtainCall") && !isCreature) throw new Error(`${c.id}: 秘蔵庫のカードはクリーチャーにしてください`);
+  if (c.abilities.some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "evolveOnly" || a.a === "gem" || a.a === "curtainCall" || a.a === "vaultCast") && !isCreature) throw new Error(`${c.id}: 秘蔵庫のカードはクリーチャーにしてください`);
   if (c.abilities.some((a) => a.a === "spell" && a.modes && a.modes.length < 2)) throw new Error(`${c.id}: モード呪文は2つ以上の選択肢が要ります`);
   // 強化パックの新規カードは元のカードとの関係を持つ
   if (c.basedOn) {
@@ -179,7 +179,7 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
   };
   // 秘蔵庫のカードはメインには入れない
   // 第11弾の英雄と関連カード(hr)は、core で指定したデッキにだけ入れる(自動では足さない)
-  const pool = out.filter((c) => fits(c) && !c.id.startsWith("hr") && !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall"].includes(a.a)));
+  const pool = out.filter((c) => fits(c) && !c.id.startsWith("hr") && !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast"].includes(a.a)));
   const inSet = (c) => !!set && c.id.startsWith(set);
   const themed = (c) => inSet(c) || (!!theme && theme(c));
   const score = (c) => {
@@ -246,7 +246,7 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
   let ex = 0;
   for (const [id, n] of Object.entries(extra)) {
     const c = out.find((x) => x.id === id);
-    if (!c || !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall"].includes(a.a))) throw new Error(`秘蔵庫のカード ${id} がありません`);
+    if (!c || !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast"].includes(a.a))) throw new Error(`秘蔵庫のカード ${id} がありません`);
     if (n > 2) throw new Error(`秘蔵庫の ${id} は2枚まで`);
     deck[id] = n;
     ex += n;
@@ -285,12 +285,12 @@ const DECKS = [
   // 第11.5弾で作り直し:マナ総量11以上の巨体を、原色と黄金郷のランプ・開拓進化で出す
   { id: "t-armed-g", name: "原色:緑単の巨獣", colors: ["G"], pure: true, theme: tag("原色"), archetype: "原色",
     core: { pc31: 2, pc32: 2, pc33: 3, pc34: 2, pc35: 2, pc36: 1, pc37: 3, pc38: 3, pc39: 2, pc40: 1, pc41: 4, pc42: 2, pc43: 3, pc44: 1, pc45: 1, eld14: 3, eld15: 3, hr58: 1, hr60: 1 },
-    extra: { eld01: 2, eld02: 2, eld03: 2, eld05: 2 } },
+    extra: { eld01: 2, pc46: 2, eld03: 2, eld05: 2 } },
   // 第11.5弾:白単(回復)と青単(ドロー)
   { id: "t-mono-w", name: "原色:白単の癒しの聖堂", colors: ["W"], pure: true, theme: tag("原色"), archetype: "原色",
-    core: { pc01: 2, pc02: 1, pc03: 2, pc04: 4, pc06: 2, pc07: 2, pc08: 4, pc09: 3, pc10: 3, pc11: 3, pc12: 2, pc13: 3, pc15: 2, hz65: 3, w007: 2 } },
+    core: { pc01: 2, pc02: 1, pc03: 2, pc04: 4, pc06: 2, pc07: 2, pc08: 4, pc09: 3, pc10: 3, pc11: 3, pc12: 2, pc13: 3, pc15: 2, hz65: 3, pc48: 2 } },
   { id: "t-mono-u", name: "原色:青単の知識の塔", colors: ["U"], pure: true, theme: tag("原色"), archetype: "原色",
-    core: { pc16: 2, pc17: 2, pc18: 2, pc19: 3, pc20: 3, pc21: 3, pc22: 2, pc23: 3, pc24: 3, pc25: 2, pc26: 3, pc27: 2, pc28: 2, pc29: 2, u021: 2, u012: 2 } },
+    core: { pc16: 2, pc17: 2, pc18: 2, pc19: 3, pc20: 3, pc21: 3, pc22: 2, pc23: 3, pc24: 3, pc25: 2, pc26: 3, pc27: 2, pc28: 2, pc29: 1, u021: 1, u012: 2, pc47: 2 } },
   { id: "t-goblin", name: "部族:ゴブリンの大群(赤単)", colors: ["R"], theme: (c) => sub("ゴブリン")(c), archetype: "部族", core: { hr61: 2, hr62: 2, hr63: 2, hr88: 2 }, extra: { cm09: 2, cm10: 2, cm11: 2, cm12: 2 } },
   { id: "t-elf", name: "部族:エルフの森(緑単)", colors: ["G"], theme: (c) => sub("エルフ")(c), archetype: "部族", core: { hr64: 2, hr65: 2, hr66: 2, hr88: 2 }, extra: { eld01: 2, eld02: 2, eld03: 2, eld05: 2 } },
   { id: "t-zombie", name: "部族:ゾンビの行進(黒単)", colors: ["B"], theme: (c) => sub("ゾンビ")(c), archetype: "部族", core: { hr67: 2, hr68: 2, hr69: 2, hr87: 1, hr88: 2 } },

@@ -1057,7 +1057,10 @@ function actionLabel(g: Game, a: Action): string {
       if (a.from === "mana") return "マナ解放で唱える";
       if (a.from === "graveyard") return "再演で唱える";
       if (a.from === "dash") return "疾駆で唱える(速攻、終了時に手札へ)";
-      if (a.from === "extra") return "大喝采に応えて秘蔵庫から唱える(コスト軽減)";
+      if (a.from === "extra") {
+        const o = g.find(a.uid);
+        return o && abilitiesOf(o.card).some((ab) => ab.a === "vaultCast") ? "秘蔵庫から唱える" : "大喝采に応えて秘蔵庫から唱える(コスト軽減)";
+      }
       const o = g.find(a.uid);
       if (!o || o.card.cost === "" || g.effectiveCost(ME, o, "hand") !== "") return "唱える";
       // 零式を持ち、その条件を満たしているときだけ「零式」。コスト軽減で0になっただけなら「コスト0」

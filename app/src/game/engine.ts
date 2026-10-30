@@ -207,7 +207,7 @@ export const isAura = (c: Card) => abilitiesOf(c).some((a) => a.a === "enchant")
 export const isEquipment = (c: Card) => abilitiesOf(c).some((a) => a.a === "equip");
 /** 秘蔵庫のカード(リリース召喚を持つ) */
 export const isExtraCard = (c: Card) =>
-  abilitiesOf(c).some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly" || a.a === "gem" || a.a === "curtainCall");
+  abilitiesOf(c).some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly" || a.a === "gem" || a.a === "curtainCall" || a.a === "vaultCast");
 export const curtainOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "curtainCall") as Extract<Ability, { a: "curtainCall" }> | undefined;
 export const pioneerOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "pioneer") as Extract<Ability, { a: "pioneer" }> | undefined;
 export const assembleOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "assemble") as Extract<Ability, { a: "assemble" }> | undefined;
@@ -480,7 +480,8 @@ export class Game {
     }
     // 秘蔵庫のカードは、戦場を離れたら(どこへ行く場合も)秘蔵庫に戻る
     // (強盗でマナゾーンに置くこと、マナ解放でスタックに置くことはできる)
-    if (isExtraCard(o.card) && to !== "battlefield" && to !== "extra" && to !== "mana" && to !== "stack") {
+    // 秘蔵 ―(第11.5弾)のカードは、秘蔵庫から出たあとは普通のカードと同じく墓地などへ行く
+    if (isExtraCard(o.card) && !abilityOf(o.card, "vaultCast") && to !== "battlefield" && to !== "extra" && to !== "mana" && to !== "stack") {
       to = "extra";
       o.faceDown = false;
       this.addLog(`${o.card.name}は秘蔵庫に戻った`, o.owner);
@@ -735,6 +736,9 @@ export class Game {
     if (blocker.tapped || !isCreatureCard(blocker.card) || this.isPacified(blocker) || this.hasKw(blocker, "ブロックできない")) return false;
     if (this.hasKw(attacker, "飛行") && !this.hasKw(blocker, "飛行") && !this.hasKw(blocker, "到達")) return false;
     if (this.hasKw(attacker, "天翔") && !this.hasKw(blocker, "天翔")) return false;
+    // パワーが N 以下のクリーチャーしかブロックできない(第11.5弾)
+    const only = abilityOf(blocker.card, "blockOnly");
+    if (only && this.power(attacker) > only.maxPower) return false;
     return true;
   }
 
@@ -980,9 +984,15 @@ export class Game {
       cost = fb.cost;
     } else if (from === "extra") {
       // 大喝采(喝采の累計)を満たすと、座長を秘蔵庫からコストを少なくして唱えられる
-      const cc = curtainOf(c);
-      if (!cc || o.zone !== "extra" || !this.ovationMet(p, c)) return null;
-      cost = reduceGeneric(cost, cc.cut ?? 0);
+      if (o.zone !== "extra") return null;
+      // 秘蔵 ―:秘蔵庫からそのまま唱えられる(第11.5弾)
+      if (abilityOf(c, "vaultCast")) {
+        /* コストはそのまま */
+      } else {
+        const cc = curtainOf(c);
+        if (!cc || !this.ovationMet(p, c)) return null;
+        cost = reduceGeneric(cost, cc.cut ?? 0);
+      }
     } else if (from === "dash") {
       const d = abilityOf(c, "dash");
       if (!d) return null;
@@ -1054,7 +1064,7 @@ export class Game {
     }
     for (const o of pl.hand) if (this.canCast(p, o, "hand")) out.push({ type: "cast", uid: o.uid, from: "hand" });
     for (const o of pl.mana) if (!o.faceDown && releaseAbility(o.card) && this.canCast(p, o, "mana")) out.push({ type: "cast", uid: o.uid, from: "mana" });
-    for (const o of pl.extra) if (curtainOf(o.card) && this.canCast(p, o, "extra")) out.push({ type: "cast", uid: o.uid, from: "extra" });
+    for (const o of pl.extra) if ((curtainOf(o.card) || abilityOf(o.card, "vaultCast")) && this.canCast(p, o, "extra")) out.push({ type: "cast", uid: o.uid, from: "extra" });
     for (const o of pl.graveyard) if (abilityOf(o.card, "flashback") && this.canCast(p, o, "graveyard")) out.push({ type: "cast", uid: o.uid, from: "graveyard" });
     for (const o of pl.hand) if (abilityOf(o.card, "dash") && this.canCast(p, o, "dash")) out.push({ type: "cast", uid: o.uid, from: "dash" });
     for (const o of pl.hand) {
@@ -1232,7 +1242,7 @@ export class Game {
     };
     this.stack.push(item);
     const tgt = targets.length ? `(対象:${targets.map((t) => this.describeRef(t)).join("、")})` : "";
-    const how = from === "extra" ? "大喝采に応えて秘蔵庫から" : from === "mana" ? "マナ解放で" : from === "graveyard" ? "再演で" : from === "dash" ? "疾駆で" : cost === "" && c.cost !== "" ? (abilityOf(c, "free") && this.cond(abilityOf(c, "free")!.if, p) ? "零式で" : "コスト0で") : "";
+    const how = from === "extra" ? (abilityOf(c, "vaultCast") ? "秘蔵庫から" : "大喝采に応えて秘蔵庫から") : from === "mana" ? "マナ解放で" : from === "graveyard" ? "再演で" : from === "dash" ? "疾駆で" : cost === "" && c.cost !== "" ? (abilityOf(c, "free") && this.cond(abilityOf(c, "free")!.if, p) ? "零式で" : "コスト0で") : "";
     this.addLog(`${c.name}を${how}唱えた${burned ? `(燃焼${burnCount}枚)` : ""}${kicked ? "(追加払い)" : ""}${x ? `(X=${x})` : ""}${tgt}`, p);
     for (const src of this.sources(p))
       for (const ab of this.activeAbilities(src)) {
@@ -1926,7 +1936,7 @@ export class Game {
         break;
       }
       case "pumpAll": {
-        const targets = e.who === "all" ? [...this.creatures(0), ...this.creatures(1)] : this.creatures(p);
+        const targets = e.who === "all" ? [...this.creatures(0), ...this.creatures(1)] : e.who === "opp" ? this.creatures(opp) : this.creatures(p);
         for (const o of targets) if (matchFilter(o.card, e.filter, this.colorsOf(o))) o.temp.push({ p: e.p, t: e.t, kw: e.kw ?? [] });
         break;
       }
@@ -2449,6 +2459,8 @@ export class Game {
     if (comic >= 2) this.gainApplause(p, "喜劇", comic >= 3 ? 2 : 1, true);
     this.addLog(`${attackers.map((o) => o.card.name).join("、")}で攻撃した`, p);
     this.queueTriggers("attacks", attackers);
+    // 対戦相手のクリーチャーが攻撃するたび(攻撃された側の誘発。攻撃したクリーチャー1体ごと)
+    for (let i = 0; i < attackers.length; i++) this.queueTriggers("oppAttack", this.sources(this.other(p)));
     await this.priorityStep();
 
     // ブロック

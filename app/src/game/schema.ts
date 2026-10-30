@@ -134,7 +134,7 @@ export type Effect = Common &
     | { do: "untap"; tg?: number; all?: boolean }
     | { do: "tapAll"; who: "opp" }
     | { do: "pump"; tg?: number; self?: boolean; p: Amount; t: Amount; kw?: string[] }
-    | { do: "pumpAll"; who: "you" | "all"; p: number; t: number; kw?: string[]; filter?: Filter }
+    | { do: "pumpAll"; who: "you" | "all" | "opp"; p: number; t: number; kw?: string[]; filter?: Filter }
     | { do: "buffSelf"; p: number; t: number; kw?: string[] }
     | { do: "counters"; tg?: number; self?: boolean; n: Amount }
     | { do: "countersAll"; n: number; filter?: Filter }
@@ -227,6 +227,8 @@ export type TriggerEvent =
   | "toGraveyard"
   /** あなたが各ターンに2枚目のカードを引くたび(第11.5弾) */
   | "secondDraw"
+  /** 対戦相手のクリーチャーが攻撃するたび(1体ごと) */
+  | "oppAttack"
   /** あなたが(filter に合う)パーマネントを生け贄に捧げるたび */
   | "sacrifice"
   /** ウシータ:この秘蔵庫のカードが戦場を離れて秘蔵庫に戻るとき */
@@ -317,6 +319,10 @@ export type Ability = { text?: string } & (
   | { a: "equip"; cost: string }
   /** 虚食:自分のマナゾーンの裏向きのカード1枚につき、唱えるコストが{1}少なくなる */
   | { a: "voidAffinity" }
+  /** 秘蔵 ―:秘蔵庫に入れ、そこからマナコストを払って唱えられる(第11.5弾) */
+  | { a: "vaultCast" }
+  /** パワーが maxPower 以下のクリーチャーしかブロックできない */
+  | { a: "blockOnly"; maxPower: number }
   /** コスト軽減(第11.5弾):per があれば「per 1つにつき{mult}」、なければ{n}。if があればその条件のときだけ */
   | { a: "costDown"; per?: Amount; mult?: number; n?: number; if?: Cond; label?: string }
   /** 共鳴:filter に合う自分のパーマネント1つにつき、唱えるコストが{1}少なくなる */

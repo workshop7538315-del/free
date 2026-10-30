@@ -308,7 +308,7 @@ function scoreCast(g: Game, p: PlayerId, a: Extract<Action, { type: "cast" }>, m
     let v = 0;
     for (const e of effects) v += effectValue(g, p, e, targets, inCombat);
     if (isInstantCard(c) && main && effects.some((e) => e.do === "counter")) return -1;
-    if (effects.some((e) => (e.do === "pump" && (e.p as number) > 0) || e.do === "pumpAll") && !inCombat && !isCombatStart(g, p)) {
+    if (effects.some((e) => (e.do === "pump" && (e.p as number) > 0) || (e.do === "pumpAll" && e.who !== "opp")) && !inCombat && !isCombatStart(g, p)) {
       // 戦闘外の強化は無駄が多い
       v -= 3;
     }
@@ -399,6 +399,11 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return inCombat ? 2 : 1;
     }
     case "pumpAll":
+      if (e.who === "opp") {
+        // 相手のクリーチャーだけを弱める:倒せる分と、戦闘中なら弱める分
+        const dead = oppCreatures.filter((o) => g.toughness(o) - o.damage <= -e.t).reduce((s, o) => s + creatureValue(g, o), 0);
+        return dead + (inCombat ? oppCreatures.length * 0.5 : 0) - 1;
+      }
       if (e.who === "all") {
         const theirs = oppCreatures.filter((o) => g.toughness(o) <= -e.t).reduce((s, o) => s + creatureValue(g, o), 0);
         const mine = myCreatures.filter((o) => g.toughness(o) <= -e.t).reduce((s, o) => s + creatureValue(g, o), 0);

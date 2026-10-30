@@ -103,6 +103,12 @@ export const entrata = (n, cat) => ({ a: "entrata", n, cat });
 export const pioneer = (n, color, grand = false) => ({ a: "pioneer", n, color, ...(grand ? { grand } : {}) });
 /** 組み立て【color】:秘蔵庫の発明品。partner(ID と名前)に武装進化する */
 export const assemble = (color, partner, partnerName, cond = "attacked") => ({ a: "assemble", color, partner, partnerName, cond });
+/** 秘蔵 ―:秘蔵庫に入れ、そこから唱えられる */
+export const vaultCast = () => ({ a: "vaultCast" });
+/** パワーが n 以下のクリーチャーしかブロックできない */
+export const blockOnly = (maxPower) => ({ a: "blockOnly", maxPower });
+/** 対戦相手のクリーチャーが攻撃するたび */
+export const oppAttack = trig("oppAttack");
 /** 原色 ―:マナゾーンの color の単色カード1枚につきコスト{1}軽減(第11.5弾) */
 export const primaryDown = (color, mult = 1) => ({ a: "costDown", per: { count: "primary", color }, mult, label: "原色" });
 /** そのほかのコスト軽減。per があれば「per 1つにつき{mult}」、なければ{n}。if があればその条件のときだけ */
@@ -533,7 +539,7 @@ function effectText(e, name, abil, notes) {
       return `ターン終了時まで、${who}は${pt}の修整を受け${kws}${kws ? "。" : "る。"}`;
     }
     case "pumpAll": {
-      const who = e.who === "all" ? `すべての${filterPhrase(e.filter, "creature")}` : `あなたがコントロールする${filterPhrase(e.filter, "creature")}`;
+      const who = e.who === "all" ? `すべての${filterPhrase(e.filter, "creature")}` : e.who === "opp" ? `対戦相手がコントロールする${filterPhrase(e.filter, "creature")}` : `あなたがコントロールする${filterPhrase(e.filter, "creature")}`;
       const kws = e.kw?.length ? `、${kwList(e.kw)}を得る` : "";
       if (e.p === 0 && e.t === 0) return `ターン終了時まで、${who}は${kwList(e.kw)}を得る。`;
       return `ターン終了時まで、${who}は${ptText(e.p, e.t)}の修整を受け${kws}${kws ? "。" : "る。"}`;
@@ -692,6 +698,7 @@ const TRIGGER_PREFIX = {
   toGraveyard: (n) => `${n}がどこからでも墓地に置かれたとき、`,
   uscita: () => "ウシータ ― ",
   secondDraw: () => "あなたが各ターンに2枚目のカードを引くたび、",
+  oppAttack: () => "対戦相手がコントロールするクリーチャーが攻撃するたび、",
 };
 
 function staticText(abil, name, card) {
@@ -791,6 +798,10 @@ function abilityTextBody(abil, card) {
       return `リリース召喚 ${abil.n}(${(abil.from ?? [{ type: "エンチャント" }]).map((f) => (Object.keys(f).length ? filterPhrase(f, "permanent") : "パーマネント")).join("か")})`;
     case "offering":
       return `奉納 ${abil.n}${abil.sub ? `(${abil.sub})` : ""}`;
+    case "vaultCast":
+      return "秘蔵 ―(このカードは秘蔵庫に入れる。あなたは秘蔵庫からこのカードを唱えてもよい。戦場を離れたら、秘蔵庫には戻らない)";
+    case "blockOnly":
+      return `${name}は、パワーが${abil.maxPower}以下のクリーチャーしかブロックできない。`;
     case "costDown": {
       const amount = abil.per !== undefined ? `${perText(abil.per)}{${abil.mult ?? 1}}` : `{${abil.n}}`;
       const body = `この呪文を唱えるためのコストは${amount}少なくなる。`;
