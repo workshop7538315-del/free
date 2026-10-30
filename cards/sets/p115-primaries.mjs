@@ -30,13 +30,13 @@ export const PRIMARIES = [
   tagged(cr("pc01", "白の守護者 ルミエラ", "{3}{W}{W}", "神・守護者", 4, 5, "M", [
     kw("飛行", "絆魂"),
     etb(E.gain(W)),
-    lifeGain([E.counters(1)], T.you),
+    once(lifeGain([E.counters(1)], T.you)),
     lifeGain(E.lose(1), undefined, { if: "pureColor" }),
   ], { flavor: "「黒を葬ったのは正しかった。……そう祈るしかないの。だから私は、今日も誰かを癒やすのです」" })),
-  tagged(ench("pc02", "黒き墓所の封印聖堂", "{2}{W}{W}", "R", [upkeep(E.gain(W)), lifeGain(E.countersAll(1), undefined, { oncePerTurn: true })], {
+  tagged(ench("pc02", "黒き墓所の封印聖堂", "{2}{W}{W}", "R", [upkeep(E.gain(W)), upkeep(cleric(), undefined, { if: { primary: "W", n: 5 } })], {
     flavor: "祈りが途切れた日、封印はほどける。だから聖堂の鐘は、一度も鳴りやんだことがない。",
   })),
-  tagged(cr("pc03", "慈雨の大司祭", "{2}{W}{W}", "人間・クレリック", 2, 4, "R", [once(lifeGain(cleric()))], { flavor: "「癒やしは雨と同じ。降らせ続ければ、やがて地面が応える」" })),
+  tagged(cr("pc03", "慈雨の大司祭", "{2}{W}{W}", "人間・クレリック", 1, 3, "R", [once(lifeGain(cleric()))], { flavor: "「癒やしは雨と同じ。降らせ続ければ、やがて地面が応える」" })),
   tagged(cr("pc04", "聖水の運び手", "{1}{W}", "人間・クレリック", 2, 2, "U", [etb(E.gain(2)), dye(E.gain(3))])),
   tagged(ins("pc05", "白光の祈り", "{1}{W}", "U", spell([E.pump(1, 3), E.gain(3)], T.you))),
   tagged(sor("pc06", "癒し手の行進", "{2}{W}{W}", "U", spell([E.gain(W), E.countersAll(1)]), { flavor: "「青は知るだけ、緑は育つだけ。癒やせるのは私たちだけよ」──ルミエラ" })),
@@ -92,7 +92,7 @@ export const PRIMARIES = [
   // サポート:軽い3枚
   tagged(sor("pc41", "大地の呼び声", "{1}{G}", "C", spell([{ ...E.ramp(1), unless: { primary: "G", n: 5 } }, { ...E.ramp(2), if: { primary: "G", n: 5 } }]))),
   tagged(ins("pc42", "巨体への祝福", "{G}", "C", spell([{ ...E.pump(2, 2, ["トランプル"]), unless: { primary: "G", n: 5 } }, { ...E.pump(5, 5, ["トランプル"]), if: { primary: "G", n: 5 } }], T.you))),
-  tagged(ench("pc43", "原色の泉", "{2}{G}", "U", [discount(HUGE, 2)], { flavor: "「青は泉の水を調べ、白は泉で傷を洗う。わしは飲む。それだけだ」──ヴェルドグラン" })),
+  tagged(ench("pc43", "原色の泉", "{2}{G}", "U", [discount(HUGE, 1)], { flavor: "「青は泉の水を調べ、白は泉で傷を洗う。わしは飲む。それだけだ」──ヴェルドグラン" })),
   // サポート:大型の2枚
   tagged(sor("pc44", "森を呼ぶ", "{9}{G}{G}", "R", [primaryDown("G"), spell(E.callForest(5, 11))])),
   tagged(sor("pc45", "大地踏み", "{10}{G}", "U", [primaryDown("G"), spell(E.stomp())])),
