@@ -801,7 +801,7 @@ function abilityTextBody(abil, card) {
     case "vaultCast":
       return "秘蔵 ―(このカードは秘蔵庫に入れる。あなたは秘蔵庫からこのカードを唱えてもよい。戦場を離れたら、秘蔵庫には戻らない)";
     case "blockOnly":
-      return `${name}は、パワーが${abil.maxPower}以下のクリーチャーしかブロックできない。`;
+      return `${name}は、元のパワーが${abil.maxPower}以下のクリーチャーしかブロックできない(修整は数えない)。`;
     case "costDown": {
       const amount = abil.per !== undefined ? `${perText(abil.per)}{${abil.mult ?? 1}}` : `{${abil.n}}`;
       const body = `この呪文を唱えるためのコストは${amount}少なくなる。`;

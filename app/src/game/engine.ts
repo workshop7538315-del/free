@@ -736,9 +736,9 @@ export class Game {
     if (blocker.tapped || !isCreatureCard(blocker.card) || this.isPacified(blocker) || this.hasKw(blocker, "ブロックできない")) return false;
     if (this.hasKw(attacker, "飛行") && !this.hasKw(blocker, "飛行") && !this.hasKw(blocker, "到達")) return false;
     if (this.hasKw(attacker, "天翔") && !this.hasKw(blocker, "天翔")) return false;
-    // パワーが N 以下のクリーチャーしかブロックできない(第11.5弾)
+    // 元のパワーが N 以下のクリーチャーしかブロックできない(第11.5弾。修整は見ない)
     const only = abilityOf(blocker.card, "blockOnly");
-    if (only && this.power(attacker) > only.maxPower) return false;
+    if (only && (attacker.card.power ?? 0) > only.maxPower) return false;
     return true;
   }
 
