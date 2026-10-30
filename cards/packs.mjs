@@ -35,6 +35,7 @@ import { COMMEDIA } from "./sets/p95-commedia.mjs";
 import { ELDORADO } from "./sets/p95-eldorado.mjs";
 import { BLACK_MARKET } from "./sets/p10-blackmarket.mjs";
 import { HEROES } from "./sets/p11-heroes.mjs";
+import { PRIMARIES } from "./sets/p115-primaries.mjs";
 
 export const PACKS = [
   {
@@ -156,5 +157,14 @@ export const PACKS = [
     theme: "第8弾以前のアーキタイプのスターター28デッキに、名前のある英雄(エース)と、その関連カード2枚ずつを配る。多色デッキのカードはすべて多色。単色デッキには、次の弾の単色強化につながる「純色」を入れた。決闘のロザリンドと陰謀のヴィオレッタは宮廷の宿敵で、2人の混成カードは払った色で効果が変わる。同じ1色のマナで払う「純色払い」の欠色カードも4枚。",
     sets: [HEROES],
     reprints: [],
+  },
+  {
+    id: "p115",
+    number: 11.5,
+    name: "原色の守護者",
+    kind: "新規展開",
+    words: ["原色", "守護", "濁り"],
+    theme: "色がまだ混ざっていなかった時代の、色ごとの守護者たちの物語。守護者同士の争いで赤は討たれ、黒は葬られた。生き残った白(癒す)・青(知る)・緑(育つ)の単色だけのパック。マナゾーンの同じ色の単色カードの枚数を数える「原色」と、チャージしたときマナゾーンが純色なら誘発する「染色」。白は回復、青はたくさん引く、緑はマナ総量11以上の巨体を原色と過去のカードの軽減で出す。",
+    sets: [PRIMARIES],
   },
 ];

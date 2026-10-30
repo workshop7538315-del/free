@@ -43914,5 +43914,1932 @@
         ]
       }
     ]
+  },
+  {
+    "id": "pc01",
+    "name": "白の守護者 ルミエラ",
+    "cost": "{3}{W}{W}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "flavor": "「黒を葬ったのは正しかった。……そう祈るしかないの。だから私は、今日も誰かを癒やすのです」",
+    "subtype": "神・守護者",
+    "power": 4,
+    "toughness": 5,
+    "text": [
+      "飛行、絆魂",
+      "白の守護者 ルミエラが戦場に出たとき、あなたはX点のライフを得る。Xは原色(あなたのマナゾーンにある白の単色カードの枚数)に等しい。",
+      "あなたがライフを得るたび、あなたがコントロールするクリーチャー1体を対象とする。それの上に+1/+1カウンターを1個置く。",
+      "純色 ― あなたがライフを得るたび、対戦相手は1点のライフを失う。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "kw",
+        "kw": "絆魂"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "gainLife",
+            "n": {
+              "count": "primary",
+              "color": "W"
+            }
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "lifeGain",
+        "effects": [
+          {
+            "do": "counters",
+            "tg": 0,
+            "n": 1
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "you"
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "lifeGain",
+        "effects": [
+          {
+            "do": "loseLife",
+            "n": 1,
+            "who": "opp"
+          }
+        ],
+        "if": "pureColor"
+      }
+    ]
+  },
+  {
+    "id": "pc02",
+    "name": "黒き墓所の封印聖堂",
+    "cost": "{2}{W}{W}",
+    "type": "エンチャント",
+    "rarity": "レア",
+    "flavor": "祈りが途切れた日、封印はほどける。だから聖堂の鐘は、一度も鳴りやんだことがない。",
+    "text": [
+      "あなたのアップキープの開始時に、あなたはX点のライフを得る。Xは原色(あなたのマナゾーンにある白の単色カードの枚数)に等しい。",
+      "あなたがライフを得るたび、あなたがコントロールする各クリーチャーの上に+1/+1カウンターを1個置く。(この能力は1ターンに1回だけ誘発する)"
+    ],
+    "tags": [
+      "原色",
+      "エンチャント"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "upkeep",
+        "effects": [
+          {
+            "do": "gainLife",
+            "n": {
+              "count": "primary",
+              "color": "W"
+            }
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "lifeGain",
+        "effects": [
+          {
+            "do": "countersAll",
+            "n": 1
+          }
+        ],
+        "oncePerTurn": true
+      }
+    ]
+  },
+  {
+    "id": "pc03",
+    "name": "慈雨の大司祭",
+    "cost": "{2}{W}{W}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "flavor": "「癒やしは雨と同じ。降らせ続ければ、やがて地面が応える」",
+    "subtype": "人間・クレリック",
+    "power": 2,
+    "toughness": 4,
+    "text": [
+      "あなたがライフを得るたび、1/1の白の人間・クレリック・クリーチャー・トークンを1体生成する。(この能力は1ターンに1回だけ誘発する)"
+    ],
+    "tags": [
+      "原色",
+      "人間"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "lifeGain",
+        "effects": [
+          {
+            "do": "token",
+            "n": 1,
+            "p": 1,
+            "t": 1,
+            "color": "W",
+            "sub": "人間・クレリック"
+          }
+        ],
+        "oncePerTurn": true
+      }
+    ]
+  },
+  {
+    "id": "pc04",
+    "name": "聖水の運び手",
+    "cost": "{1}{W}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・クレリック",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "聖水の運び手が戦場に出たとき、あなたは2点のライフを得る。",
+      "染色 ― あなたは3点のライフを得る。"
+    ],
+    "tags": [
+      "原色",
+      "人間"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "gainLife",
+            "n": 2
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "charge",
+        "effects": [
+          {
+            "do": "gainLife",
+            "n": 3
+          }
+        ],
+        "if": "pureColor",
+        "dye": true
+      }
+    ]
+  },
+  {
+    "id": "pc05",
+    "name": "白光の祈り",
+    "cost": "{1}{W}",
+    "type": "インスタント",
+    "rarity": "アンコモン",
+    "text": [
+      "あなたがコントロールするクリーチャー1体を対象とする。ターン終了時まで、それは+1/+3の修整を受ける。あなたは3点のライフを得る。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "pump",
+            "tg": 0,
+            "p": 1,
+            "t": 3
+          },
+          {
+            "do": "gainLife",
+            "n": 3
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "you"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc06",
+    "name": "癒し手の行進",
+    "cost": "{2}{W}{W}",
+    "type": "ソーサリー",
+    "rarity": "アンコモン",
+    "flavor": "「青は知るだけ、緑は育つだけ。癒やせるのは私たちだけよ」──ルミエラ",
+    "text": [
+      "あなたはX点のライフを得る。あなたがコントロールする各クリーチャーの上に+1/+1カウンターを1個置く。Xは原色(あなたのマナゾーンにある白の単色カードの枚数)に等しい。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "gainLife",
+            "n": {
+              "count": "primary",
+              "color": "W"
+            }
+          },
+          {
+            "do": "countersAll",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc07",
+    "name": "聖別の浄光",
+    "cost": "{2}{W}",
+    "type": "インスタント",
+    "rarity": "アンコモン",
+    "text": [
+      "タップ状態のクリーチャー1体を対象とする。それを追放する。あなたは2点のライフを得る。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "exile",
+            "tg": 0
+          },
+          {
+            "do": "gainLife",
+            "n": 2
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "tapped": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc08",
+    "name": "巡礼の癒し手",
+    "cost": "{W}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "人間・クレリック",
+    "power": 1,
+    "toughness": 2,
+    "text": [
+      "絆魂",
+      "染色 ― あなたは2点のライフを得る。"
+    ],
+    "tags": [
+      "原色",
+      "人間"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "絆魂"
+      },
+      {
+        "a": "trigger",
+        "on": "charge",
+        "effects": [
+          {
+            "do": "gainLife",
+            "n": 2
+          }
+        ],
+        "if": "pureColor",
+        "dye": true
+      }
+    ]
+  },
+  {
+    "id": "pc09",
+    "name": "祈りの番兵",
+    "cost": "{1}{W}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "人間・兵士",
+    "power": 1,
+    "toughness": 4,
+    "text": [
+      "染色 ― あなたは2点のライフを得る。"
+    ],
+    "tags": [
+      "原色",
+      "人間"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "charge",
+        "effects": [
+          {
+            "do": "gainLife",
+            "n": 2
+          }
+        ],
+        "if": "pureColor",
+        "dye": true
+      }
+    ]
+  },
+  {
+    "id": "pc10",
+    "name": "白翼の見習い",
+    "cost": "{1}{W}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "人間・クレリック",
+    "power": 2,
+    "toughness": 1,
+    "text": [
+      "飛行",
+      "あなたがライフを得るたび、ターン終了時まで、白翼の見習いは+1/+1の修整を受ける。(この能力は1ターンに1回だけ誘発する)"
+    ],
+    "tags": [
+      "原色",
+      "人間"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "lifeGain",
+        "effects": [
+          {
+            "do": "pump",
+            "self": true,
+            "p": 1,
+            "t": 1
+          }
+        ],
+        "oncePerTurn": true
+      }
+    ]
+  },
+  {
+    "id": "pc11",
+    "name": "光の聖句",
+    "cost": "{W}",
+    "type": "インスタント",
+    "rarity": "コモン",
+    "text": [
+      "あなたは3点のライフを得る。",
+      "染色 ― あなたは2点のライフを得る。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "gainLife",
+            "n": 3
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "charge",
+        "effects": [
+          {
+            "do": "gainLife",
+            "n": 2
+          }
+        ],
+        "if": "pureColor",
+        "dye": true
+      }
+    ]
+  },
+  {
+    "id": "pc12",
+    "name": "聖堂の衛兵",
+    "cost": "{2}{W}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "人間・兵士",
+    "power": 2,
+    "toughness": 3,
+    "text": [
+      "警戒",
+      "聖堂の衛兵が戦場に出たとき、あなたは3点のライフを得る。"
+    ],
+    "tags": [
+      "原色",
+      "人間"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "gainLife",
+            "n": 3
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc13",
+    "name": "聖別の天使",
+    "cost": "{3}{W}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "天使",
+    "power": 2,
+    "toughness": 3,
+    "text": [
+      "飛行",
+      "あなたがライフを得るたび、聖別の天使の上に+1/+1カウンターを1個置く。(この能力は1ターンに1回だけ誘発する)"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "lifeGain",
+        "effects": [
+          {
+            "do": "counters",
+            "self": true,
+            "n": 1
+          }
+        ],
+        "oncePerTurn": true
+      }
+    ]
+  },
+  {
+    "id": "pc14",
+    "name": "守りの陣",
+    "cost": "{1}{W}",
+    "type": "インスタント",
+    "rarity": "コモン",
+    "text": [
+      "ターン終了時まで、あなたがコントロールするクリーチャーは+0/+2の修整を受ける。あなたは2点のライフを得る。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "pumpAll",
+            "who": "you",
+            "p": 0,
+            "t": 2
+          },
+          {
+            "do": "gainLife",
+            "n": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc15",
+    "name": "裁きの光",
+    "cost": "{3}{W}",
+    "type": "ソーサリー",
+    "rarity": "コモン",
+    "text": [
+      "対戦相手がコントロールするパワーが4以上のクリーチャー1体を対象とする。それを破壊する。あなたは2点のライフを得る。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "destroy",
+            "tg": 0
+          },
+          {
+            "do": "gainLife",
+            "n": 2
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp",
+            "minPower": 4
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc16",
+    "name": "青の守護者 シアネア",
+    "cost": "{3}{U}{U}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "flavor": "「赤の最期の炎について、記録は3つ残っている。どれも互いに矛盾している。だから私は、まだ読むのをやめられない」",
+    "subtype": "神・守護者",
+    "power": 3,
+    "toughness": 5,
+    "text": [
+      "飛行",
+      "純色 ― あなたのアップキープの開始時に、カードを1枚引く。",
+      "あなたが各ターンに2枚目のカードを引くたび、対戦相手がコントロールするクリーチャー1体を対象とする。それをタップする。それは、そのコントローラーの次のアンタップ・ステップにアンタップしない。対戦相手は自分のライブラリーの一番上から2枚を墓地に置く。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "upkeep",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "if": "pureColor"
+      },
+      {
+        "a": "trigger",
+        "on": "secondDraw",
+        "effects": [
+          {
+            "do": "tap",
+            "tg": 0,
+            "freeze": true
+          },
+          {
+            "do": "mill",
+            "n": 2,
+            "who": "opp"
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc17",
+    "name": "知識の大書庫",
+    "cost": "{2}{U}{U}",
+    "type": "エンチャント",
+    "rarity": "レア",
+    "flavor": "棚は天井まで届き、天井はまだ見えない。",
+    "text": [
+      "あなたが各ターンに2枚目のカードを引くたび、飛行を持つ1/1の青の鳥・クリーチャー・トークンを1体生成する。",
+      "染色 ― カードを1枚引く。"
+    ],
+    "tags": [
+      "原色",
+      "エンチャント"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "secondDraw",
+        "effects": [
+          {
+            "do": "token",
+            "n": 1,
+            "p": 1,
+            "t": 1,
+            "color": "U",
+            "sub": "鳥",
+            "kw": [
+              "飛行"
+            ]
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "charge",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "if": "pureColor",
+        "dye": true
+      }
+    ]
+  },
+  {
+    "id": "pc18",
+    "name": "原色の叡智",
+    "cost": "{3}{U}{U}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "flavor": "「白は癒やすことしか知らない。緑は育つことしか知らない。愚かだと思わない?」──シアネア",
+    "text": [
+      "カードをX枚引く。カードを2枚捨てる。Xは原色(あなたのマナゾーンにある青の単色カードの枚数)に等しい。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "draw",
+            "n": {
+              "count": "primary",
+              "color": "U"
+            }
+          },
+          {
+            "do": "discard",
+            "n": 2,
+            "who": "you"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc19",
+    "name": "書庫の番人",
+    "cost": "{1}{U}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・ウィザード",
+    "power": 1,
+    "toughness": 3,
+    "text": [
+      "染色 ― カードを1枚引く。"
+    ],
+    "tags": [
+      "原色",
+      "人間"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "charge",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "if": "pureColor",
+        "dye": true
+      }
+    ]
+  },
+  {
+    "id": "pc20",
+    "name": "矛盾する三つの記録",
+    "cost": "{1}{U}{U}",
+    "type": "インスタント",
+    "rarity": "アンコモン",
+    "flavor": "どれが本当かは問題ではない。三つとも読んだ者が勝つ。",
+    "text": [
+      "呪文1つを対象とする。それを打ち消す。カードを1枚引く。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "counter",
+            "tg": 0
+          },
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "targets": [
+          {
+            "t": "spell"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc21",
+    "name": "潮読みの学者",
+    "cost": "{2}{U}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "人間・ウィザード",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "飛行",
+      "潮読みの学者が戦場に出たとき、カードを1枚引く。",
+      "染色 ― カードを1枚引く。"
+    ],
+    "tags": [
+      "原色",
+      "人間"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "charge",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "if": "pureColor",
+        "dye": true
+      }
+    ]
+  },
+  {
+    "id": "pc22",
+    "name": "知識を喰らう大海鳥",
+    "cost": "{4}{U}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "鳥",
+    "power": 1,
+    "toughness": 1,
+    "text": [
+      "飛行",
+      "知識を喰らう大海鳥は、あなたの手札1枚につき+1/+1の修整を受ける。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "scale",
+          "per": {
+            "count": "hand"
+          },
+          "p": 1,
+          "t": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "pc23",
+    "name": "見習いの写本師",
+    "cost": "{U}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "人間・ウィザード",
+    "power": 1,
+    "toughness": 1,
+    "text": [
+      "あなたが各ターンに2枚目のカードを引くたび、見習いの写本師の上に+1/+1カウンターを1個置く。"
+    ],
+    "tags": [
+      "原色",
+      "人間"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "secondDraw",
+        "effects": [
+          {
+            "do": "counters",
+            "self": true,
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc24",
+    "name": "渦の問答",
+    "cost": "{U}",
+    "type": "インスタント",
+    "rarity": "コモン",
+    "text": [
+      "カードを1枚引く。",
+      "染色 ― カードを1枚引く。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "charge",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "if": "pureColor",
+        "dye": true
+      }
+    ]
+  },
+  {
+    "id": "pc25",
+    "name": "知の引き潮",
+    "cost": "{1}{U}",
+    "type": "インスタント",
+    "rarity": "コモン",
+    "text": [
+      "クリーチャー1体を対象とする。それを持ち主の手札に戻す。純色 ― カードを1枚引く。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "bounce",
+            "tg": 0
+          },
+          {
+            "do": "draw",
+            "n": 1,
+            "if": "pureColor"
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc26",
+    "name": "青翼の偵察鳥",
+    "cost": "{1}{U}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "鳥",
+    "power": 1,
+    "toughness": 2,
+    "text": [
+      "飛行",
+      "青翼の偵察鳥が戦場に出たとき、カードを1枚引く。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc27",
+    "name": "霧の写字生",
+    "cost": "{2}{U}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "人間・ウィザード",
+    "power": 2,
+    "toughness": 3,
+    "text": [
+      "あなたが各ターンに2枚目のカードを引くたび、対戦相手がコントロールするクリーチャー1体を対象とする。それをタップする。"
+    ],
+    "tags": [
+      "原色",
+      "人間"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "secondDraw",
+        "effects": [
+          {
+            "do": "tap",
+            "tg": 0
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc28",
+    "name": "深き洞察",
+    "cost": "{2}{U}",
+    "type": "ソーサリー",
+    "rarity": "コモン",
+    "text": [
+      "カードを2枚引く。原色 5(青) ― 代わりに、カードを3枚引く。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 2,
+            "unless": {
+              "primary": "U",
+              "n": 5
+            }
+          },
+          {
+            "do": "draw",
+            "n": 3,
+            "if": {
+              "primary": "U",
+              "n": 5
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc29",
+    "name": "書架の巨人",
+    "cost": "{5}{U}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "巨人",
+    "power": 4,
+    "toughness": 6,
+    "text": [
+      "書架の巨人が戦場に出たとき、カードを2枚引く。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc30",
+    "name": "霧隠れ",
+    "cost": "{1}{U}",
+    "type": "インスタント",
+    "rarity": "コモン",
+    "text": [
+      "対戦相手がコントロールするクリーチャー1体を対象とする。それをタップする。カードを1枚引く。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "tap",
+            "tg": 0
+          },
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc31",
+    "name": "緑の守護者 ヴェルドグラン",
+    "cost": "{12}{G}{G}{G}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "flavor": "「燃えた森も、腐った森も、また生える。それだけのことだ」",
+    "subtype": "神・守護者",
+    "power": 15,
+    "toughness": 15,
+    "text": [
+      "原色 ― この呪文を唱えるためのコストはあなたのマナゾーンにある緑の単色カード1枚につき{1}少なくなる。",
+      "あなたのマナゾーンにあるカードのマナ総量の合計が30以上なら、この呪文を唱えるためのコストは{5}少なくなる。",
+      "トランプル",
+      "緑の守護者 ヴェルドグランが戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。緑の守護者 ヴェルドグランはそれと決闘する。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "costDown",
+        "per": {
+          "count": "primary",
+          "color": "G"
+        },
+        "mult": 1,
+        "label": "原色"
+      },
+      {
+        "a": "costDown",
+        "n": 5,
+        "if": {
+          "manaMV": 30
+        }
+      },
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "duel",
+            "tg": [
+              0
+            ],
+            "self": true
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc32",
+    "name": "焼け跡の大樹",
+    "cost": "{9}{G}{G}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "flavor": "赤の守護者が倒れた場所には、灰しか残らなかった。百年後、そこに最初の芽が出た。",
+    "subtype": "ツリーフォーク",
+    "power": 11,
+    "toughness": 11,
+    "text": [
+      "原色 ― この呪文を唱えるためのコストはあなたのマナゾーンにある緑の単色カード1枚につき{1}少なくなる。",
+      "到達",
+      "紋章 ― あなたが唱えるマナ総量が11以上の呪文を唱えるためのコストは{1}少なくなる。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "costDown",
+        "per": {
+          "count": "primary",
+          "color": "G"
+        },
+        "mult": 1,
+        "label": "原色"
+      },
+      {
+        "a": "kw",
+        "kw": "到達"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "discount",
+          "filter": {
+            "minMV": 11
+          },
+          "n": 1
+        },
+        "from": "mana"
+      }
+    ]
+  },
+  {
+    "id": "pc33",
+    "name": "地鳴りの巨亀",
+    "cost": "{9}{G}{G}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "カメ",
+    "power": 8,
+    "toughness": 14,
+    "text": [
+      "原色 ― この呪文を唱えるためのコストはあなたのマナゾーンにある緑の単色カード1枚につき{1}少なくなる。",
+      "染色 ― このターン、あなたは追加で1回チャージを行ってもよい。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "costDown",
+        "per": {
+          "count": "primary",
+          "color": "G"
+        },
+        "mult": 1,
+        "label": "原色"
+      },
+      {
+        "a": "trigger",
+        "on": "charge",
+        "effects": [
+          {
+            "do": "extraCharge",
+            "n": 1
+          }
+        ],
+        "if": "pureColor",
+        "dye": true
+      }
+    ]
+  },
+  {
+    "id": "pc34",
+    "name": "黄金郷の山崩し",
+    "cost": "{9}{G}{G}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "subtype": "巨人",
+    "power": 10,
+    "toughness": 10,
+    "text": [
+      "原色 ― この呪文を唱えるためのコストはあなたのマナゾーンにある緑の単色カード1枚につき{1}少なくなる。",
+      "このゲームであなたが開拓進化をしたなら、この呪文を唱えるためのコストは{3}少なくなる。",
+      "紋章 ― 埋蔵 4(マナゾーンにあるこのカードを開拓進化で墓地に置くとき、マナ総量に+4して数える)"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "costDown",
+        "per": {
+          "count": "primary",
+          "color": "G"
+        },
+        "mult": 1,
+        "label": "原色"
+      },
+      {
+        "a": "costDown",
+        "n": 3,
+        "if": "pioneeredGame"
+      },
+      {
+        "a": "buried",
+        "n": 4,
+        "from": "mana"
+      }
+    ]
+  },
+  {
+    "id": "pc35",
+    "name": "原色の巨獣",
+    "cost": "{10}{G}{G}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "ビースト",
+    "power": 12,
+    "toughness": 12,
+    "text": [
+      "原色 ― この呪文を唱えるためのコストはあなたのマナゾーンにある緑の単色カード1枚につき{1}少なくなる。",
+      "この呪文を唱えるためのコストはあなたがコントロールするパワーが4以上のクリーチャー1体につき{2}少なくなる。",
+      "トランプル"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "costDown",
+        "per": {
+          "count": "primary",
+          "color": "G"
+        },
+        "mult": 1,
+        "label": "原色"
+      },
+      {
+        "a": "costDown",
+        "per": {
+          "count": "perm",
+          "filter": {
+            "type": "クリーチャー",
+            "minPower": 4
+          }
+        },
+        "mult": 2
+      },
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      }
+    ]
+  },
+  {
+    "id": "pc36",
+    "name": "森喰らいの大蛇",
+    "cost": "{10}{G}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "ヘビ",
+    "power": 11,
+    "toughness": 9,
+    "text": [
+      "原色 ― この呪文を唱えるためのコストはあなたのマナゾーンにある緑の単色カード1枚につき{1}少なくなる。",
+      "この呪文を唱えるためのコストはあなたの墓地にあるクリーチャー・カード1枚につき{1}少なくなる。",
+      "トランプル"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "costDown",
+        "per": {
+          "count": "primary",
+          "color": "G"
+        },
+        "mult": 1,
+        "label": "原色"
+      },
+      {
+        "a": "costDown",
+        "per": {
+          "count": "graveyardCreatures"
+        }
+      },
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      }
+    ]
+  },
+  {
+    "id": "pc37",
+    "name": "苔の巨人",
+    "cost": "{8}{G}{G}{G}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "巨人",
+    "power": 9,
+    "toughness": 9,
+    "text": [
+      "原色 ― この呪文を唱えるためのコストはあなたのマナゾーンにある緑の単色カード1枚につき{1}少なくなる。",
+      "染色 ― カードを1枚引く。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "costDown",
+        "per": {
+          "count": "primary",
+          "color": "G"
+        },
+        "mult": 1,
+        "label": "原色"
+      },
+      {
+        "a": "trigger",
+        "on": "charge",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "if": "pureColor",
+        "dye": true
+      }
+    ]
+  },
+  {
+    "id": "pc38",
+    "name": "大角の群れ長",
+    "cost": "{9}{G}{G}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "ビースト",
+    "power": 10,
+    "toughness": 8,
+    "text": [
+      "原色 ― この呪文を唱えるためのコストはあなたのマナゾーンにある緑の単色カード1枚につき{1}少なくなる。",
+      "トランプル",
+      "染色 ― あなたのライブラリーの一番上のカードをあなたのマナゾーンに置く。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "costDown",
+        "per": {
+          "count": "primary",
+          "color": "G"
+        },
+        "mult": 1,
+        "label": "原色"
+      },
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      },
+      {
+        "a": "trigger",
+        "on": "charge",
+        "effects": [
+          {
+            "do": "rampTop",
+            "n": 1
+          }
+        ],
+        "if": "pureColor",
+        "dye": true
+      }
+    ]
+  },
+  {
+    "id": "pc39",
+    "name": "根張りの巨像",
+    "cost": "{10}{G}{G}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "ツリーフォーク",
+    "power": 11,
+    "toughness": 12,
+    "text": [
+      "原色 ― この呪文を唱えるためのコストはあなたのマナゾーンにある緑の単色カード1枚につき{1}少なくなる。",
+      "到達",
+      "紋章 ― あなたがコントロールする緑のクリーチャーはトランプルを持つ。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "costDown",
+        "per": {
+          "count": "primary",
+          "color": "G"
+        },
+        "mult": 1,
+        "label": "原色"
+      },
+      {
+        "a": "kw",
+        "kw": "到達"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 0,
+          "t": 0,
+          "filter": {
+            "type": "クリーチャー",
+            "color": "G"
+          },
+          "others": false,
+          "kw": [
+            "トランプル"
+          ]
+        },
+        "from": "mana"
+      }
+    ]
+  },
+  {
+    "id": "pc40",
+    "name": "雷鳴の巨牛",
+    "cost": "{11}{G}{G}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "subtype": "ビースト",
+    "power": 13,
+    "toughness": 13,
+    "text": [
+      "原色 ― この呪文を唱えるためのコストはあなたのマナゾーンにある緑の単色カード1枚につき{1}少なくなる。",
+      "あなたのマナゾーンに埋蔵を持つカードがあるなら、この呪文を唱えるためのコストは{2}少なくなる。",
+      "速攻、トランプル"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "costDown",
+        "per": {
+          "count": "primary",
+          "color": "G"
+        },
+        "mult": 1,
+        "label": "原色"
+      },
+      {
+        "a": "costDown",
+        "n": 2,
+        "if": "buriedInMana"
+      },
+      {
+        "a": "kw",
+        "kw": "速攻"
+      },
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      }
+    ]
+  },
+  {
+    "id": "pc41",
+    "name": "大地の呼び声",
+    "cost": "{1}{G}",
+    "type": "ソーサリー",
+    "rarity": "コモン",
+    "text": [
+      "あなたのライブラリーの一番上のカードをあなたのマナゾーンに置く。原色 5(緑) ― 代わりに、あなたのライブラリーの一番上のカード2枚をあなたのマナゾーンに置く。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "rampTop",
+            "n": 1,
+            "unless": {
+              "primary": "G",
+              "n": 5
+            }
+          },
+          {
+            "do": "rampTop",
+            "n": 2,
+            "if": {
+              "primary": "G",
+              "n": 5
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc42",
+    "name": "巨体への祝福",
+    "cost": "{G}",
+    "type": "インスタント",
+    "rarity": "コモン",
+    "text": [
+      "あなたがコントロールするクリーチャー1体を対象とする。ターン終了時まで、それは+2/+2の修整を受け、トランプルを得る。原色 5(緑) ― 代わりに、ターン終了時まで、それは+5/+5の修整を受け、トランプルを得る。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "pump",
+            "tg": 0,
+            "p": 2,
+            "t": 2,
+            "kw": [
+              "トランプル"
+            ],
+            "unless": {
+              "primary": "G",
+              "n": 5
+            }
+          },
+          {
+            "do": "pump",
+            "tg": 0,
+            "p": 5,
+            "t": 5,
+            "kw": [
+              "トランプル"
+            ],
+            "if": {
+              "primary": "G",
+              "n": 5
+            }
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "you"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc43",
+    "name": "原色の泉",
+    "cost": "{2}{G}",
+    "type": "エンチャント",
+    "rarity": "アンコモン",
+    "flavor": "「青は泉の水を調べ、白は泉で傷を洗う。わしは飲む。それだけだ」──ヴェルドグラン",
+    "text": [
+      "あなたが唱えるマナ総量が11以上の呪文を唱えるためのコストは{2}少なくなる。"
+    ],
+    "tags": [
+      "原色",
+      "エンチャント"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "discount",
+          "filter": {
+            "minMV": 11
+          },
+          "n": 2
+        }
+      }
+    ]
+  },
+  {
+    "id": "pc44",
+    "name": "森を呼ぶ",
+    "cost": "{9}{G}{G}",
+    "type": "ソーサリー",
+    "rarity": "レア",
+    "text": [
+      "原色 ― この呪文を唱えるためのコストはあなたのマナゾーンにある緑の単色カード1枚につき{1}少なくなる。",
+      "あなたのライブラリーの一番上のカード5枚をあなたのマナゾーンに置く。その中からマナ総量11以上のクリーチャー・カード1枚を戦場に出してもよい。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "costDown",
+        "per": {
+          "count": "primary",
+          "color": "G"
+        },
+        "mult": 1,
+        "label": "原色"
+      },
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "callForest",
+            "n": 5,
+            "minMV": 11
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pc45",
+    "name": "大地踏み",
+    "cost": "{10}{G}",
+    "type": "ソーサリー",
+    "rarity": "アンコモン",
+    "text": [
+      "原色 ― この呪文を唱えるためのコストはあなたのマナゾーンにある緑の単色カード1枚につき{1}少なくなる。",
+      "あなたがコントロールするクリーチャーのうちパワーが最も大きいもの1体は、対戦相手がコントロールするクリーチャーそれぞれに、そのパワーに等しいダメージを与える。"
+    ],
+    "tags": [
+      "原色"
+    ],
+    "pack": "p115",
+    "packs": [
+      "p115"
+    ],
+    "abilities": [
+      {
+        "a": "costDown",
+        "per": {
+          "count": "primary",
+          "color": "G"
+        },
+        "mult": 1,
+        "label": "原色"
+      },
+      {
+        "a": "spell",
+        "effects": [
+          {
+            "do": "stomp"
+          }
+        ]
+      }
+    ]
   }
 ]

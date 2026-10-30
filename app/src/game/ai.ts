@@ -141,6 +141,15 @@ function keepValue(g: Game, p: PlayerId, c: Card): number {
 }
 
 /** まだ足りない色(手札の色マナ記号と、マナゾーンの色の差) */
+/** マナゾーンがすべて同じ1色なら、その色 */
+function pureColorOf(g: Game, p: PlayerId): Color | null {
+  const mana = g.players[p].mana;
+  if (!mana.length) return null;
+  const first = manaColors(mana[0]);
+  if (first.length !== 1) return null;
+  return mana.every((m) => { const cs = manaColors(m); return cs.length === 1 && cs[0] === first[0]; }) ? first[0] : null;
+}
+
 function colorNeed(g: Game, p: PlayerId, except?: Obj): Record<Color | "C", number> {
   const need: Record<Color | "C", number> = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
   for (const o of g.players[p].hand) {
@@ -201,8 +210,17 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
       for (const c of cardColors(o.card.cost)) if (need[c] > 0) s -= 1.2;
       if (cardColors(o.card.cost).length === 0 && need.C > 0) s -= 1.2;
       if (cardColors(o.card.cost).length >= 2) s += 0.6; // タップ状態で置かれる
-      // 今すぐ唱えたいカードは残す
-      if (manaValue(o.card.cost) <= me.mana.length + 1 && manaValue(o.card.cost) >= 1) s += 0.8;
+      // 今すぐ唱えたいカードは残す(原色などのコスト軽減を反映した実際のコストで見る)
+      const eff = manaValue(g.effectiveCost(p, o, "hand") ?? o.card.cost);
+      if (eff <= me.mana.length + 1 && manaValue(o.card.cost) >= 1) s += 0.8;
+      // 軽減で大きく安くなったカード(原色の巨体など)は、もうすぐ唱えられるなら残す
+      if (manaValue(o.card.cost) - eff >= 3 && eff <= me.mana.length + 2) s += 2;
+      // 単色デッキ:マナゾーンが純色なら、それを崩すカード(別の色・多色・欠色)はマナにしない
+      const pureNow = pureColorOf(g, p);
+      if (pureNow) {
+        const cs = cardColors(o.card.cost);
+        if (!(cs.length === 1 && cs[0] === pureNow)) s += 2.5;
+      }
       if (!best || s < best.s) best = { a, s };
     }
     // 2回目以降のチャージ(追加チャージ)は、手札を使い切らないように、マナにしてよいカードだけにする
@@ -473,6 +491,15 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       if (n === 0) return -1;
       if (them.life <= n && g.creatures(g.other(p)).length === 0) return 50;
       return n * 1.2 - n * 0.9 + (them.life <= n * 2 ? 3 : 0) - (n <= 1 ? 1 : 0);
+    }
+    case "callForest":
+      // マナが大きく増え、巨体が出ることもある
+      return e.n * 1.2 + 3;
+    case "stomp": {
+      const mine = g.creatures(p);
+      if (!mine.length) return -1;
+      const pw = Math.max(...mine.map((o) => g.power(o)));
+      return g.creatures(g.other(p)).filter((o) => g.toughness(o) - o.damage <= pw).reduce((v, o) => v + creatureValue(g, o), 0) - 1;
     }
     case "heist":
       return me.extra.length ? Math.min(e.n, me.extra.length) * 1.4 : 0.8;

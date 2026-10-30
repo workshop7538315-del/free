@@ -103,6 +103,16 @@ export const entrata = (n, cat) => ({ a: "entrata", n, cat });
 export const pioneer = (n, color, grand = false) => ({ a: "pioneer", n, color, ...(grand ? { grand } : {}) });
 /** 組み立て【color】:秘蔵庫の発明品。partner(ID と名前)に武装進化する */
 export const assemble = (color, partner, partnerName, cond = "attacked") => ({ a: "assemble", color, partner, partnerName, cond });
+/** 原色 ―:マナゾーンの color の単色カード1枚につきコスト{1}軽減(第11.5弾) */
+export const primaryDown = (color, mult = 1) => ({ a: "costDown", per: { count: "primary", color }, mult, label: "原色" });
+/** そのほかのコスト軽減。per があれば「per 1つにつき{mult}」、なければ{n}。if があればその条件のときだけ */
+export const costDown = (opts) => ({ a: "costDown", ...opts });
+/** 染色 ―:このカードをチャージしたとき、マナゾーンが純色なら */
+export const dye = (effects, targets) => ({ ...trig("charge")(effects, targets), if: "pureColor", dye: true });
+/** あなたが各ターンに2枚目のカードを引くたび */
+export const secondDraw = trig("secondDraw");
+/** 原色の数(効果の量に使う) */
+export const primaryCount = (color) => ({ count: "primary", color });
 /** 純色払い */
 export const pureCost = () => ({ a: "pureCost" });
 /** 陶酔 ―:このカードが手札から捨てられたとき */
@@ -259,6 +269,8 @@ export const E = {
   createMana: (card, n = 1) => ({ do: "createMana", card, n }),
   /** 強盗 N(fallback:秘蔵庫が空のときに手札に加える生成カード) */
   perApplause: (cat, div, effects) => ({ do: "perApplause", cat, div, effects: [effects].flat() }),
+  callForest: (n, minMV) => ({ do: "callForest", n, minMV }),
+  stomp: () => ({ do: "stomp" }),
   handBlast: (per) => ({ do: "handBlast", ...(per ? { per } : {}) }),
   heist: (n, fallback) => ({ do: "heist", n, ...(fallback ? { fallback } : {}) }),
   /** 純色払いの色に応じたキーワードを得る */
@@ -317,6 +329,7 @@ const COUNT_TEXT = {
   burned: "燃焼した枚数",
   crests: "あなたのマナゾーンにある紋章を持つカードの枚数",
   colorlessMana: "あなたのマナゾーンにある欠色のカード(裏向きを含む)の枚数",
+  graveyardCreatures: "あなたの墓地にあるクリーチャー・カードの枚数",
 };
 const PER_TEXT = {
   mana: "あなたのマナゾーンにあるカード1枚につき",
@@ -327,14 +340,17 @@ const PER_TEXT = {
   colorsInMana: "あなたのマナゾーンにあるカードの色1色につき",
   crests: "あなたのマナゾーンにある紋章を持つカード1枚につき",
   colorlessMana: "あなたのマナゾーンにある欠色のカード1枚につき",
+  graveyardCreatures: "あなたの墓地にあるクリーチャー・カード1枚につき",
 };
 function countText(n) {
   if (n.count === "applause") return `あなたの喝采【${n.cat}】の数`;
+  if (n.count === "primary") return `原色(あなたのマナゾーンにある${COLOR_JA[n.color]}の単色カードの枚数)`;
   if (n.count === "perm") return `あなたがコントロールする${filterPhrase(n.filter, "permanent")}の数`;
   return COUNT_TEXT[n.count];
 }
 function perText(n) {
   if (n.count === "applause") return `あなたの喝采【${n.cat}】1につき`;
+  if (n.count === "primary") return `あなたのマナゾーンにある${COLOR_JA[n.color]}の単色カード1枚につき`;
   if (n.count === "perm") return `あなたがコントロールする${filterPhrase(n.filter, "permanent")}1${unitOf(n.filter)}につき`;
   return PER_TEXT[n.count];
 }
@@ -352,6 +368,7 @@ export function condLabel(c) {
   if (typeof c === "object") {
     if ("armed" in c) return `マナ武装 ${c.n}(${COLOR_JA[c.armed]})`;
     if ("applause" in c) return `喝采【${c.applause}】${c.n}`;
+    if ("primary" in c) return `原色 ${c.n}(${COLOR_JA[c.primary]})`;
     return null;
   }
   return (
@@ -386,8 +403,9 @@ function unitOf(f = {}) {
 function condPrefix(c) {
   const label = condLabel(c);
   if (label) return `${label} ― `;
+  if (typeof c === "object" && "manaMV" in c) return `あなたのマナゾーンにあるカードのマナ総量の合計が${c.manaMV}以上なら、`;
   if (typeof c === "object") return `あなたが${filterPhrase(c.control, "permanent")}を${c.n}${unitOf(c.control)}以上コントロールしているなら、`;
-  return { burned: "燃焼したなら、", kicked: "追加払いしたなら、", fewerMana: "あなたのマナゾーンのカードが対戦相手より少ないなら、", notMoreMana: "あなたのマナゾーンのカードが対戦相手の枚数以下なら、" }[c];
+  return { pioneeredGame: "このゲームであなたが開拓進化をしたなら、", buriedInMana: "あなたのマナゾーンに埋蔵を持つカードがあるなら、", burned: "燃焼したなら、", kicked: "追加払いしたなら、", fewerMana: "あなたのマナゾーンのカードが対戦相手より少ないなら、", notMoreMana: "あなたのマナゾーンのカードが対戦相手の枚数以下なら、" }[c];
 }
 
 /** 条件の前置き(常在能力に付けるとき) */
@@ -403,6 +421,8 @@ function condPlain(c) {
   if (typeof c === "object") {
     if ("armed" in c) return `あなたのマナゾーンに${COLOR_JA[c.armed]}のカードが${c.n}枚以上ある`;
     if ("applause" in c) return `あなたの喝采【${c.applause}】が${c.n}以上ある`;
+    if ("primary" in c) return `あなたのマナゾーンに${COLOR_JA[c.primary]}の単色カードが${c.n}枚以上ある`;
+    if ("manaMV" in c) return `あなたのマナゾーンにあるカードのマナ総量の合計が${c.manaMV}以上である`;
     return `あなたが${filterPhrase(c.control, "permanent")}を${c.n}${unitOf(c.control)}以上コントロールしている`;
   }
   return {
@@ -415,6 +435,8 @@ function condPlain(c) {
     chain: "このターン、あなたがインスタントかソーサリーを2つ以上唱えた",
     vaultEmpty: "あなたの秘蔵庫にカードがない",
     pureColor: "あなたのマナゾーンのカードがすべて同じ1色である",
+    pioneeredGame: "このゲームであなたが開拓進化をした",
+    buriedInMana: "あなたのマナゾーンに埋蔵を持つカードがある",
     vacuum: "あなたのマナゾーンのカードがすべて欠色である",
     intrigue: "このターン、対戦相手がカードを捨てたか、対戦相手のクリーチャーが戦場を離れた",
     threshold: "あなたの墓地にカードが7枚以上ある",
@@ -584,6 +606,10 @@ function effectText(e, name, abil, notes) {
       return `${name}は、純色払いで支払った色に応じて、白なら警戒、青なら飛行、黒なら接死、赤なら速攻、緑ならトランプルを得る。`;
     case "perApplause":
       return `このゲームで得た喝采【${e.cat}】の累計${e.div}につき1回、次を行う:「${e.effects.map((x) => effectText(x, name, abil, notes)).join("")}」`;
+    case "callForest":
+      return `あなたのライブラリーの一番上のカード${e.n}枚をあなたのマナゾーンに置く。その中からマナ総量${e.minMV}以上のクリーチャー・カード1枚を戦場に出してもよい。`;
+    case "stomp":
+      return "あなたがコントロールするクリーチャーのうちパワーが最も大きいもの1体は、対戦相手がコントロールするクリーチャーそれぞれに、そのパワーに等しいダメージを与える。";
     case "handBlast":
       return e.per
         ? `このゲームで得た喝采【${e.per.cat}】の累計${e.per.div}につき1回、次を行う(0回なら何もしない):あなたの手札をすべて捨て、捨てた枚数に等しい回数、対戦相手か対戦相手のクリーチャーをランダムに1つ選び、1点のダメージを与える。(2回目以降は最初に捨てた枚数を使う)`
@@ -665,6 +691,7 @@ const TRIGGER_PREFIX = {
   discard: (n, f) => `あなたが${f ? filterPhrase(f, "card") : "カード"}を捨てるたび、`,
   toGraveyard: (n) => `${n}がどこからでも墓地に置かれたとき、`,
   uscita: () => "ウシータ ― ",
+  secondDraw: () => "あなたが各ターンに2枚目のカードを引くたび、",
 };
 
 function staticText(abil, name, card) {
@@ -764,6 +791,12 @@ function abilityTextBody(abil, card) {
       return `リリース召喚 ${abil.n}(${(abil.from ?? [{ type: "エンチャント" }]).map((f) => (Object.keys(f).length ? filterPhrase(f, "permanent") : "パーマネント")).join("か")})`;
     case "offering":
       return `奉納 ${abil.n}${abil.sub ? `(${abil.sub})` : ""}`;
+    case "costDown": {
+      const amount = abil.per !== undefined ? `${perText(abil.per)}{${abil.mult ?? 1}}` : `{${abil.n}}`;
+      const body = `この呪文を唱えるためのコストは${amount}少なくなる。`;
+      if (abil.label) return `${abil.label} ― ${body}`;
+      return abil.if ? condPrefix(abil.if) + body : body;
+    }
     case "voidAffinity":
       return "虚食(この呪文を唱えるためのコストは、あなたのマナゾーンにある裏向きのカード1枚につき{1}少なくなる)";
     case "affinity":
@@ -779,6 +812,8 @@ function abilityTextBody(abil, card) {
       if (abil.modes) return `次から1つを選ぶ。${abil.modes.map((m, i) => `${"①②③④"[i]}${bodyText(m, name)}`).join("")}`;
       return bodyText(abil, name);
     case "trigger": {
+      // 染色 ―:チャージしたとき、マナゾーンが純色なら
+      if (abil.dye) return "染色 ― " + bodyText(abil, name, null) + (abil.oncePerTurn ? "(この能力は1ターンに1回だけ誘発する)" : "");
       const pre = TRIGGER_PREFIX[abil.on](name, abil.filter);
       const shared = abil.if ? null : sharedCond(abil);
       const body = bodyText(abil, name, shared);

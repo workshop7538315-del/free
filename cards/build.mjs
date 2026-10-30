@@ -168,9 +168,11 @@ function isSymmetricWipe(c) {
   );
 }
 
-function buildDeck({ colors, theme, set, generic = false, allowColorless = false, highlander = false, themeSpells = 8, themeCreatures = 16, core = {}, restNonTheme = false, extra = {} }) {
+function buildDeck({ colors, theme, set, generic = false, allowColorless = false, highlander = false, themeSpells = 8, themeCreatures = 16, core = {}, restNonTheme = false, extra = {}, pure = false }) {
   const fits = (c) => {
     if (c.cost.includes("{C}") && !allowColorless) return false;
+    // pure:単色デッキ。マナゾーンを純色に保つため、欠色・多色・混成のカードは自動では入れない
+    if (pure && (colorsOf(c.cost).length !== 1 || c.cost.includes("/"))) return false;
     if (generic && c.tags?.length) return false;
     const cs = colorsOf(c.cost);
     return cs.every((x) => colors.includes(x));
@@ -280,7 +282,15 @@ const DECKS = [
   { id: "t-equip", set: "eqp", themeSpells: 11, name: "装備:武具の行進(赤白)", colors: ["R", "W"], theme: tag("装備"), archetype: "装備", core: { hr49: 2, hr50: 2, hr51: 2 }, extra: { cm09: 2, cm10: 2, cm11: 2, cm12: 2 } },
   { id: "t-heartbeat", set: "hrt", name: "鼓動:大地の脈動(赤緑)", colors: ["R", "G"], theme: tag("鼓動"), archetype: "鼓動", core: { hr52: 2, hr53: 2, hr54: 2 }, extra: { eld01: 2, eld02: 2, eld03: 2, eld05: 2 } },
   { id: "t-armed-r", set: "arm", name: "マナ武装:赤単の烈火", colors: ["R"], theme: tag("マナ武装"), archetype: "マナ武装", core: { hr55: 2, hr56: 2, hr57: 2, hr87: 1, hr88: 2 } },
-  { id: "t-armed-g", set: "arm", name: "マナ武装:緑単の巨獣", colors: ["G"], theme: tag("マナ武装"), archetype: "マナ武装", core: { hr58: 1, hr59: 1, hr60: 1, hr87: 1, hr88: 1 }, extra: { eld01: 2, eld02: 2, eld03: 2, eld05: 2 } },
+  // 第11.5弾で作り直し:マナ総量11以上の巨体を、原色と黄金郷のランプ・開拓進化で出す
+  { id: "t-armed-g", name: "原色:緑単の巨獣", colors: ["G"], pure: true, theme: tag("原色"), archetype: "原色",
+    core: { pc31: 2, pc32: 2, pc33: 3, pc34: 2, pc35: 2, pc36: 1, pc37: 3, pc38: 3, pc39: 2, pc40: 1, pc41: 4, pc42: 2, pc43: 3, pc44: 1, pc45: 1, eld14: 3, eld15: 3, hr58: 1, hr60: 1 },
+    extra: { eld01: 2, eld02: 2, eld03: 2, eld05: 2 } },
+  // 第11.5弾:白単(回復)と青単(ドロー)
+  { id: "t-mono-w", name: "原色:白単の癒しの聖堂", colors: ["W"], pure: true, theme: tag("原色"), archetype: "原色",
+    core: { pc01: 2, pc02: 2, pc03: 3, pc04: 4, pc06: 2, pc07: 2, pc08: 4, pc09: 2, pc10: 3, pc12: 2, pc13: 3, pc15: 2, lif01: 3, lif05: 2, lif13: 2 } },
+  { id: "t-mono-u", name: "原色:青単の知識の塔", colors: ["U"], pure: true, theme: tag("原色"), archetype: "原色",
+    core: { pc16: 2, pc17: 2, pc18: 2, pc19: 3, pc20: 3, pc21: 3, pc22: 2, pc23: 3, pc24: 3, pc25: 2, pc26: 3, pc27: 2, pc28: 2, pc29: 2, u021: 2, u012: 2 } },
   { id: "t-goblin", name: "部族:ゴブリンの大群(赤単)", colors: ["R"], theme: (c) => sub("ゴブリン")(c), archetype: "部族", core: { hr61: 2, hr62: 2, hr63: 2, hr88: 2 }, extra: { cm09: 2, cm10: 2, cm11: 2, cm12: 2 } },
   { id: "t-elf", name: "部族:エルフの森(緑単)", colors: ["G"], theme: (c) => sub("エルフ")(c), archetype: "部族", core: { hr64: 2, hr65: 2, hr66: 2, hr88: 2 }, extra: { eld01: 2, eld02: 2, eld03: 2, eld05: 2 } },
   { id: "t-zombie", name: "部族:ゾンビの行進(黒単)", colors: ["B"], theme: (c) => sub("ゾンビ")(c), archetype: "部族", core: { hr67: 2, hr68: 2, hr69: 2, hr87: 1, hr88: 2 } },
@@ -304,9 +314,9 @@ const DECKS = [
   { id: "t-void-titan", set: "vd", name: "虚無:始祖の目覚め(欠色)", colors: [], allowColorless: true, theme: tag("虚無"), archetype: "虚無", core: { hr82: 2, hr83: 2, hr84: 2, vd06: 4, adv27: 3, vd10: 4, vd28: 3, vd14: 2, vd18: 3, vd01: 3, vd04: 2, vd41: 2, vd42: 2, vd43: 1 } },
 ];
 
-const decks = DECKS.map(({ theme, set, generic, allowColorless, highlander, themeSpells, themeCreatures, core, restNonTheme, extra, ...d }) => ({
+const decks = DECKS.map(({ theme, set, generic, allowColorless, highlander, themeSpells, themeCreatures, core, restNonTheme, extra, pure, ...d }) => ({
   ...d,
-  cards: buildDeck({ colors: d.colors, theme, set, generic, allowColorless, highlander, themeSpells, themeCreatures, core, restNonTheme, extra }),
+  cards: buildDeck({ colors: d.colors, theme, set, generic, allowColorless, highlander, themeSpells, themeCreatures, core, restNonTheme, extra, pure }),
 }));
 writeFileSync(join(here, process.env.NOHERO ? "decks-nohero.json" : "decks.json"), JSON.stringify(decks, null, 2) + "\n");
 

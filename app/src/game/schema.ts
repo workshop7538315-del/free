@@ -66,7 +66,11 @@ export type CondName =
   /** 金庫破り:自分の秘蔵庫にカードがない(第10弾) */
   | "vaultEmpty"
   /** 純色:自分のマナゾーンのカードがすべて同じ1色(1枚以上。第11弾) */
-  | "pureColor";
+  | "pureColor"
+  /** このゲームで、自分が開拓進化をした */
+  | "pioneeredGame"
+  /** 自分のマナゾーンに埋蔵を持つカードがある */
+  | "buriedInMana";
 
 export type Cond =
   | CondName
@@ -75,12 +79,16 @@ export type Cond =
   /** 指定したパーマネントをN個以上コントロールしている */
   | { control: Filter; n: number }
   /** 喝采【cat】が N 以上 */
-  | { applause: Applause; n: number };
+  | { applause: Applause; n: number }
+  /** 原色 N:自分のマナゾーンにその色の単色カードがN枚以上(多色・欠色・裏向きは数えない。第11.5弾) */
+  | { primary: Color; n: number }
+  /** 自分のマナゾーンのカードのマナ総量の合計が N 以上 */
+  | { manaMV: number };
 
-export type CountKind = "mana" | "creatures" | "graveyard" | "colorsInMana" | "hand" | "oppCreatures" | "burned" | "crests" | "colorlessMana";
+export type CountKind = "mana" | "creatures" | "graveyard" | "graveyardCreatures" | "colorsInMana" | "hand" | "oppCreatures" | "burned" | "crests" | "colorlessMana";
 
 /** 数。"X"=唱えたときのX、count=数を数える、perm=条件に合う自分のパーマネントの数 */
-export type Amount = number | "X" | { count: CountKind } | { count: "perm"; filter: Filter } | { count: "applause"; cat: Applause };
+export type Amount = number | "X" | { count: CountKind } | { count: "perm"; filter: Filter } | { count: "applause"; cat: Applause } | { count: "primary"; color: Color };
 
 export type TargetSpec =
   | {
@@ -168,6 +176,10 @@ export type Effect = Common &
     /** 強盗 N:自分の秘蔵庫からN枚をタップ状態でマナゾーンに置く(空なら《札束》を生成) */
     | { do: "heist"; n: number; fallback?: GeneratedCard }
     | { do: "handBlast"; per?: { cat: Applause; div: number } }
+    /** ライブラリーの上から n 枚をマナゾーンに置き、その中のマナ総量 minMV 以上のクリーチャー1枚を戦場に出してよい */
+    | { do: "callForest"; n: number; minMV: number }
+    /** あなたのパワー最大のクリーチャーが、対戦相手のクリーチャーそれぞれにそのパワーに等しいダメージを与える */
+    | { do: "stomp" }
     | { do: "perApplause"; cat: Applause; div: number; effects: Effect[] }
     /** このカード(効果の発生源)をマナゾーンに置く(陶酔で、捨てられた墓地から) */
     | { do: "selfToMana" }
@@ -213,6 +225,8 @@ export type TriggerEvent =
   | "castSelf"
   /** このカードがどこからでも墓地に置かれたとき */
   | "toGraveyard"
+  /** あなたが各ターンに2枚目のカードを引くたび(第11.5弾) */
+  | "secondDraw"
   /** あなたが(filter に合う)パーマネントを生け贄に捧げるたび */
   | "sacrifice"
   /** ウシータ:この秘蔵庫のカードが戦場を離れて秘蔵庫に戻るとき */
@@ -303,6 +317,8 @@ export type Ability = { text?: string } & (
   | { a: "equip"; cost: string }
   /** 虚食:自分のマナゾーンの裏向きのカード1枚につき、唱えるコストが{1}少なくなる */
   | { a: "voidAffinity" }
+  /** コスト軽減(第11.5弾):per があれば「per 1つにつき{mult}」、なければ{n}。if があればその条件のときだけ */
+  | { a: "costDown"; per?: Amount; mult?: number; n?: number; if?: Cond; label?: string }
   /** 共鳴:filter に合う自分のパーマネント1つにつき、唱えるコストが{1}少なくなる */
   | { a: "affinity"; filter: Filter }
   /** 零式:条件を満たしていれば、マナを払わずに唱えてもよい */

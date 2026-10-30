@@ -111,6 +111,10 @@ export type Player = {
   /** 加護(第9.5弾)。喝采と同じ加護の枠を使う */
   blessings: string[];
   pioneeredThisTurn: boolean;
+  /** このゲームで開拓進化をしたか */
+  pioneeredGame: boolean;
+  /** このターンに引いた枚数(2枚目を引いたときの誘発用) */
+  drawsThisTurn: number;
   assembledThisTurn: boolean;
   evolvedThisTurn: boolean;
 };
@@ -339,6 +343,8 @@ export class Game {
       enteredThisTurn: new Set(),
       blessings: [],
       pioneeredThisTurn: false,
+      pioneeredGame: false,
+      drawsThisTurn: 0,
       assembledThisTurn: false,
       evolvedThisTurn: false,
     });
@@ -540,6 +546,8 @@ export class Game {
     if (typeof c === "object") {
       if ("armed" in c) return pl.mana.filter((o) => manaColors(o).includes(c.armed)).length >= c.n;
       if ("applause" in c) return (pl.applause[c.applause] ?? 0) >= c.n;
+      if ("primary" in c) return this.primaryCount(p, c.primary) >= c.n;
+      if ("manaMV" in c) return pl.mana.reduce((s, o) => s + (o.faceDown ? 0 : manaValue(o.card.cost)), 0) >= c.manaMV;
       return pl.battlefield.filter((o) => matchFilter(o.card, c.control, this.colorsOf(o))).length >= c.n;
     }
     switch (c) {
@@ -565,6 +573,10 @@ export class Game {
         return pl.spellsThisTurn >= 2;
       case "vaultEmpty":
         return pl.extra.length === 0;
+      case "pioneeredGame":
+        return pl.pioneeredGame;
+      case "buriedInMana":
+        return pl.mana.some((o) => !o.faceDown && abilitiesOf(o.card).some((a) => a.a === "buried"));
       case "pureColor": {
         if (!pl.mana.length) return false;
         const first = manaColors(pl.mana[0]);
@@ -617,7 +629,19 @@ export class Game {
         return pl.battlefield.filter((o) => matchFilter(o.card, n.filter, this.colorsOf(o))).length;
       case "applause":
         return pl.applause[n.cat] ?? 0;
+      case "primary":
+        return this.primaryCount(p, n.color);
+      case "graveyardCreatures":
+        return pl.graveyard.filter((o) => isCreatureCard(o.card)).length;
     }
+  }
+
+  /** 原色:マナゾーンにある、その色の単色カードの枚数(多色・欠色・裏向きは数えない) */
+  primaryCount(p: PlayerId, color: Color): number {
+    return this.players[p].mana.filter((o) => {
+      const cs = manaColors(o);
+      return cs.length === 1 && cs[0] === color;
+    }).length;
   }
 
   /** その領域で働いている能力。紋章はマナゾーンでだけ、それ以外は戦場でだけ働く */
@@ -971,6 +995,9 @@ export class Game {
     const aff = abilityOf(c, "affinity");
     if (aff) discount += this.players[p].battlefield.filter((x) => matchFilter(x.card, aff.filter, this.colorsOf(x))).length;
     if (abilityOf(c, "voidAffinity")) discount += this.players[p].mana.filter((x) => x.faceDown).length;
+    // 第11.5弾のコスト軽減(原色など)
+    for (const a of abilitiesOf(c))
+      if (a.a === "costDown" && (!a.if || this.cond(a.if, p))) discount += a.per !== undefined ? this.count(a.per, p) * (a.mult ?? 1) : (a.n ?? 0);
     // 金庫破り:秘蔵庫が空なら、マナ解放のコストが少なくなる
     const crack = abilityOf(c, "vaultCrack");
     if (crack && from === "mana" && this.players[p].extra.length === 0) discount += crack.n;
@@ -1647,6 +1674,7 @@ export class Game {
     if (this.canMillPioneer(p, pi.n, minCount))
       mill = !canBoard || (await this.ask<boolean>(p, { kind: "yesno", prompt: `加護《${BLESSING_ELDORADO}》:マナゾーンの代わりに、ライブラリーの上からマナ総量の合計が${pi.n}以上になるまで墓地に置きますか?`, reason: "blessing", obj: o }));
     pl.pioneeredThisTurn = true;
+    pl.pioneeredGame = true;
     if (mill) {
       let sum = 0;
       let count = 0;
@@ -2007,6 +2035,34 @@ export class Game {
       case "extraCharge":
         pl.extraChargesThisTurn += e.n;
         break;
+      case "callForest": {
+        const placed: Obj[] = [];
+        for (let i = 0; i < e.n; i++) {
+          const o = pl.library[0];
+          if (!o) break;
+          this.putIntoMana(o, p);
+          placed.push(o);
+        }
+        this.addLog(`ライブラリーの上から${placed.length}枚をマナゾーンに置いた`, p);
+        const big = placed.filter((o) => o.zone === "mana" && isCreatureCard(o.card) && manaValue(o.card.cost) >= e.minMV);
+        if (!big.length) break;
+        const [pick] = await this.askCards(p, `戦場に出すクリーチャーを選んでください(マナ総量${e.minMV}以上)`, big, 1, "tutor");
+        if (pick) {
+          this.addLog(`${pick.card.name}をマナゾーンから戦場に出した`, p);
+          this.enterBattlefield(pick, p);
+        }
+        break;
+      }
+      case "stomp": {
+        const mine = this.creatures(p);
+        if (!mine.length) break;
+        const big = mine.reduce((a, b) => (this.power(b) > this.power(a) ? b : a));
+        const n = this.power(big);
+        if (n <= 0) break;
+        for (const o of this.creatures(opp)) this.dealDamage(big, o, n);
+        this.addLog(`${big.card.name}が対戦相手のクリーチャーそれぞれに${n}点のダメージを与えた`, p);
+        break;
+      }
       case "reclaim": {
         if (pl.mana.length === 0) break;
         if (e.then?.length) {
@@ -2289,6 +2345,8 @@ export class Game {
         return;
       }
       this.move(o, "hand");
+      pl.drawsThisTurn++;
+      if (pl.drawsThisTurn === 2) this.queueTriggers("secondDraw", this.sources(p));
     }
   }
 
@@ -2554,6 +2612,7 @@ export class Game {
       q.applauseThisTurn = {};
       q.enteredThisTurn.clear();
       q.pioneeredThisTurn = false;
+      q.drawsThisTurn = 0;
       q.assembledThisTurn = false;
       q.evolvedThisTurn = false;
       for (const o of q.battlefield) o.attackedThisTurn = false;
