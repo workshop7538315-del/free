@@ -113,6 +113,10 @@ export const blockOnly = (maxPower, maxToughness) => ({ a: "blockOnly", maxPower
 export const pioneerOppBase = (maxSum, minOpp) => ({ a: "pioneerOppBase", maxSum, minOpp });
 /** 対戦相手のクリーチャーが攻撃するたび */
 export const oppAttack = trig("oppAttack");
+/** 縁 ―《名前》:その武将をコントロールしているならコスト{n}軽減(三国志スターター) */
+export const en = (names, n) => ({ a: "costDown", n, if: { anyName: names }, en: names });
+/** 計略:秘蔵庫に入れ、献策で手札に加える */
+export const lesson = () => ({ a: "lesson" });
 /** 原色 ―:マナゾーンの color の単色カード1枚につきコスト{1}軽減(第11.5弾) */
 export const primaryDown = (color, mult = 1) => ({ a: "costDown", per: { count: "primary", color }, mult, label: "原色" });
 /** そのほかのコスト軽減。per があれば「per 1つにつき{mult}」、なければ{n}。if があればその条件のときだけ */
@@ -279,6 +283,7 @@ export const E = {
   createMana: (card, n = 1) => ({ do: "createMana", card, n }),
   /** 強盗 N(fallback:秘蔵庫が空のときに手札に加える生成カード) */
   perApplause: (cat, div, effects) => ({ do: "perApplause", cat, div, effects: [effects].flat() }),
+  learn: () => ({ do: "learn" }),
   callForest: (n, minMV) => ({ do: "callForest", n, minMV }),
   stomp: () => ({ do: "stomp" }),
   handBlast: (per) => ({ do: "handBlast", ...(per ? { per } : {}) }),
@@ -379,6 +384,7 @@ export function condLabel(c) {
     if ("armed" in c) return `マナ武装 ${c.n}(${COLOR_JA[c.armed]})`;
     if ("applause" in c) return `喝采【${c.applause}】${c.n}`;
     if ("primary" in c) return `原色 ${c.n}(${COLOR_JA[c.primary]})`;
+    if ("navy" in c) return `水軍 ${c.navy}`;
     return null;
   }
   return (
@@ -398,6 +404,9 @@ export function condLabel(c) {
       chain: "連唱",
       vaultEmpty: "金庫破り",
       pureColor: "純色",
+      hegemonyWei: "覇業【魏】",
+      hegemonyWu: "覇業【呉】",
+      hegemonyShu: "覇業【蜀】",
       vacuum: "真空",
     }[c] ?? null
   );
@@ -433,6 +442,8 @@ function condPlain(c) {
     if ("applause" in c) return `あなたの喝采【${c.applause}】が${c.n}以上ある`;
     if ("primary" in c) return `あなたのマナゾーンに${COLOR_JA[c.primary]}の単色カードが${c.n}枚以上ある`;
     if ("manaMV" in c) return `あなたのマナゾーンにあるカードのマナ総量の合計が${c.manaMV}以上である`;
+    if ("navy" in c) return `あなたのマナゾーンに青のカードが${c.navy}枚以上ある`;
+    if ("anyName" in c) return `あなたが${c.anyName.map((n) => `《${n}》`).join("か")}をコントロールしている`;
     return `あなたが${filterPhrase(c.control, "permanent")}を${c.n}${unitOf(c.control)}以上コントロールしている`;
   }
   return {
@@ -446,6 +457,9 @@ function condPlain(c) {
     vaultEmpty: "あなたの秘蔵庫にカードがない",
     pureColor: "あなたのマナゾーンのカードがすべて同じ1色である",
     pioneeredGame: "このゲームであなたが開拓進化をした",
+    hegemonyWei: "あなたの手札が対戦相手より多い",
+    hegemonyWu: "あなたのマナゾーンのカードが対戦相手より多い",
+    hegemonyShu: "戦場でパワーが最も高いクリーチャーをあなたがコントロールしている",
     buriedInMana: "あなたのマナゾーンに埋蔵を持つカードがある",
     vacuum: "あなたのマナゾーンのカードがすべて欠色である",
     intrigue: "このターン、対戦相手がカードを捨てたか、対戦相手のクリーチャーが戦場を離れた",
@@ -616,6 +630,8 @@ function effectText(e, name, abil, notes) {
       return `${name}は、純色払いで支払った色に応じて、白なら警戒、青なら飛行、黒なら接死、赤なら速攻、緑ならトランプルを得る。`;
     case "perApplause":
       return `このゲームで得た喝采【${e.cat}】の累計${e.div}につき1回、次を行う:「${e.effects.map((x) => effectText(x, name, abil, notes)).join("")}」`;
+    case "learn":
+      return "献策を行う。(秘蔵庫の計略カード1枚を見せて手札に加えるか、手札を1枚捨ててカードを1枚引く)";
     case "callForest":
       return `あなたのライブラリーの一番上のカード${e.n}枚をあなたのマナゾーンに置く。その中からマナ総量${e.minMV}以上のクリーチャー・カード1枚を戦場に出してもよい。`;
     case "stomp":
@@ -814,7 +830,12 @@ function abilityTextBody(abil, card) {
         : `${name}は、元のパワーが${abil.maxPower}以下のクリーチャーしかブロックできない(修整は数えない)。`;
     case "pioneerOppBase":
       return `対戦相手がコントロールするクリーチャーが${abil.minOpp}体以上いるなら、元のパワーとタフネスの合計が${abil.maxSum}以下の対戦相手のクリーチャー1体も、${name}の開拓進化の素材にできる。`;
+    case "lesson":
+      return "計略(このカードは秘蔵庫に入れる。献策で手札に加えられる。使ったあとは墓地に置かれる)";
+    case "navyAlways":
+      return "覇業【呉】 ― あなたのカードの「水軍」は、条件をつねに満たしているものとして扱う。";
     case "costDown": {
+      if (abil.en) return `縁 ―${abil.en.map((n) => `《${n}》`).join("")}(あなたが${abil.en.map((n) => `《${n}》`).join("か")}をコントロールしているなら、この呪文を唱えるためのコストは{${abil.n}}少なくなる)`;
       const amount = abil.per !== undefined ? `${perText(abil.per)}{${abil.mult ?? 1}}` : `{${abil.n}}`;
       const body = `この呪文を唱えるためのコストは${amount}少なくなる。`;
       if (abil.label) return `${abil.label} ― ${body}`;

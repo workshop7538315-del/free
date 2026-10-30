@@ -70,7 +70,13 @@ export type CondName =
   /** このゲームで、自分が開拓進化をした */
   | "pioneeredGame"
   /** 自分のマナゾーンに埋蔵を持つカードがある */
-  | "buriedInMana";
+  | "buriedInMana"
+  /** 覇業【魏】:自分の手札が対戦相手より多い */
+  | "hegemonyWei"
+  /** 覇業【呉】:自分のマナゾーンのカードが対戦相手より多い */
+  | "hegemonyWu"
+  /** 覇業【蜀】:戦場でパワーが最も高いクリーチャーをコントロールしている(同じなら満たす) */
+  | "hegemonyShu";
 
 export type Cond =
   | CondName
@@ -83,7 +89,11 @@ export type Cond =
   /** 原色 N:自分のマナゾーンにその色の単色カードがN枚以上(多色・欠色・裏向きは数えない。第11.5弾) */
   | { primary: Color; n: number }
   /** 自分のマナゾーンのカードのマナ総量の合計が N 以上 */
-  | { manaMV: number };
+  | { manaMV: number }
+  /** 水軍 N:自分のマナゾーンに青のカード(多色も数える)が N 枚以上(三国志スターター) */
+  | { navy: number }
+  /** 縁:名前にこれらのどれかを含むクリーチャーをコントロールしている */
+  | { anyName: string[] };
 
 export type CountKind = "mana" | "creatures" | "graveyard" | "graveyardCreatures" | "colorsInMana" | "hand" | "oppCreatures" | "burned" | "crests" | "colorlessMana";
 
@@ -180,6 +190,8 @@ export type Effect = Common &
     | { do: "callForest"; n: number; minMV: number }
     /** あなたのパワー最大のクリーチャーが、対戦相手のクリーチャーそれぞれにそのパワーに等しいダメージを与える */
     | { do: "stomp" }
+    /** 献策:秘蔵庫の計略1枚を手札に加えるか、手札を1枚捨てて1枚引く */
+    | { do: "learn" }
     | { do: "perApplause"; cat: Applause; div: number; effects: Effect[] }
     /** このカード(効果の発生源)をマナゾーンに置く(陶酔で、捨てられた墓地から) */
     | { do: "selfToMana" }
@@ -329,6 +341,10 @@ export type Ability = { text?: string } & (
   | { a: "anchor" }
   /** 一度秘蔵庫から出たら、秘蔵庫には戻らない */
   | { a: "oneShot" }
+  /** 計略:秘蔵庫に入れるインスタント・ソーサリー。献策で手札に加える */
+  | { a: "lesson" }
+  /** 覇業【呉】のあいだ、自分の水軍の条件をつねに満たす(孫権) */
+  | { a: "navyAlways" }
   /** コスト軽減(第11.5弾):per があれば「per 1つにつき{mult}」、なければ{n}。if があればその条件のときだけ */
   | { a: "costDown"; per?: Amount; mult?: number; n?: number; if?: Cond; label?: string }
   /** 共鳴:filter に合う自分のパーマネント1つにつき、唱えるコストが{1}少なくなる */

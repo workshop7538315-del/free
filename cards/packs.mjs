@@ -36,6 +36,7 @@ import { ELDORADO } from "./sets/p95-eldorado.mjs";
 import { BLACK_MARKET } from "./sets/p10-blackmarket.mjs";
 import { HEROES } from "./sets/p11-heroes.mjs";
 import { PRIMARIES } from "./sets/p115-primaries.mjs";
+import { SANGOKU } from "./sets/sg-sangoku.mjs";
 
 export const PACKS = [
   {
@@ -166,5 +167,15 @@ export const PACKS = [
     words: ["原色", "守護", "濁り"],
     theme: "色がまだ混ざっていなかった時代の、色ごとの守護者たちの物語。守護者同士の争いで赤は討たれ、黒は葬られた。生き残った白(癒す)・青(知る)・緑(育つ)の単色だけのパック。マナゾーンの同じ色の単色カードの枚数を数える「原色」と、チャージしたときマナゾーンが純色なら誘発する「染色」。白は回復、青はたくさん引く、緑はマナ総量11以上の巨体を原色と過去のカードの軽減で出す。",
     sets: [PRIMARIES],
+  },
+  {
+    id: "sgk",
+    number: 11.5,
+    label: "スターター限定",
+    name: "三国志",
+    kind: "スターター限定",
+    words: ["覇業", "献策", "縁"],
+    theme: "パックには入らず、魏・呉・蜀の3つのスターターでだけ手に入るカード。共通の「覇業【勢力】」(相手より優位なら強くなる)と、魏の献策・計略(秘蔵庫の計略を手札に加える)、呉の水軍(マナゾーンの青のカードの枚数)、蜀の縁(仲間の武将がいればコストが軽くなる)。",
+    sets: [SANGOKU],
   },
 ];

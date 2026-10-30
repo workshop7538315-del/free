@@ -159,7 +159,7 @@ export type Action =
 export type Decision =
   | { kind: "action"; options: Action[] }
   | { kind: "target"; prompt: string; spec: TargetSpec; options: TargetRef[]; source: Obj; effects: Effect[]; index: number }
-  | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "kicker" | "lookTop" | "mulligan" | "reclaim" | "blessing"; obj?: Obj }
+  | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "kicker" | "lookTop" | "mulligan" | "reclaim" | "blessing" | "learn" | "learnDiscard"; obj?: Obj }
   | { kind: "number"; prompt: string; min: number; max: number; reason?: "x" | "burn"; obj?: Obj }
   | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" | "pioneerBase" | "heist" }
   | { kind: "attackers"; options: number[] }
@@ -211,7 +211,7 @@ export const isAura = (c: Card) => abilitiesOf(c).some((a) => a.a === "enchant")
 export const isEquipment = (c: Card) => abilitiesOf(c).some((a) => a.a === "equip");
 /** 秘蔵庫のカード(リリース召喚を持つ) */
 export const isExtraCard = (c: Card) =>
-  abilitiesOf(c).some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly" || a.a === "gem" || a.a === "curtainCall" || a.a === "vaultCast");
+  abilitiesOf(c).some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly" || a.a === "gem" || a.a === "curtainCall" || a.a === "vaultCast" || a.a === "lesson");
 export const curtainOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "curtainCall") as Extract<Ability, { a: "curtainCall" }> | undefined;
 export const pioneerOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "pioneer") as Extract<Ability, { a: "pioneer" }> | undefined;
 export const assembleOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "assemble") as Extract<Ability, { a: "assemble" }> | undefined;
@@ -503,7 +503,7 @@ export class Game {
     // 秘蔵庫のカードは、戦場を離れたら(どこへ行く場合も)秘蔵庫に戻る
     // (強盗でマナゾーンに置くこと、マナ解放でスタックに置くことはできる)
     // 秘蔵 ―(第11.5弾)のカードは、秘蔵庫から出たあとは普通のカードと同じく墓地などへ行く
-    if (isExtraCard(o.card) && !abilityOf(o.card, "vaultCast") && !abilityOf(o.card, "oneShot") && to !== "battlefield" && to !== "extra" && to !== "mana" && to !== "stack") {
+    if (isExtraCard(o.card) && !abilityOf(o.card, "vaultCast") && !abilityOf(o.card, "oneShot") && !abilityOf(o.card, "lesson") && to !== "battlefield" && to !== "extra" && to !== "mana" && to !== "stack") {
       to = "extra";
       o.faceDown = false;
       this.addLog(`${o.card.name}は秘蔵庫に戻った`, o.owner);
@@ -570,6 +570,8 @@ export class Game {
       if ("armed" in c) return pl.mana.filter((o) => manaColors(o).includes(c.armed)).length >= c.n;
       if ("applause" in c) return (pl.applause[c.applause] ?? 0) >= c.n;
       if ("primary" in c) return this.primaryCount(p, c.primary) >= c.n;
+      if ("navy" in c) return this.navyCount(p) >= c.navy || this.navyAlways(p);
+      if ("anyName" in c) return pl.battlefield.some((o) => isCreatureCard(o.card) && c.anyName.some((n) => o.card.name.includes(n)));
       if ("manaMV" in c) return pl.mana.reduce((s, o) => s + (o.faceDown ? 0 : manaValue(o.card.cost)), 0) >= c.manaMV;
       return pl.battlefield.filter((o) => matchFilter(o.card, c.control, this.colorsOf(o))).length >= c.n;
     }
@@ -596,6 +598,18 @@ export class Game {
         return pl.spellsThisTurn >= 2;
       case "vaultEmpty":
         return pl.extra.length === 0;
+      case "hegemonyWei":
+        return pl.hand.length > this.players[this.other(p)].hand.length;
+      case "hegemonyWu":
+        return pl.mana.length > this.players[this.other(p)].mana.length;
+      case "hegemonyShu": {
+        // 常在能力(全体強化)は数えない:覇業【蜀】で強くなる効果がまたこの判定に入り、無限に回るのを防ぐ
+        const raw = (o: Obj) => (o.card.power ?? 0) + o.counters + (o.under?.length ?? 0) + [...o.temp, ...o.perm].reduce((s, m) => s + m.p, 0);
+        const mine = this.creatures(p).map(raw);
+        if (!mine.length) return false;
+        const theirs = this.creatures(this.other(p)).map(raw);
+        return Math.max(...mine) >= Math.max(0, ...theirs);
+      }
       case "pioneeredGame":
         return pl.pioneeredGame;
       case "buriedInMana":
@@ -657,6 +671,16 @@ export class Game {
       case "graveyardCreatures":
         return pl.graveyard.filter((o) => isCreatureCard(o.card)).length;
     }
+  }
+
+  /** 水軍:マナゾーンにある青のカードの枚数(多色も数える。裏向きは数えない) */
+  navyCount(p: PlayerId): number {
+    return this.players[p].mana.filter((o) => manaColors(o).includes("U")).length;
+  }
+
+  /** 孫権:覇業【呉】のあいだ、水軍の条件をつねに満たす */
+  private navyAlways(p: PlayerId): boolean {
+    return this.players[p].battlefield.some((o) => abilityOf(o.card, "navyAlways")) && this.cond("hegemonyWu", p);
   }
 
   /** 原色:マナゾーンにある、その色の単色カードの枚数(多色・欠色・裏向きは数えない) */
@@ -1053,7 +1077,13 @@ export class Game {
     const sp = spellAbility(c);
     if (sp?.modes) {
       if (!sp.modes.some((m) => (m.targets ?? []).every((t) => this.targetOptions(t, p).length > 0) && (!m.pay || this.canPay(p, withPaid(cost, m.pay), 0, ex)))) return false;
-    } else if (sp?.targets) for (const t of sp.targets) if (this.targetOptions(t, p).length === 0) return false;
+    } else if (sp?.targets) {
+      for (const t of sp.targets) if (this.targetOptions(t, p).length === 0) return false;
+      // 同じ種類の対象を複数とる呪文(離間の計など)は、別々の対象がその数だけ必要
+      const need = new Map<string, number>();
+      for (const t of sp.targets) need.set(JSON.stringify(t), (need.get(JSON.stringify(t)) ?? 0) + 1);
+      for (const [k, n] of need) if (n > 1 && this.targetOptions(JSON.parse(k), p).length < n) return false;
+    }
     if (isAura(c) && this.targetOptions(AURA_TARGET, p).length === 0) return false;
     return true;
   }
@@ -2099,6 +2129,27 @@ export class Game {
       case "extraCharge":
         pl.extraChargesThisTurn += e.n;
         break;
+      case "learn": {
+        // 献策:秘蔵庫の計略を手札に加えるか、手札を1枚捨てて1枚引く
+        const lessons = pl.extra.filter((o) => abilityOf(o.card, "lesson"));
+        if (lessons.length && (await this.askYesNo(p, `${src.card.name}:献策 ― 秘蔵庫の計略を1枚手札に加えますか?`, "learn", src))) {
+          const [pick] = await this.askCards(p, "手札に加える計略を選んでください", lessons, 1, "tutor");
+          if (pick) {
+            this.move(pick, "hand");
+            this.addLog(`献策:計略《${pick.card.name}》を手札に加えた`, p);
+          }
+          break;
+        }
+        if (pl.hand.length && (await this.askYesNo(p, `${src.card.name}:献策 ― 手札を1枚捨てて、カードを1枚引きますか?`, "learnDiscard", src))) {
+          const [o] = await this.askCards(p, "捨てるカードを選んでください", pl.hand, 1, "discard");
+          if (o) {
+            this.move(o, "graveyard");
+            this.addLog(`献策:${o.card.name}を捨てて1枚引いた`, p);
+            this.draw(p, 1);
+          }
+        }
+        break;
+      }
       case "callForest": {
         const placed: Obj[] = [];
         for (let i = 0; i < e.n; i++) {

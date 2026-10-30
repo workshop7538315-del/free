@@ -497,6 +497,8 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       if (them.life <= n && g.creatures(g.other(p)).length === 0) return 50;
       return n * 1.2 - n * 0.9 + (them.life <= n * 2 ? 3 : 0) - (n <= 1 ? 1 : 0);
     }
+    case "learn":
+      return me.extra.some((o) => abilitiesOf(o.card).some((a) => a.a === "lesson")) ? 2.5 : 0.5;
     case "callForest":
       // マナが大きく増え、巨体が出ることもある
       return e.n * 1.2 + 3;
@@ -729,6 +731,11 @@ function chooseYesNo(g: Game, p: PlayerId, d: Extract<Decision, { kind: "yesno" 
       return me.library.length >= 12;
     case "kicker":
       return true;
+    case "learn":
+      return true;
+    case "learnDiscard":
+      // 手札に、マナにも使いにくい重いカードがあるなら入れ替える
+      return me.hand.some((o) => manaValue(o.card.cost) > me.mana.length + 3);
     case "lookTop":
       return !!d.obj && manaValue(d.obj.card.cost) > me.mana.length + 3;
     case "may":

@@ -10,11 +10,11 @@ export const packById = (id: string) => BY_ID.get(id);
 /** 「第4弾」 */
 export const packShort = (id: string) => {
   const p = BY_ID.get(id);
-  return p ? `第${p.number}弾` : id;
+  return p ? p.label ?? `第${p.number}弾` : id;
 };
 /** 「第4弾「紋章の目覚め」」 */
 export const packLabel = (id: string) => {
   const p = BY_ID.get(id);
-  return p ? `第${p.number}弾「${p.name}」` : id;
+  return p ? `${p.label ?? `第${p.number}弾`}「${p.name}」` : id;
 };
 export const cardName = (id: string) => CARD_NAME.get(id) ?? id;

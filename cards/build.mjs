@@ -37,7 +37,7 @@ if (PACK_IDS.size !== PACKS.length) throw new Error("パックIDが重複して�
 PACKS.forEach((p, i) => {
   // 番号は昇順(9.5弾のような小数や、同じ番号の複数パックも可)
   if (i > 0 && p.number < PACKS[i - 1].number) throw new Error(`${p.name}:第${p.number}弾の番号が順番になっていません`);
-  if (!["新規展開", "既存カード強化"].includes(p.kind)) throw new Error(`${p.name}:種類は「新規展開」か「既存カード強化」`);
+  if (!["新規展開", "既存カード強化", "スターター限定"].includes(p.kind)) throw new Error(`${p.name}:種類は「新規展開」「既存カード強化」「スターター限定」`);
   if (!Array.isArray(p.words) || p.words.length !== 3) throw new Error(`${p.name}:テーマの単語は3つ`);
 });
 
@@ -188,7 +188,7 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
   };
   // 秘蔵庫のカードはメインには入れない
   // 第11弾の英雄と関連カード(hr)は、core で指定したデッキにだけ入れる(自動では足さない)
-  const pool = out.filter((c) => fits(c) && !c.id.startsWith("hr") && !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast"].includes(a.a)));
+  const pool = out.filter((c) => fits(c) && !c.id.startsWith("hr") && !c.id.startsWith("sg") && !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast", "lesson"].includes(a.a)));
   const inSet = (c) => !!set && c.id.startsWith(set);
   const themed = (c) => inSet(c) || (!!theme && theme(c));
   const score = (c) => {
@@ -255,7 +255,7 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
   let ex = 0;
   for (const [id, n] of Object.entries(extra)) {
     const c = out.find((x) => x.id === id);
-    if (!c || !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast"].includes(a.a))) throw new Error(`秘蔵庫のカード ${id} がありません`);
+    if (!c || !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast", "lesson"].includes(a.a))) throw new Error(`秘蔵庫のカード ${id} がありません`);
     if (n > 2) throw new Error(`秘蔵庫の ${id} は2枚まで`);
     deck[id] = Math.min(n, RESTRICTED[id] ?? n);
     ex += n;
@@ -295,6 +295,14 @@ const DECKS = [
   { id: "t-armed-g", name: "原色:緑単の巨獣", colors: ["G"], pure: true, theme: tag("原色"), archetype: "原色",
     core: { pc31: 2, pc32: 2, pc33: 3, pc34: 2, pc35: 2, pc36: 1, pc37: 3, pc38: 3, pc39: 2, pc40: 1, pc41: 4, pc42: 2, pc43: 3, pc44: 1, pc45: 1, eld14: 3, eld15: 3, hr58: 1, hr60: 1 },
     extra: { eld01: 2, pc46: 1, eld02: 1, eld03: 2, eld05: 2 } },
+  // スターター限定《三国志》:魏(上級者向けコントロール)・呉(中級者向けミッドレンジ)・蜀(初心者向けアグロ)
+  { id: "sg-wei", name: "三国志:魏(白黒赤)", colors: ["W", "B", "R"], theme: tag("魏"), archetype: "三国志",
+    core: { sg01: 2, sg02: 2, sg03: 3, sg04: 2, sg05: 2, sg06: 2, sg07: 2, sg08: 3, sg09: 3, sg10: 3, sg11: 2, sg12: 3 },
+    extra: { sg20: 1, sg21: 2, sg22: 1, sg23: 2, sg24: 1, sg25: 1 } },
+  { id: "sg-wu", name: "三国志:呉(青赤緑)", colors: ["U", "R", "G"], theme: tag("呉"), archetype: "三国志",
+    core: { sg30: 2, sg31: 2, sg32: 2, sg33: 2, sg34: 2, sg35: 2, sg36: 3, sg37: 2, sg38: 3, sg39: 3, sg40: 3, sg41: 3, sg42: 2, sg43: 2 } },
+  { id: "sg-shu", name: "三国志:蜀(白赤緑)", colors: ["W", "R", "G"], theme: tag("蜀"), archetype: "三国志",
+    core: { sg50: 2, sg51: 2, sg52: 2, sg53: 2, sg54: 2, sg55: 2, sg56: 2, sg57: 3, sg58: 4, sg59: 4, sg60: 3, sg61: 3, sg62: 3 } },
   // 第11.5弾:白単(回復)と青単(ドロー)
   { id: "t-mono-w", name: "原色:白単の癒しの聖堂", colors: ["W"], pure: true, theme: tag("原色"), archetype: "原色",
     core: { pc01: 2, pc02: 1, pc03: 2, pc04: 4, pc06: 2, pc07: 2, pc08: 4, pc09: 3, pc10: 3, pc11: 3, pc12: 2, pc13: 3, pc15: 2, hz65: 3, pc48: 2 } },
@@ -341,4 +349,4 @@ for (const c of out) for (const t of c.tags ?? []) tagCounts[t] = (tagCounts[t] 
 console.log(`カード ${out.length}種類`, counts);
 console.log("アーキタイプ", tagCounts);
 console.log(`スターターデッキ ${decks.length}個`);
-for (const p of packsJson) console.log(`第${p.number}弾「${p.name}」(${p.kind}) 新規${p.newCards} 再録${p.reprints.length}`);
+for (const p of packsJson) console.log(`${p.label ?? `第${p.number}弾`}「${p.name}」(${p.kind}) 新規${p.newCards} 再録${p.reprints.length}`);

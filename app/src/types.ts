@@ -29,7 +29,9 @@ export type Pack = {
   id: string;
   number: number;
   name: string;
-  kind: "新規展開" | "既存カード強化";
+  kind: "新規展開" | "既存カード強化" | "スターター限定";
+  /** 弾の番号の代わりに出す名前(スターター限定など) */
+  label?: string;
   words: string[];
   theme: string;
   newCards: number;
