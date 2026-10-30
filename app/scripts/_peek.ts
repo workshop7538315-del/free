@@ -1,0 +1,11 @@
+import cardsJson from "../../cards/cards.json";
+import decksJson from "../../cards/decks.json";
+import { Game, type PlayerId } from "../src/game/engine";
+import { CpuAgent } from "../src/game/ai";
+const byId = new Map((cardsJson as any[]).map((c) => [c.id, c]));
+const decks = decksJson as any[];
+const expand = (l: Record<string, number>) => Object.entries(l).flatMap(([id, n]) => Array.from({ length: n }, () => byId.get(id)!));
+const g: any = new Game({ decks: [expand(decks.find((d) => d.id === process.env.A).cards), expand(decks.find((d) => d.id === process.env.B).cards)], names: ["A", "B"], agents: [new CpuAgent(), new CpuAgent()], seed: 3, first: 0, maxTurns: 80 });
+const al = g.addLog.bind(g);
+g.addLog = (t: string, p: any) => { if (t.startsWith("― Aのターン")) { const pl = g.players[0]; console.log(t, "| 手札:", pl.hand.map((o: any) => o.card.name + o.card.cost).join(" "), "| マナ:", pl.mana.map((o: any) => o.card.cost.replace(/[{}0-9X]/g, "") || "C").join(",")); } return al(t, p); };
+await g.run();

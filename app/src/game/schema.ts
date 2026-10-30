@@ -135,7 +135,7 @@ export type Effect = Common &
     | { do: "damage"; n: Amount; tg?: number; to?: "opp" }
     | { do: "damageAll"; n: Amount; players?: boolean; who?: "opp" }
     | { do: "destroy"; tg: number }
-    | { do: "destroyAll"; maxPower?: number; filter?: Filter }
+    | { do: "destroyAll"; maxPower?: number; filter?: Filter; who?: "opp" }
     | { do: "exile"; tg: number }
     | { do: "bounce"; tg: number }
     | { do: "bounceAll"; who?: "opp" }

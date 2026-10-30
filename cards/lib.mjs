@@ -230,7 +230,7 @@ export const E = {
   dmgAll: (n, players = false) => ({ do: "damageAll", n, ...(players ? { players } : {}) }),
   dmgAllOpp: (n, players = false) => ({ do: "damageAll", n, who: "opp", ...(players ? { players } : {}) }),
   destroy: (tg = 0) => ({ do: "destroy", tg }),
-  destroyAll: (maxPower, filter) => ({ do: "destroyAll", ...(maxPower !== undefined ? { maxPower } : {}), ...(filter ? { filter } : {}) }),
+  destroyAll: (maxPower, filter, who) => ({ do: "destroyAll", ...(maxPower !== undefined ? { maxPower } : {}), ...(filter ? { filter } : {}), ...(who ? { who } : {}) }),
   exile: (tg = 0) => ({ do: "exile", tg }),
   bounce: (tg = 0) => ({ do: "bounce", tg }),
   bounceAll: (who) => ({ do: "bounceAll", ...(who ? { who } : {}) }),
@@ -532,8 +532,8 @@ function effectText(e, name, abil, notes) {
       return `${it(e.tg)}を破壊する。`;
     case "destroyAll": {
       const f = { ...(e.filter ?? {}), ...(e.maxPower !== undefined ? { maxPower: e.maxPower } : {}) };
-      if (!Object.keys(f).length) return "すべてのクリーチャーを破壊する。";
-      return `${filterPhrase(f, "creature")}${f.sub || f.type ? "" : ""}をすべて破壊する。`;
+      if (!Object.keys(f).length) return e.who === "opp" ? "対戦相手がコントロールするクリーチャーをすべて破壊する。" : "すべてのクリーチャーを破壊する。";
+      return `${e.who === "opp" ? "対戦相手がコントロールする" : ""}${filterPhrase(f, "creature")}${f.sub || f.type ? "" : ""}をすべて破壊する。`;
     }
     case "exile":
       return `${it(e.tg)}を追放する。`;

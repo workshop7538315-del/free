@@ -297,12 +297,12 @@ const DECKS = [
     extra: { eld01: 2, pc46: 1, eld02: 1, eld03: 2, eld05: 2 } },
   // スターター限定《三国志》:魏(上級者向けコントロール)・呉(中級者向けミッドレンジ)・蜀(初心者向けアグロ)
   { id: "sg-wei", name: "三国志:魏(白黒赤)", colors: ["W", "B", "R"], theme: tag("魏"), archetype: "三国志",
-    core: { sg01: 2, sg02: 2, sg03: 3, sg04: 2, sg05: 2, sg06: 2, sg07: 2, sg08: 3, sg09: 3, sg10: 3, sg11: 2, sg12: 3 },
+    core: { sg01: 2, sg02: 2, sg03: 3, sg04: 2, sg05: 2, sg06: 2, sg07: 2, sg08: 3, sg09: 3, sg10: 3, sg11: 2, sg12: 3, w021: 1, hz58: 1, ct17: 3, b021: 2, ct13: 2, hum28: 2 },
     extra: { sg20: 1, sg21: 2, sg22: 1, sg23: 2, sg24: 1, sg25: 1 } },
   { id: "sg-wu", name: "三国志:呉(青赤緑)", colors: ["U", "R", "G"], theme: tag("呉"), archetype: "三国志",
     core: { sg30: 2, sg31: 2, sg32: 2, sg33: 2, sg34: 2, sg35: 2, sg36: 3, sg37: 2, sg38: 3, sg39: 3, sg40: 3, sg41: 3, sg42: 2, sg43: 2 } },
   { id: "sg-shu", name: "三国志:蜀(白赤緑)", colors: ["W", "R", "G"], theme: tag("蜀"), archetype: "三国志",
-    core: { sg50: 2, sg51: 2, sg52: 2, sg53: 2, sg54: 2, sg55: 2, sg56: 2, sg57: 3, sg58: 4, sg59: 4, sg60: 3, sg61: 3, sg62: 3 } },
+    core: { sg50: 2, sg51: 2, sg52: 2, sg53: 2, sg54: 2, sg55: 2, sg56: 2, sg57: 3, sg58: 4, sg59: 4, sg60: 2, sg61: 2, sg62: 3, sg63: 3, r006: 3, trb15: 2 } },
   // 第11.5弾:白単(回復)と青単(ドロー)
   { id: "t-mono-w", name: "原色:白単の癒しの聖堂", colors: ["W"], pure: true, theme: tag("原色"), archetype: "原色",
     core: { pc01: 2, pc02: 1, pc03: 2, pc04: 4, pc06: 2, pc07: 2, pc08: 4, pc09: 3, pc10: 3, pc11: 3, pc12: 2, pc13: 3, pc15: 2, hz65: 3, pc48: 2 } },

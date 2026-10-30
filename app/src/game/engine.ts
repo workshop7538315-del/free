@@ -1956,7 +1956,7 @@ export class Game {
         break;
       }
       case "destroyAll":
-        for (const o of [...this.creatures(0), ...this.creatures(1)])
+        for (const o of e.who === "opp" ? this.creatures(opp) : [...this.creatures(0), ...this.creatures(1)])
           if ((e.maxPower === undefined || this.power(o) <= e.maxPower) && matchFilter(o.card, e.filter, this.colorsOf(o))) this.destroy(o);
         break;
       case "exile": {

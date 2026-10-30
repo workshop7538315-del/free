@@ -5,6 +5,7 @@ import type { Card } from "../types";
 import type { Amount, Applause, Effect, TargetSpec } from "./schema";
 import { cardColors, colorPips, manaValue, parseCost, COLORS, type Color } from "../lib/mana";
 import {
+  matchFilter,
   abilitiesOf,
   burnAbility,
   abilityOf,
@@ -216,8 +217,9 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
       // 軽減で大きく安くなったカード(原色の巨体など)は、もうすぐ唱えられるなら残す
       if (manaValue(o.card.cost) - eff >= 3 && eff <= me.mana.length + 2) s += 2;
       // 単色デッキ:マナゾーンが純色なら、それを崩すカード(別の色・多色・欠色)はマナにしない
+      // (手札に別の色を必要とするカードがあるなら、純色にこだわらない:多色デッキが色を集められなくなるため)
       const pureNow = pureColorOf(g, p);
-      if (pureNow) {
+      if (pureNow && !COLORS.some((c) => c !== pureNow && need[c] > 0)) {
         const cs = cardColors(o.card.cost);
         if (!(cs.length === 1 && cs[0] === pureNow)) s += 2.5;
       }
@@ -375,9 +377,10 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return bestOpp >= 2.5 ? bestOpp + 1 : 0;
     }
     case "destroyAll": {
-      const theirs = oppCreatures.reduce((s, o) => s + creatureValue(g, o), 0);
-      const mine = myCreatures.reduce((s, o) => s + creatureValue(g, o), 0);
-      return theirs - mine - 4;
+      const hit = (o: Obj) => (e.maxPower === undefined || g.power(o) <= e.maxPower) && matchFilter(o.card, e.filter, g.colorsOf(o)) && !g.hasKw(o, "破壊不能");
+      const theirs = oppCreatures.filter(hit).reduce((s, o) => s + creatureValue(g, o), 0);
+      const mine = e.who === "opp" ? 0 : myCreatures.filter(hit).reduce((s, o) => s + creatureValue(g, o), 0);
+      return theirs - mine - (e.who === "opp" ? 1 : 4);
     }
     case "bounce":
     case "tuck":
