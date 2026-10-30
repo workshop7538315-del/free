@@ -1634,7 +1634,8 @@ export class Game {
   pioneerBases(p: PlayerId, target: Obj): Obj[] {
     const pi = pioneerOf(target.card);
     if (!pi) return [];
-    return this.creatures(p).filter((o) =>
+    // 防衛を持つクリーチャー(苔むす防人など)は、開拓進化の素材にならない
+    return this.creatures(p).filter((o) => !this.hasKw(o, "防衛")).filter((o) =>
       pi.grand ? isExtraCard(o.card) && !!pioneerOf(o.card) && !pioneerOf(o.card)!.grand : this.colorsOf(o).includes(pi.color),
     );
   }
