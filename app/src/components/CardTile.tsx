@@ -62,6 +62,7 @@ export function CardTile({ card, count, onChange, compact = false }: Props) {
             </button>
             <span className="card-count" aria-live="polite">
               {count}
+              {card.limit !== undefined && <span className="card-limit" title={`制限カード:${card.limit}枚まで`}>/{card.limit}</span>}
             </span>
             <button type="button" className="step step-sm" onClick={() => onChange(1)} disabled={count >= maxCopies(card)} aria-label={`${card.name}を1枚入れる`}>
               ＋
@@ -110,6 +111,7 @@ export function CardTile({ card, count, onChange, compact = false }: Props) {
         </button>
         <span className="card-count" aria-live="polite">
           {count > 0 ? `${count}枚` : "未投入"}
+          {card.limit !== undefined && <span className="card-limit" title="制限カード:デッキに入れられる枚数が少ない">制限 {card.limit}枚</span>}
         </span>
         <button
           type="button"
