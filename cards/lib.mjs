@@ -804,6 +804,8 @@ function abilityTextBody(abil, card) {
       return `奉納 ${abil.n}${abil.sub ? `(${abil.sub})` : ""}`;
     case "vaultCast":
       return "秘蔵 ―(このカードは秘蔵庫に入れる。あなたは秘蔵庫からこのカードを唱えてもよい。戦場を離れたら、秘蔵庫には戻らない)";
+    case "oneShot":
+      return `${name}は、一度秘蔵庫から出たら、秘蔵庫には戻らない(戦場やマナゾーンを離れると墓地などへ行く)。`;
     case "anchor":
       return `${name}が戦場に出たとき、次の対戦相手のターンの終了時まで、${name}は戦場を離れない。そのターンの終了時に、${name}と、その下に重なっているカードをすべて、持ち主のマナゾーンに置く。`;
     case "blockOnly":

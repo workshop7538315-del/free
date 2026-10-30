@@ -503,7 +503,7 @@ export class Game {
     // 秘蔵庫のカードは、戦場を離れたら(どこへ行く場合も)秘蔵庫に戻る
     // (強盗でマナゾーンに置くこと、マナ解放でスタックに置くことはできる)
     // 秘蔵 ―(第11.5弾)のカードは、秘蔵庫から出たあとは普通のカードと同じく墓地などへ行く
-    if (isExtraCard(o.card) && !abilityOf(o.card, "vaultCast") && to !== "battlefield" && to !== "extra" && to !== "mana" && to !== "stack") {
+    if (isExtraCard(o.card) && !abilityOf(o.card, "vaultCast") && !abilityOf(o.card, "oneShot") && to !== "battlefield" && to !== "extra" && to !== "mana" && to !== "stack") {
       to = "extra";
       o.faceDown = false;
       this.addLog(`${o.card.name}は秘蔵庫に戻った`, o.owner);

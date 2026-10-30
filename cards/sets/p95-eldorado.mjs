@@ -23,11 +23,11 @@ const GOLD = gen("tk-ougon", "黄金", "{0}", "アーティファクト", [{ a: 
 
 export const ELDORADO = [
   // ================================================================ 秘蔵庫:開拓者(緑)
-  tagged(cr("eld01", "苔むす開拓者", "{2}{G}", "エルフ・開拓者", 3, 3, "C", [pioneer(6, "G"), kw("到達"), etb(E.create(GOLD))])),
-  tagged(cr("eld02", "黄金郷の先駆者", "{3}{G}", "人間・開拓者", 4, 4, "U", [pioneer(9, "G"), kw("到達"), etb(E.draw(1))])),
-  tagged(cr("eld03", "密林を拓く巨獣", "{5}{G}", "ビースト・開拓者", 7, 7, "R", [pioneer(13, "G"), kw("トランプル"), etb(E.duelSelf(), T.opp)])),
-  tagged(cr("eld04", "大樹海の覇者", "{6}{G}{G}", "ビースト・開拓者", 8, 8, "R", [pioneer(18, "G"), kw("到達", "トランプル"), etb([E.ramp(2), E.create(GOLD)])])),
-  tagged(cr("eld05", "黄金郷の大開拓者 エル・ドラード", "{7}{G}{G}{G}", "人間・開拓者", 8, 8, "M", [
+  tagged(cr("eld01", "苔むす開拓者", "{2}{G}", "エルフ・開拓者", 2, 2, "C", [pioneer(6, "G"), kw("到達"), etb(E.create(GOLD))])),
+  tagged(cr("eld02", "黄金郷の先駆者", "{3}{G}", "人間・開拓者", 3, 3, "U", [pioneer(9, "G"), kw("到達"), etb(E.draw(1))])),
+  tagged(cr("eld03", "密林を拓く巨獣", "{5}{G}", "ビースト・開拓者", 5, 5, "R", [pioneer(13, "G"), kw("トランプル"), etb(E.duelSelf(), T.opp)])),
+  tagged(cr("eld04", "大樹海の覇者", "{6}{G}{G}", "ビースト・開拓者", 6, 6, "R", [pioneer(18, "G"), kw("到達", "トランプル"), etb([E.ramp(2), E.create(GOLD)])])),
+  tagged(cr("eld05", "黄金郷の大開拓者 エル・ドラード", "{7}{G}{G}{G}", "人間・開拓者", 6, 6, "M", [
     pioneer(24, "G", true),
     kw("到達", "トランプル"),
     etb([E.blessing("黄金郷への道"), E.create(GOLD, 2)]),

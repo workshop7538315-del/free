@@ -285,7 +285,7 @@ const DECKS = [
   // 第11.5弾で作り直し:マナ総量11以上の巨体を、原色と黄金郷のランプ・開拓進化で出す
   { id: "t-armed-g", name: "原色:緑単の巨獣", colors: ["G"], pure: true, theme: tag("原色"), archetype: "原色",
     core: { pc31: 2, pc32: 2, pc33: 3, pc34: 2, pc35: 2, pc36: 1, pc37: 3, pc38: 3, pc39: 2, pc40: 1, pc41: 4, pc42: 2, pc43: 3, pc44: 1, pc45: 1, eld14: 3, eld15: 3, hr58: 1, hr60: 1 },
-    extra: { eld01: 2, pc46: 2, eld03: 2, eld05: 2 } },
+    extra: { eld01: 2, pc46: 1, eld02: 1, eld03: 2, eld05: 2 } },
   // 第11.5弾:白単(回復)と青単(ドロー)
   { id: "t-mono-w", name: "原色:白単の癒しの聖堂", colors: ["W"], pure: true, theme: tag("原色"), archetype: "原色",
     core: { pc01: 2, pc02: 1, pc03: 2, pc04: 4, pc06: 2, pc07: 2, pc08: 4, pc09: 3, pc10: 3, pc11: 3, pc12: 2, pc13: 3, pc15: 2, hz65: 3, pc48: 2 } },
