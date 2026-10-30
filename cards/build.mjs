@@ -288,7 +288,7 @@ const DECKS = [
     extra: { eld01: 2, eld02: 2, eld03: 2, eld05: 2 } },
   // 第11.5弾:白単(回復)と青単(ドロー)
   { id: "t-mono-w", name: "原色:白単の癒しの聖堂", colors: ["W"], pure: true, theme: tag("原色"), archetype: "原色",
-    core: { pc01: 2, pc02: 2, pc03: 3, pc04: 4, pc06: 2, pc07: 2, pc08: 4, pc09: 2, pc10: 3, pc12: 2, pc13: 3, pc15: 2, lif01: 3, w002: 2, hz58: 2 } },
+    core: { pc01: 2, pc02: 1, pc03: 2, pc04: 4, pc06: 2, pc07: 2, pc08: 4, pc09: 3, pc10: 3, pc11: 3, pc12: 2, pc13: 3, pc15: 2, hz65: 3, w007: 2 } },
   { id: "t-mono-u", name: "原色:青単の知識の塔", colors: ["U"], pure: true, theme: tag("原色"), archetype: "原色",
     core: { pc16: 2, pc17: 2, pc18: 2, pc19: 3, pc20: 3, pc21: 3, pc22: 2, pc23: 3, pc24: 3, pc25: 2, pc26: 3, pc27: 2, pc28: 2, pc29: 2, u021: 2, u012: 2 } },
   { id: "t-goblin", name: "部族:ゴブリンの大群(赤単)", colors: ["R"], theme: (c) => sub("ゴブリン")(c), archetype: "部族", core: { hr61: 2, hr62: 2, hr63: 2, hr88: 2 }, extra: { cm09: 2, cm10: 2, cm11: 2, cm12: 2 } },

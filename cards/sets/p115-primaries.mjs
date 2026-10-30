@@ -27,25 +27,25 @@ const bird = (n = 1) => E.token(n, 1, 1, "U", "鳥", ["飛行"]);
 
 export const PRIMARIES = [
   // ================================================================ 白:回復
-  tagged(cr("pc01", "白の守護者 ルミエラ", "{3}{W}{W}", "神・守護者", 4, 5, "M", [
-    kw("飛行", "絆魂"),
-    etb(E.gain(W)),
+  tagged(cr("pc01", "白の守護者 ルミエラ", "{3}{W}{W}", "神・守護者", 3, 4, "M", [
+    kw("飛行"),
+    etb(E.gain(3)),
     once(lifeGain([E.counters(1)], T.you)),
-    lifeGain(E.lose(1), undefined, { if: "pureColor" }),
+    lifeGain(E.lose(1), undefined, { if: "pureColor", oncePerTurn: true }),
   ], { flavor: "「黒を葬ったのは正しかった。……そう祈るしかないの。だから私は、今日も誰かを癒やすのです」" })),
   tagged(ench("pc02", "黒き墓所の封印聖堂", "{2}{W}{W}", "R", [upkeep(E.gain(W)), upkeep(cleric(), undefined, { if: { primary: "W", n: 5 } })], {
     flavor: "祈りが途切れた日、封印はほどける。だから聖堂の鐘は、一度も鳴りやんだことがない。",
   })),
   tagged(cr("pc03", "慈雨の大司祭", "{2}{W}{W}", "人間・クレリック", 1, 3, "R", [once(lifeGain(cleric()))], { flavor: "「癒やしは雨と同じ。降らせ続ければ、やがて地面が応える」" })),
-  tagged(cr("pc04", "聖水の運び手", "{1}{W}", "人間・クレリック", 2, 2, "U", [etb(E.gain(2)), dye(E.gain(3))])),
+  tagged(cr("pc04", "聖水の運び手", "{1}{W}", "人間・クレリック", 2, 2, "U", [etb(E.gain(2)), dye(E.gain(2))])),
   tagged(ins("pc05", "白光の祈り", "{1}{W}", "U", spell([E.pump(1, 3), E.gain(3)], T.you))),
   tagged(sor("pc06", "癒し手の行進", "{2}{W}{W}", "U", spell([E.gain(W), E.countersAll(1)]), { flavor: "「青は知るだけ、緑は育つだけ。癒やせるのは私たちだけよ」──ルミエラ" })),
   tagged(ins("pc07", "聖別の浄光", "{2}{W}", "U", spell([E.exile(), E.gain(2)], { t: "creature", tapped: true }))),
-  tagged(cr("pc08", "巡礼の癒し手", "{W}", "人間・クレリック", 1, 2, "C", [kw("絆魂"), dye(E.gain(2))])),
-  tagged(cr("pc09", "祈りの番兵", "{1}{W}", "人間・兵士", 1, 4, "C", [dye(E.gain(2))])),
+  tagged(cr("pc08", "巡礼の癒し手", "{W}", "人間・クレリック", 1, 2, "C", [kw("絆魂"), dye(E.gain(1))])),
+  tagged(cr("pc09", "祈りの番兵", "{1}{W}", "人間・兵士", 1, 4, "C", [dye(E.gain(1))])),
   tagged(cr("pc10", "白翼の見習い", "{1}{W}", "人間・クレリック", 2, 1, "C", [kw("飛行"), once(lifeGain(E.pumpSelf(1, 1)))])),
   tagged(ins("pc11", "光の聖句", "{W}", "C", [spell(E.gain(3)), dye(E.gain(2))])),
-  tagged(cr("pc12", "聖堂の衛兵", "{2}{W}", "人間・兵士", 2, 3, "C", [kw("警戒"), etb(E.gain(3))])),
+  tagged(cr("pc12", "聖堂の衛兵", "{2}{W}", "人間・兵士", 2, 3, "C", [kw("警戒"), etb(E.gain(2))])),
   tagged(cr("pc13", "聖別の天使", "{3}{W}", "天使", 2, 3, "C", [kw("飛行"), once(lifeGain(E.countersSelf(1)))])),
   tagged(ins("pc14", "守りの陣", "{1}{W}", "C", spell([E.pumpAll(0, 2), E.gain(2)]))),
   tagged(sor("pc15", "裁きの光", "{3}{W}", "C", spell([E.destroy(), E.gain(2)], { t: "creature", who: "opp", minPower: 4 }))),
