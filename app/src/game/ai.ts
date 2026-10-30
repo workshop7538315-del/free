@@ -744,7 +744,12 @@ function chooseCards(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseC
   let sorted: Obj[] = objs;
   switch (d.reason) {
     case "pioneerBase":
-      sorted = [...objs].sort((a, b) => creatureValue(g, a) - creatureValue(g, b));
+      // 相手のクリーチャーを素材にできるなら、価値の高い順にそれを使う(相手の場から取り除ける)。自分のものは価値の低い順
+      sorted = [...objs].sort((a, b) => {
+        const ao = a.controller !== p, bo = b.controller !== p;
+        if (ao !== bo) return ao ? -1 : 1;
+        return ao ? creatureValue(g, b) - creatureValue(g, a) : creatureValue(g, a) - creatureValue(g, b);
+      });
       break;
     case "discard": {
       // 陶酔(捨てられたとき)を持つカードは、捨てると得をする
@@ -1032,7 +1037,10 @@ function scorePioneer(g: Game, p: PlayerId, uid: number): number {
   if (!o || !pi || !(g.step === "main1" || g.step === "main2")) return -1;
   const bases = g.pioneerBases(p, o);
   if (!bases.length) return -1;
-  const base = [...bases].sort((a, b) => creatureValue(g, a) - creatureValue(g, b))[0];
+  const oppBases = bases.filter((b) => b.controller !== p).sort((a, b) => creatureValue(g, b) - creatureValue(g, a));
+  const base = oppBases[0] ?? [...bases].sort((a, b) => creatureValue(g, a) - creatureValue(g, b))[0];
+  // 素材が相手のクリーチャーなら、失うのではなく相手から取り除ける(得)。自分のものなら下に重なって+1/+1になるだけ
+  const baseCost = base.controller !== p ? -creatureValue(g, base) : creatureValue(g, base) - 1.5;
   const me = g.players[p];
   let gain = cardCreatureValue(o.card) + 2 + (pi.grand ? 6 : 0);
   // 壁(元のパワーが小さいものだけブロックできる):止められる相手のクリーチャーが多いほど、また押されているほど価値が高い
@@ -1042,16 +1050,16 @@ function scorePioneer(g: Game, p: PlayerId, uid: number): number {
     const stoppable = opp.filter((x) => (x.card.power ?? 0) <= only.maxPower);
     const pressure = opp.reduce((s, x) => s + g.power(x), 0) >= me0Life(g, p) / 2 ? 1.5 : 1;
     gain = stoppable.reduce((s, x) => s + g.power(x), 0) * 2.5 * pressure - 2;
-    // 一時的な壁のために、大きいクリーチャーを素材にはしない
-    if (Math.min(...bases.map((b) => creatureValue(g, b))) > 6) return -1;
+    // 一時的な壁のために、自分の大きいクリーチャーを素材にはしない
+    if (!oppBases.length && Math.min(...bases.map((b) => creatureValue(g, b))) > 6) return -1;
   }
   // 加護があり、ライブラリーに余裕があれば、山札を削る(損はほぼない)
-  if (me.blessings.includes(BLESSING_ELDORADO) && me.library.length >= 12) return gain - creatureValue(g, base);
+  if (me.blessings.includes(BLESSING_ELDORADO) && me.library.length >= 12) return gain - baseCost;
   const fodder = g.pioneerFodder(p, base);
   const picked = pickFodder(g, p, fodder, pi.n, pi.grand ? 3 : 1);
   if (picked.reduce((s, x) => s + x.value, 0) < pi.n) return -1;
   const loss = picked.reduce((s, x) => s + fodderWorth(g, p, x.o), 0);
-  return gain - creatureValue(g, base) - loss;
+  return gain - baseCost - loss;
 }
 
 function scoreAssemble(g: Game, p: PlayerId, uid: number): number {

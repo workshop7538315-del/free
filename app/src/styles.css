@@ -2567,3 +2567,9 @@ textarea {
     flex: none;
   }
 }
+
+.detail-under {
+  margin: 0.4rem 0 0;
+  font-size: var(--step--1);
+  color: var(--muted);
+}

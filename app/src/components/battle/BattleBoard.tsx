@@ -1149,6 +1149,11 @@ function CardDetail({ g, o }: { g: Game; o: Obj | null }) {
           {onField && o.damage > 0 && <span className="detail-damage">(ダメージ {o.damage})</span>}
         </p>
       )}
+      {onField && (o.under?.length ?? 0) > 0 && (
+        <p className="detail-under">
+          下に重なっているカード({o.under!.length}枚、1枚につき+1/+1):{o.under!.map((u) => u.card.name).join("、")}
+        </p>
+      )}
     </section>
   );
 }

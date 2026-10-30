@@ -322,7 +322,9 @@ export type Ability = { text?: string } & (
   /** 秘蔵 ―:秘蔵庫に入れ、そこからマナコストを払って唱えられる(第11.5弾) */
   | { a: "vaultCast" }
   /** パワーが maxPower 以下のクリーチャーしかブロックできない */
-  | { a: "blockOnly"; maxPower: number }
+  | { a: "blockOnly"; maxPower: number; maxToughness?: number }
+  /** 開拓進化の素材に、相手のクリーチャーも使える(相手の場に minOpp 体以上いるとき、元のパワーとタフネスが maxStat 以下のもの) */
+  | { a: "pioneerOppBase"; maxStat: number; minOpp: number }
   /** 留まる:次の対戦相手のターンの終了時まで戦場を離れず、その終了時にマナゾーンに置かれる */
   | { a: "anchor" }
   /** コスト軽減(第11.5弾):per があれば「per 1つにつき{mult}」、なければ{n}。if があればその条件のときだけ */

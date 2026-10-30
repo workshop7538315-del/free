@@ -107,8 +107,10 @@ export const assemble = (color, partner, partnerName, cond = "attacked") => ({ a
 export const vaultCast = () => ({ a: "vaultCast" });
 /** 留まる:次の対戦相手のターンの終了時まで戦場を離れず、その終了時にマナゾーンに置かれる */
 export const anchor = () => ({ a: "anchor" });
-/** パワーが n 以下のクリーチャーしかブロックできない */
-export const blockOnly = (maxPower) => ({ a: "blockOnly", maxPower });
+/** 元のパワー(と、指定があればタフネス)が n 以下のクリーチャーしかブロックできない */
+export const blockOnly = (maxPower, maxToughness) => ({ a: "blockOnly", maxPower, ...(maxToughness !== undefined ? { maxToughness } : {}) });
+/** 開拓進化の素材に相手のクリーチャーも使える */
+export const pioneerOppBase = (maxStat, minOpp) => ({ a: "pioneerOppBase", maxStat, minOpp });
 /** 対戦相手のクリーチャーが攻撃するたび */
 export const oppAttack = trig("oppAttack");
 /** 原色 ―:マナゾーンの color の単色カード1枚につきコスト{1}軽減(第11.5弾) */
@@ -803,9 +805,13 @@ function abilityTextBody(abil, card) {
     case "vaultCast":
       return "秘蔵 ―(このカードは秘蔵庫に入れる。あなたは秘蔵庫からこのカードを唱えてもよい。戦場を離れたら、秘蔵庫には戻らない)";
     case "anchor":
-      return `${name}が戦場に出たとき、次の対戦相手のターンの終了時まで、${name}は戦場を離れない。そのターンの終了時に、${name}をあなたのマナゾーンに置く。`;
+      return `${name}が戦場に出たとき、次の対戦相手のターンの終了時まで、${name}は戦場を離れない。そのターンの終了時に、${name}と、その下に重なっているカードをすべて、持ち主のマナゾーンに置く。`;
     case "blockOnly":
-      return `${name}は、元のパワーが${abil.maxPower}以下のクリーチャーしかブロックできない(修整は数えない)。`;
+      return abil.maxToughness !== undefined
+        ? `${name}は、元のパワーが${abil.maxPower}以下で元のタフネスが${abil.maxToughness}以下のクリーチャーしかブロックできない(修整は数えない)。`
+        : `${name}は、元のパワーが${abil.maxPower}以下のクリーチャーしかブロックできない(修整は数えない)。`;
+    case "pioneerOppBase":
+      return `対戦相手がコントロールするクリーチャーが${abil.minOpp}体以上いるなら、元のパワーとタフネスがどちらも${abil.maxStat}以下の対戦相手のクリーチャー1体も、${name}の開拓進化の素材にできる。`;
     case "costDown": {
       const amount = abil.per !== undefined ? `${perText(abil.per)}{${abil.mult ?? 1}}` : `{${abil.n}}`;
       const body = `この呪文を唱えるためのコストは${amount}少なくなる。`;

@@ -9,7 +9,7 @@ import { cardColors, manaValue, parseCost, type Color } from "../lib/mana";
 import { findPayment, type ManaUnit } from "./payment";
 
 export type PlayerId = 0 | 1;
-export type Zone = "library" | "hand" | "mana" | "battlefield" | "graveyard" | "exile" | "stack" | "extra";
+export type Zone = "library" | "hand" | "mana" | "battlefield" | "graveyard" | "exile" | "stack" | "extra" | "under";
 export type Step = "setup" | "untap" | "upkeep" | "draw" | "main1" | "attack" | "block" | "damage" | "main2" | "end" | "cleanup";
 
 export const STEP_NAMES: Record<Step, string> = {
@@ -30,6 +30,8 @@ type Mod = { p: number; t: number; kw: string[] };
 
 export type Obj = {
   uid: number;
+  /** 下に重なっているカード(開拓進化。上から順ではなく、重ねた順) */
+  under?: Obj[];
   /** このターン番号の終了時まで戦場を離れない(第11.5弾の「留まる」)。終わるとマナゾーンへ */
   anchorUntil?: number;
   /** マナゾーンで裏向き(名前・色・能力を持たない欠色のカードとして扱う) */
@@ -445,6 +447,9 @@ export class Game {
       this.addLog(`${o.card.name}は戦場を離れなかった`, o.controller);
       return;
     }
+    // 下に重なっているカードは、上のカードと一緒に戦場を離れる
+    const carried = o.zone === "battlefield" && to !== "battlefield" && o.under?.length ? o.under : [];
+    if (carried.length) o.under = [];
     const arr = this.zoneArray(o);
     if (arr) {
       const i = arr.indexOf(o);
@@ -452,6 +457,12 @@ export class Game {
     }
     if (o.zone === "stack") this.stack = this.stack.filter((s) => s.obj !== o);
     const wasBattlefield = o.zone === "battlefield";
+    if (carried.length) {
+      // 上のカードが秘蔵庫に戻るときは、下のカードは墓地へ(ほかの行き先なら同じ所へ)
+      const dest: Zone = to === "extra" || (isExtraCard(o.card) && !abilityOf(o.card, "vaultCast") && to !== "mana" && to !== "stack") ? "graveyard" : to === "stack" ? "graveyard" : to;
+      for (const u of carried) this.move(u, dest);
+      this.addLog(`下に重なっていた${carried.map((u) => u.card.name).join("、")}も${{ graveyard: "墓地", hand: "手札", mana: "マナゾーン", exile: "追放領域", library: "ライブラリー" }[dest as string] ?? dest}に置かれた`, o.controller);
+    }
     // 領域を移ると表向きに戻る
     o.faceDown = false;
     // 陰謀:戦場を離れたクリーチャーと、手札から墓地に置かれた(捨てた)カードを数える
@@ -703,11 +714,11 @@ export class Game {
   }
 
   power(o: Obj): number {
-    return (o.card.power ?? 0) + o.counters + this.allMods(o).reduce((s, m) => s + m.p, 0);
+    return (o.card.power ?? 0) + o.counters + (o.under?.length ?? 0) + this.allMods(o).reduce((s, m) => s + m.p, 0);
   }
 
   toughness(o: Obj): number {
-    return (o.card.toughness ?? 0) + o.counters + this.allMods(o).reduce((s, m) => s + m.t, 0);
+    return (o.card.toughness ?? 0) + o.counters + (o.under?.length ?? 0) + this.allMods(o).reduce((s, m) => s + m.t, 0);
   }
 
   keywords(o: Obj): Set<string> {
@@ -749,7 +760,7 @@ export class Game {
     if (this.hasKw(attacker, "天翔") && !this.hasKw(blocker, "天翔")) return false;
     // 元のパワーが N 以下のクリーチャーしかブロックできない(第11.5弾。修整は見ない)
     const only = abilityOf(blocker.card, "blockOnly");
-    if (only && (attacker.card.power ?? 0) > only.maxPower) return false;
+    if (only && ((attacker.card.power ?? 0) > only.maxPower || (only.maxToughness !== undefined && (attacker.card.toughness ?? 0) > only.maxToughness))) return false;
     return true;
   }
 
@@ -1648,10 +1659,13 @@ export class Game {
   pioneerBases(p: PlayerId, target: Obj): Obj[] {
     const pi = pioneerOf(target.card);
     if (!pi) return [];
+    // 相手のクリーチャーも素材にできる開拓者(苔むす防人):相手の場のクリーチャーが minOpp 体以上なら、元のパワーとタフネスが maxStat 以下のもの
+    const opp = abilityOf(target.card, "pioneerOppBase");
+    const oppCs = opp && this.creatures(this.other(p)).length >= opp.minOpp ? this.creatures(this.other(p)).filter((o) => (o.card.power ?? 0) <= opp.maxStat && (o.card.toughness ?? 0) <= opp.maxStat && !this.anchored(o)) : [];
     // 防衛を持つクリーチャー(苔むす防人など)は、開拓進化の素材にならない
-    return this.creatures(p).filter((o) => !this.hasKw(o, "防衛")).filter((o) =>
+    return [...this.creatures(p).filter((o) => !this.hasKw(o, "防衛") && !this.anchored(o)).filter((o) =>
       pi.grand ? isExtraCard(o.card) && !!pioneerOf(o.card) && !pioneerOf(o.card)!.grand : this.colorsOf(o).includes(pi.color),
-    );
+    ), ...oppCs];
   }
 
   /** 開拓進化で墓地に置けるカード(マナゾーンだけ)と、そのマナ総量(紋章 ― 埋蔵 N を足す) */
@@ -1739,10 +1753,35 @@ export class Game {
         else this.move(x.o, "graveyard");
       }
     }
-    this.addLog(`${base.card.name}を素材に、${o.card.name}が${word}した`, p);
-    this.die(base);
+    this.addLog(`${base.card.name}${base.controller !== p ? "(相手のクリーチャー)" : ""}の上に重ねて、${o.card.name}が${word}した`, p);
     this.usedCards.add(o.card.id);
     this.enterBattlefield(o, p);
+    this.putUnder(o, base);
+  }
+
+  /** 開拓進化:base(とその下のカード)を、top の下に重ねる。重なったカード1枚につき top は+1/+1 */
+  private putUnder(top: Obj, base: Obj) {
+    const arr = this.zoneArray(base);
+    if (arr) {
+      const i = arr.indexOf(base);
+      if (i >= 0) arr.splice(i, 1);
+    }
+    if (isCreatureCard(base.card)) this.players[base.controller].lostThisTurn++;
+    const below = base.under ?? [];
+    base.under = [];
+    for (const u of [base, ...below]) {
+      u.zone = "under";
+      u.tapped = false;
+      u.sick = false;
+      u.damage = 0;
+      u.counters = 0;
+      u.temp = [];
+      u.perm = [];
+      u.attachedTo = null;
+      u.anchorUntil = undefined;
+      u.controller = u.owner;
+    }
+    top.under = [...(top.under ?? []), ...below, base];
   }
 
   canAssemble(p: PlayerId, o: Obj): boolean {
