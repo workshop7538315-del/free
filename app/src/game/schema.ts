@@ -323,6 +323,8 @@ export type Ability = { text?: string } & (
   | { a: "vaultCast" }
   /** パワーが maxPower 以下のクリーチャーしかブロックできない */
   | { a: "blockOnly"; maxPower: number }
+  /** 留まる:次の対戦相手のターンの終了時まで戦場を離れず、その終了時にマナゾーンに置かれる */
+  | { a: "anchor" }
   /** コスト軽減(第11.5弾):per があれば「per 1つにつき{mult}」、なければ{n}。if があればその条件のときだけ */
   | { a: "costDown"; per?: Amount; mult?: number; n?: number; if?: Cond; label?: string }
   /** 共鳴:filter に合う自分のパーマネント1つにつき、唱えるコストが{1}少なくなる */

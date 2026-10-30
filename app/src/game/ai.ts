@@ -1024,6 +1024,8 @@ function chooseSum(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseSum
 }
 
 /** 開拓進化の評価:出てくる体 − 素材のクリーチャー − 墓地に置くカード */
+const me0Life = (g: Game, p: PlayerId) => g.players[p].life;
+
 function scorePioneer(g: Game, p: PlayerId, uid: number): number {
   const o = g.players[p].extra.find((x) => x.uid === uid);
   const pi = o ? (abilitiesOf(o.card).find((a) => a.a === "pioneer") as { n: number; grand?: boolean } | undefined) : undefined;
@@ -1032,7 +1034,17 @@ function scorePioneer(g: Game, p: PlayerId, uid: number): number {
   if (!bases.length) return -1;
   const base = [...bases].sort((a, b) => creatureValue(g, a) - creatureValue(g, b))[0];
   const me = g.players[p];
-  const gain = cardCreatureValue(o.card) + 2 + (pi.grand ? 6 : 0);
+  let gain = cardCreatureValue(o.card) + 2 + (pi.grand ? 6 : 0);
+  // 壁(元のパワーが小さいものだけブロックできる):止められる相手のクリーチャーが多いほど、また押されているほど価値が高い
+  const only = abilitiesOf(o.card).find((a) => a.a === "blockOnly") as { maxPower: number } | undefined;
+  if (only) {
+    const opp = g.creatures(g.other(p));
+    const stoppable = opp.filter((x) => (x.card.power ?? 0) <= only.maxPower);
+    const pressure = opp.reduce((s, x) => s + g.power(x), 0) >= me0Life(g, p) / 2 ? 1.5 : 1;
+    gain = stoppable.reduce((s, x) => s + g.power(x), 0) * 2.5 * pressure - 2;
+    // 一時的な壁のために、大きいクリーチャーを素材にはしない
+    if (Math.min(...bases.map((b) => creatureValue(g, b))) > 6) return -1;
+  }
   // 加護があり、ライブラリーに余裕があれば、山札を削る(損はほぼない)
   if (me.blessings.includes(BLESSING_ELDORADO) && me.library.length >= 12) return gain - creatureValue(g, base);
   const fodder = g.pioneerFodder(p, base);

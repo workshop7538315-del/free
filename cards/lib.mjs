@@ -105,6 +105,8 @@ export const pioneer = (n, color, grand = false) => ({ a: "pioneer", n, color, .
 export const assemble = (color, partner, partnerName, cond = "attacked") => ({ a: "assemble", color, partner, partnerName, cond });
 /** 秘蔵 ―:秘蔵庫に入れ、そこから唱えられる */
 export const vaultCast = () => ({ a: "vaultCast" });
+/** 留まる:次の対戦相手のターンの終了時まで戦場を離れず、その終了時にマナゾーンに置かれる */
+export const anchor = () => ({ a: "anchor" });
 /** パワーが n 以下のクリーチャーしかブロックできない */
 export const blockOnly = (maxPower) => ({ a: "blockOnly", maxPower });
 /** 対戦相手のクリーチャーが攻撃するたび */
@@ -800,6 +802,8 @@ function abilityTextBody(abil, card) {
       return `奉納 ${abil.n}${abil.sub ? `(${abil.sub})` : ""}`;
     case "vaultCast":
       return "秘蔵 ―(このカードは秘蔵庫に入れる。あなたは秘蔵庫からこのカードを唱えてもよい。戦場を離れたら、秘蔵庫には戻らない)";
+    case "anchor":
+      return `${name}が戦場に出たとき、次の対戦相手のターンの終了時まで、${name}は戦場を離れない。そのターンの終了時に、${name}をあなたのマナゾーンに置く。`;
     case "blockOnly":
       return `${name}は、元のパワーが${abil.maxPower}以下のクリーチャーしかブロックできない(修整は数えない)。`;
     case "costDown": {

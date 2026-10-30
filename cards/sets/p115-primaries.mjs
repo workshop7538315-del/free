@@ -13,7 +13,7 @@
 //   緑:ファッティ。すべてマナ総量11以上。原色と過去のカード(開拓進化・ランプ・《黄金》・マナ武装)で軽減して出す。
 import {
   cr, ins, sor, ench, kw, spell, etb, upkeep, lifeGain, once, discount, scale, crest, buried, lord,
-  primaryDown, costDown, dye, secondDraw, primaryCount, vaultCast, blockOnly, oppAttack, T, E,
+  primaryDown, costDown, dye, secondDraw, primaryCount, vaultCast, blockOnly, oppAttack, anchor, pioneer, T, E,
 } from "../lib.mjs";
 
 const tagged = (c) => ({ ...c, tags: [...new Set([...(c.tags ?? []), "原色"])] });
@@ -98,8 +98,9 @@ export const PRIMARIES = [
   tagged(sor("pc45", "大地踏み", "{10}{G}", "U", [primaryDown("G"), spell(E.stomp())])),
 
   // ================================================================ 速攻デッキへの備え(第11.5弾の追加)
-  // 緑:秘蔵庫から出しやすい壁。攻撃できず、小さいクリーチャーしかブロックできないが、何体でもブロックできる
-  tagged(cr("pc46", "苔むす防人", "{1}{G}", "ツリーフォーク", 1, 5, "U", [vaultCast(), kw("防衛", "鉄壁"), blockOnly(1), { a: "note", text: "防衛を持つクリーチャーは、開拓進化の素材にならない。" }], {
+  // 緑:軽い開拓進化で出す壁。攻撃できず、小さいクリーチャーしかブロックできないが、何体でもブロックできる。
+  //     次の相手のターンが終わるまで場を離れず、そのあとマナゾーンに置かれる(原色が1つ増える)
+  tagged(cr("pc46", "苔むす防人", "{1}{G}", "ツリーフォーク", 1, 5, "U", [pioneer(3, "G"), kw("防衛", "鉄壁"), blockOnly(1), anchor(), { a: "note", text: "防衛を持つクリーチャーは、開拓進化の素材にならない。" }], {
     flavor: "巨体が目を覚ますまで、小さな足音を数え続ける。",
   })),
   // 青:軽い全体の弱体化

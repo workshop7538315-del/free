@@ -30,6 +30,8 @@ type Mod = { p: number; t: number; kw: string[] };
 
 export type Obj = {
   uid: number;
+  /** このターン番号の終了時まで戦場を離れない(第11.5弾の「留まる」)。終わるとマナゾーンへ */
+  anchorUntil?: number;
   /** マナゾーンで裏向き(名前・色・能力を持たない欠色のカードとして扱う) */
   faceDown?: boolean;
   /** 生成されたカード(チャージできず、手札・スタック・戦場以外に移ると消える) */
@@ -433,7 +435,16 @@ export class Game {
   }
 
   /** カードを別の領域に移す。トークンは戦場を離れると消える */
+  /** 「留まる」で戦場を離れないか */
+  private anchored(o: Obj): boolean {
+    return o.zone === "battlefield" && o.anchorUntil !== undefined && this.turn <= o.anchorUntil;
+  }
+
   private move(o: Obj, to: Zone, opts: { top?: boolean; tapped?: boolean; controller?: PlayerId } = {}) {
+    if (to !== "battlefield" && this.anchored(o)) {
+      this.addLog(`${o.card.name}は戦場を離れなかった`, o.controller);
+      return;
+    }
     const arr = this.zoneArray(o);
     if (arr) {
       const i = arr.indexOf(o);
@@ -1358,6 +1369,9 @@ export class Game {
 
   private enterBattlefield(o: Obj, controller: PlayerId, burned = false, x = 0, kicked = false, burnCount = 0, dashed = false) {
     this.move(o, "battlefield", { controller });
+    o.anchorUntil = undefined;
+    // 留まる:次の対戦相手のターンの終了時まで戦場を離れず、その終了時にマナゾーンへ
+    if (abilityOf(o.card, "anchor")) o.anchorUntil = this.active === controller ? this.turn + 1 : this.turn + 2;
     o.sick = true;
     o.burned = burned;
     o.burnCount = burnCount;
@@ -1787,7 +1801,7 @@ export class Game {
 
   /** 戦場から墓地へ(死亡) */
   private die(o: Obj) {
-    if (o.zone !== "battlefield") return;
+    if (o.zone !== "battlefield" || this.anchored(o)) return;
     const controller = o.controller;
     const wasCreature = isCreatureCard(o.card);
     const dyingAbilities = abilitiesOf(o.card).filter((a) => !isCrestAbility(a));
@@ -2367,7 +2381,7 @@ export class Game {
       let changed = false;
       for (const p of this.players) {
         for (const o of [...p.battlefield]) {
-          if (!isCreatureCard(o.card)) continue;
+          if (!isCreatureCard(o.card) || this.anchored(o)) continue;
           const lethal = o.damage >= this.toughness(o) || (o.deathtouched && o.damage > 0);
           if (this.toughness(o) <= 0 || (lethal && !this.hasKw(o, "破壊不能"))) {
             this.die(o);
@@ -2670,6 +2684,14 @@ export class Game {
         o.deathtouched = false;
         o.temp = [];
       }
+    // 留まる:期限のターンの終わりに、マナゾーンに置く
+    for (const q of this.players)
+      for (const o of [...q.battlefield])
+        if (o.anchorUntil === this.turn) {
+          o.anchorUntil = undefined;
+          this.addLog(`${o.card.name}はマナゾーンに置かれた`, o.controller);
+          this.move(o, "mana");
+        }
     // マナゾーンに生成したカード(《火の粉》など)は、ターン終了時に墓地に置かれる
     for (const q of this.players) {
       const fleeting = q.mana.filter((o) => o.fleeting);
