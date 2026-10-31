@@ -377,7 +377,7 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return bestOpp >= 2.5 ? bestOpp + 1 : 0;
     }
     case "destroyAll": {
-      const hit = (o: Obj) => (e.maxPower === undefined || g.power(o) <= e.maxPower) && matchFilter(o.card, e.filter, g.colorsOf(o)) && !g.hasKw(o, "破壊不能");
+      const hit = (o: Obj) => (e.maxPower === undefined || g.power(o) <= e.maxPower) && (!e.untapped || !o.tapped) && matchFilter(o.card, e.filter, g.colorsOf(o)) && !g.hasKw(o, "破壊不能");
       const theirs = oppCreatures.filter(hit).reduce((s, o) => s + creatureValue(g, o), 0);
       const mine = e.who === "opp" ? 0 : myCreatures.filter(hit).reduce((s, o) => s + creatureValue(g, o), 0);
       return theirs - mine - (e.who === "opp" ? 1 : 4);

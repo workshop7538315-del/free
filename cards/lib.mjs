@@ -326,6 +326,7 @@ export function filterPhrase(f = {}, ctx = "creature") {
   if (f.maxMV !== undefined) adj.push(`マナ総量が${f.maxMV}以下の`);
   if (f.maxPower !== undefined) adj.push(`パワーが${f.maxPower}以下の`);
   if (f.minPower !== undefined) adj.push(`パワーが${f.minPower}以上の`);
+  if (f.minToughness !== undefined) adj.push(`タフネスが${f.minToughness}以上の`);
   let noun;
   if (f.sub) noun = ctx === "spell" ? `${f.sub}呪文` : ctx === "card" ? `${f.sub}・カード` : f.sub;
   else if (f.type) noun = ctx === "spell" ? `${f.type}呪文` : ctx === "card" ? `${f.type}・カード` : f.type;
@@ -422,6 +423,7 @@ function unitOf(f = {}) {
 function condPrefix(c) {
   const label = condLabel(c);
   if (label) return `${label} ― `;
+  if (typeof c === "object" && "oppHand" in c) return `対戦相手の手札が${c.oppHand}枚以上なら、`;
   if (typeof c === "object" && "manaMV" in c) return `あなたのマナゾーンにあるカードのマナ総量の合計が${c.manaMV}以上なら、`;
   if (typeof c === "object") return `あなたが${filterPhrase(c.control, "permanent")}を${c.n}${unitOf(c.control)}以上コントロールしているなら、`;
   return { pioneeredGame: "このゲームであなたが開拓進化をしたなら、", buriedInMana: "あなたのマナゾーンに埋蔵を持つカードがあるなら、", burned: "燃焼したなら、", kicked: "追加払いしたなら、", fewerMana: "あなたのマナゾーンのカードが対戦相手より少ないなら、", notMoreMana: "あなたのマナゾーンのカードが対戦相手の枚数以下なら、" }[c];
@@ -443,6 +445,7 @@ function condPlain(c) {
     if ("primary" in c) return `あなたのマナゾーンに${COLOR_JA[c.primary]}の単色カードが${c.n}枚以上ある`;
     if ("manaMV" in c) return `あなたのマナゾーンにあるカードのマナ総量の合計が${c.manaMV}以上である`;
     if ("navy" in c) return `あなたのマナゾーンに青のカードが${c.navy}枚以上ある`;
+    if ("oppHand" in c) return `対戦相手の手札が${c.oppHand}枚以上ある`;
     if ("anyName" in c) return `あなたが${c.anyName.map((n) => `《${n}》`).join("か")}をコントロールしている`;
     return `あなたが${filterPhrase(c.control, "permanent")}を${c.n}${unitOf(c.control)}以上コントロールしている`;
   }
@@ -533,7 +536,7 @@ function effectText(e, name, abil, notes) {
     case "destroyAll": {
       const f = { ...(e.filter ?? {}), ...(e.maxPower !== undefined ? { maxPower: e.maxPower } : {}) };
       if (!Object.keys(f).length) return e.who === "opp" ? "対戦相手がコントロールするクリーチャーをすべて破壊する。" : "すべてのクリーチャーを破壊する。";
-      return `${e.who === "opp" ? "対戦相手がコントロールする" : ""}${filterPhrase(f, "creature")}${f.sub || f.type ? "" : ""}をすべて破壊する。`;
+      return `${e.who === "opp" ? "対戦相手がコントロールする" : ""}${e.untapped ? "アンタップ状態の" : ""}${filterPhrase(f, "creature")}${f.sub || f.type ? "" : ""}をすべて破壊する。`;
     }
     case "exile":
       return `${it(e.tg)}を追放する。`;

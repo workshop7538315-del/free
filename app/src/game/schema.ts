@@ -20,6 +20,8 @@ export type Filter = {
   maxMV?: number;
   maxPower?: number;
   minPower?: number;
+  /** 元々のタフネスがこの値以上 */
+  minToughness?: number;
   color?: Color;
 };
 
@@ -93,7 +95,9 @@ export type Cond =
   /** 水軍 N:自分のマナゾーンに青のカード(多色も数える)が N 枚以上(三国志スターター) */
   | { navy: number }
   /** 縁:名前にこれらのどれかを含むクリーチャーをコントロールしている */
-  | { anyName: string[] };
+  | { anyName: string[] }
+  /** 対戦相手の手札がn枚以上 */
+  | { oppHand: number };
 
 export type CountKind = "mana" | "creatures" | "graveyard" | "graveyardCreatures" | "colorsInMana" | "hand" | "oppCreatures" | "burned" | "crests" | "colorlessMana";
 
@@ -135,7 +139,7 @@ export type Effect = Common &
     | { do: "damage"; n: Amount; tg?: number; to?: "opp" }
     | { do: "damageAll"; n: Amount; players?: boolean; who?: "opp" }
     | { do: "destroy"; tg: number }
-    | { do: "destroyAll"; maxPower?: number; filter?: Filter; who?: "opp" }
+    | { do: "destroyAll"; maxPower?: number; filter?: Filter; who?: "opp"; untapped?: boolean }
     | { do: "exile"; tg: number }
     | { do: "bounce"; tg: number }
     | { do: "bounceAll"; who?: "opp" }

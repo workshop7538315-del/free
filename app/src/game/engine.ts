@@ -255,6 +255,7 @@ export function matchFilter(c: Card, f: Filter | undefined, colors?: Color[]): b
   if (f.maxMV !== undefined && mv > f.maxMV) return false;
   if (f.maxPower !== undefined && (c.power ?? 99) > f.maxPower) return false;
   if (f.minPower !== undefined && (c.power ?? -1) < f.minPower) return false;
+  if (f.minToughness !== undefined && (c.toughness ?? -1) < f.minToughness) return false;
   if (f.color && !(colors ?? cardColors(c.cost)).includes(f.color)) return false;
   return true;
 }
@@ -572,6 +573,7 @@ export class Game {
       if ("primary" in c) return this.primaryCount(p, c.primary) >= c.n;
       if ("navy" in c) return this.navyCount(p) >= c.navy || this.navyAlways(p);
       if ("anyName" in c) return pl.battlefield.some((o) => isCreatureCard(o.card) && c.anyName.some((n) => o.card.name.includes(n)));
+      if ("oppHand" in c) return this.players[this.other(p)].hand.length >= c.oppHand;
       if ("manaMV" in c) return pl.mana.reduce((s, o) => s + (o.faceDown ? 0 : manaValue(o.card.cost)), 0) >= c.manaMV;
       return pl.battlefield.filter((o) => matchFilter(o.card, c.control, this.colorsOf(o))).length >= c.n;
     }
@@ -1957,7 +1959,7 @@ export class Game {
       }
       case "destroyAll":
         for (const o of e.who === "opp" ? this.creatures(opp) : [...this.creatures(0), ...this.creatures(1)])
-          if ((e.maxPower === undefined || this.power(o) <= e.maxPower) && matchFilter(o.card, e.filter, this.colorsOf(o))) this.destroy(o);
+          if ((e.maxPower === undefined || this.power(o) <= e.maxPower) && (!e.untapped || !o.tapped) && matchFilter(o.card, e.filter, this.colorsOf(o))) this.destroy(o);
         break;
       case "exile": {
         const o = this.refObj(ctx, e.tg);

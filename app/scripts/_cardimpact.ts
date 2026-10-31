@@ -6,12 +6,12 @@ const byId = new Map((cardsJson as any[]).map((c) => [c.id, c]));
 const decks = decksJson as any[];
 const expand = (l: Record<string, number>) => Object.entries(l).flatMap(([id, n]) => Array.from({ length: n }, () => byId.get(id)!));
 const A = process.env.A!;
-const OPP = decks.filter((d) => !d.legacy && d.id !== A).map((d) => d.id);
+const OPP = process.env.OPP ? process.env.OPP.split(",") : decks.filter((d) => !d.legacy && d.id !== A).map((d) => d.id);
 const me = decks.find((d) => d.id === A)!;
 const names = Object.keys(me.cards).map((id) => byId.get(id)!.name);
 const stat: Record<string, { w: number; n: number }> = {};
 let W = 0, N = 0, turns = 0, lifeEnd = 0;
-for (const o of OPP) for (let i = 0; i < 6; i++) {
+for (const o of OPP) for (let i = 0; i < Number(process.env.REP ?? 6); i++) {
   const g: any = new Game({ decks: [expand(me.cards), expand(decks.find((d) => d.id === o)!.cards)], names: ["A", "B"], agents: [new CpuAgent(), new CpuAgent()], seed: i * 97 + 13, first: (i % 2) as PlayerId, maxTurns: 80 });
   const win = (await g.run()) === 0;
   N++; if (win) W++; turns += g.turn; lifeEnd += g.players[0].life;

@@ -10,7 +10,7 @@
 //
 // 狙う相性:魏(コントロール)> 呉(大型ミッドレンジ)> 蜀(アグロ)> 魏。
 // 難しさ:魏は上級者向け(献策と計略の使い分け)、呉は中級者向け(青を増やして水軍を育てる)、蜀は初心者向け(縁で武将を安く並べる)。
-import { cr, ins, sor, ench, kw, spell, etb, dies, attacks, endStep, allyEnter, selfIf, lord, discount, lesson, en, once, T, E } from "../lib.mjs";
+import { cr, ins, sor, ench, kw, spell, costDown, etb, dies, attacks, endStep, allyEnter, selfIf, lord, discount, lesson, en, once, T, E } from "../lib.mjs";
 
 const tagged = (c, faction) => ({ ...c, tags: [...new Set([...(c.tags ?? []), "三国志", faction])] });
 const wei = (c) => tagged(c, "魏");
@@ -48,23 +48,24 @@ export const SANGOKU = [
   plan(ins("sg25", "遠交近攻", "{1}{W}", "C", spell([E.tap(0, true), E.draw(1)], T.opp))),
 
   // ================================================================ 呉(青・赤・緑):緑で青を増やし、水軍を育て、赤で焼く
-  wu(cr("sg30", "呉王 孫権 仲謀", "{2}{U}{G}{R}", "人間・武将・君主", 4, 5, "M", [etb(E.ramp(2)), { a: "navyAlways" }, selfIf({ navy: 6 }, 2, 2)], {
+  wu(cr("sg30", "呉王 孫権 仲謀", "{2}{U}{G}{R}", "人間・武将・君主", 5, 6, "M", [etb(E.ramp(2)), { a: "navyAlways" }, selfIf({ navy: 6 }, 2, 2, ["呪禁"])], {
     flavor: "「江東の地は、父と兄が遺したもの。わしはそれを守り、広げるだけだ」",
   })),
   wu(cr("sg31", "周瑜 公瑾", "{2}{U}{R}", "人間・武将", 4, 4, "R", [etb(E.tutor({ name: "火計" })), { ...discount({ name: "火計" }, 2), if: { navy: 5 } }], {
     flavor: "赤壁の夜、東南の風が吹いた。",
   })),
   wu(cr("sg32", "陸遜 伯言", "{1}{U}{R}", "人間・武将", 3, 3, "R", [etb({ ...E.dmg(2), if: { navy: 4 } }, T.opp)], { flavor: "書生と侮った者たちは、夷陵の炎の中で考えを改めた。" })),
-  wu(cr("sg33", "甘寧 興覇", "{1}{U}{G}", "人間・武将・水軍", 3, 2, "R", [kw("速攻"), selfIf({ navy: 4 }, 2, 0, ["トランプル"])], { flavor: "鈴の音が聞こえたら、もう遅い。" })),
-  wu(cr("sg34", "黄蓋 公覆", "{2}{R}{G}", "人間・武将", 4, 4, "U", [dies(E.dmgAllOpp(2))], { flavor: "苦肉の計。打たれた背の痛みは、燃える船団の炎で返した。" })),
-  wu(cr("sg35", "孫策 伯符", "{2}{R}{G}", "人間・武将", 5, 4, "R", [kw("速攻"), selfIf("hegemonyWu", 2, 0, ["トランプル"])], { flavor: "小覇王。江東を駆け抜けた、短く激しい生涯。" })),
-  wu(cr("sg36", "呂蒙 子明", "{2}{U}{G}", "人間・武将", 3, 4, "U", [etb(E.draw(1)), selfIf({ navy: 5 }, 1, 1, ["呪禁"])], { flavor: "「士別れて三日、即ち更に刮目して相待すべし」" })),
-  wu(cr("sg37", "楼船", "{4}{U}{U}", "船・水軍", 5, 6, "U", [kw("到達", "呪禁"), etb({ ...E.draw(2), if: { navy: 6 } })])),
+  wu(cr("sg33", "甘寧 興覇", "{1}{U}{G}", "人間・武将・水軍", 3, 3, "R", [kw("速攻"), selfIf({ navy: 4 }, 2, 0, ["トランプル", "呪禁"])], { flavor: "鈴の音が聞こえたら、もう遅い。" })),
+  wu(cr("sg34", "黄蓋 公覆", "{2}{R}{G}", "人間・武将", 4, 4, "U", [dies(E.draw(2))], { flavor: "苦肉の計。打たれた背の痛みは、燃える船団の炎で返した。" })),
+  wu(cr("sg35", "孫策 伯符", "{2}{R}{G}", "人間・武将", 5, 4, "R", [kw("速攻"), selfIf("hegemonyWu", 2, 0, ["トランプル", "呪禁"])], { flavor: "小覇王。江東を駆け抜けた、短く激しい生涯。" })),
+  wu(cr("sg36", "呂蒙 子明", "{2}{U}{G}", "人間・武将", 4, 4, "U", [etb(E.draw(1)), selfIf({ navy: 4 }, 1, 1, ["呪禁"])], { flavor: "「士別れて三日、即ち更に刮目して相待すべし」" })),
+  wu(cr("sg37", "楼船", "{4}{U}{U}", "船・水軍", 6, 7, "U", [kw("到達", "呪禁"), etb({ ...E.draw(2), if: { navy: 6 } })])),
   wu(cr("sg38", "闘艦", "{2}{U}", "船・水軍", 2, 3, "C", [selfIf({ navy: 4 }, 1, 1, ["呪禁"])])),
-  wu(cr("sg39", "江東の水兵", "{1}{U}", "人間・水軍", 2, 2, "C", [selfIf({ navy: 3 }, 1, 1)])),
+  wu(cr("sg39", "江東の水兵", "{1}{U}", "人間・水軍", 2, 2, "C", [selfIf({ navy: 3 }, 1, 1, ["呪禁"])])),
   wu(sor("sg40", "長江の流れ", "{1}{U}{G}", "C", spell([E.ramp(1), E.draw(1)]))),
   wu(sor("sg41", "揚州の豊穣", "{1}{G}", "C", spell([E.ramp(1), { ...E.draw(1), if: "hegemonyWu" }]))),
-  wu(sor("sg42", "火計", "{3}{R}{R}", "R", spell(E.destroyAll(undefined, { minPower: 4 }, "opp")), { flavor: "連環の船団は、逃げることもできずに燃えた。" })),
+  wu(sor("sg42", "火計", "{4}{R}{R}", "R", [costDown({ n: 2, if: { oppHand: 3 } }), spell({ ...E.destroyAll(undefined, { minToughness: 4 }, "opp"), untapped: true })], { flavor: "連環の船団は、逃げることもできずに燃えた。" })),
+  wu(cr("sg44", "魯粛 子敬", "{2}{U}", "人間・武将", 1, 3, "U", [etb([E.draw(1), { ...E.draw(1), if: { oppHand: 3 } }])], { flavor: "「曹操に降れば、将軍はどこに座られるおつもりか」" })),
   wu(cr("sg43", "江東の斥候船", "{U}", "船・水軍", 1, 2, "C", [kw("飛行"), etb(E.lookTop())])),
 
   // ================================================================ 蜀(白・赤・緑):縁で武将を安く並べるアグロ
@@ -87,5 +88,7 @@ export const SANGOKU = [
   shu(cr("sg60", "南中の象兵", "{3}{G}", "ゾウ", 5, 5, "C", [kw("トランプル")])),
   shu(sor("sg61", "義兄弟の契り", "{1}{G}", "C", spell(E.counters(2), T.you))),
   shu(sor("sg63", "三顧の礼", "{W}", "U", spell(E.tutor(GENERAL)), { flavor: "三度目の訪問で、ようやく草廬の戸が開いた。" })),
+  shu(cr("sg64", "魏延 文長", "{2}{R}", "人間・武将", 3, 2, "U", [kw("速攻"), selfIf("fewerMana", 2, 0, ["トランプル"])], { flavor: "「わしを殺せる者がおるか!」" })),
+  shu(sor("sg65", "荊州借用", "{1}{G}", "C", spell([E.ramp(1), { ...E.draw(2), if: "fewerMana" }]), { flavor: "借りたものは、返すつもりで借りるとは限らない。" })),
   shu(cr("sg62", "関平", "{1}{R}", "人間・武将", 2, 2, "U", [en(["関羽"], 1), kw("速攻")], { flavor: "父の青龍偃月刀を、いつか自分が担ぐと信じていた。" })),
 ];
