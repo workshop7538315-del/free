@@ -1,3 +1,4 @@
+import { isExtraCard } from "../game/engine";
 import type { Card, DeckCards } from "../types";
 import { COLORS, cardColors, colorPips, manaValue, type Color } from "./mana";
 
@@ -7,9 +8,8 @@ export const MAX_COPIES = 4;
 export const EXTRA_SIZE = 8;
 export const EXTRA_COPIES = 2;
 
-/** 秘蔵庫のカード(リリース召喚を持つ) */
-export const isExtra = (c: Card | undefined) =>
-  !!c?.abilities?.some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly" || a.a === "gem" || a.a === "curtainCall" || a.a === "vaultCast" || a.a === "lesson");
+/** 秘蔵庫に入るカード(エンジンと同じ判定を使う。龍生九子など新しい種類もここに揃う) */
+export const isExtra = (c: Card | undefined) => !!c && isExtraCard(c);
 /** 同名カードの上限。制限カード(limit)はそれより少ない */
 export const maxCopies = (c: Card | undefined) => Math.min(isExtra(c) ? EXTRA_COPIES : MAX_COPIES, c?.limit ?? 99);
 
