@@ -82,7 +82,6 @@ export function Account({ session }: Props) {
   if (!open) {
     return (
       <div className="account">
-        <span className="account-note">ログインするとデッキをクラウドに保存できます。</span>
         <button type="button" className="btn" onClick={() => setOpen(true)}>
           ログイン
         </button>

@@ -115,7 +115,7 @@ export function Battle({ byId, starters, saved, draft }: Props) {
                 <label className={`deck-choice ${mine === c.key ? "is-on" : ""}`}>
                   <input type="radio" name="mine" value={c.key} checked={mine === c.key} onChange={() => setMine(c.key)} />
                   <span className="deck-choice-name">{c.name}</span>
-                  <span className="deck-choice-kind">{c.kind === "starter" ? "スターター" : c.kind === "legacy" ? "旧スターター" : c.kind === "saved" ? "保存済み" : "作成中"}</span>
+                  {c.kind !== "starter" && <span className="deck-choice-kind">{c.kind === "legacy" ? "旧スターター" : c.kind === "saved" ? "保存済み" : "作成中"}</span>}
                 </label>
               </li>
             ))}

@@ -25,6 +25,8 @@
   --font-ui: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
   --font-card: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
 
+  --step--3: 0.6875rem;
+  --step--2: 0.75rem;
   --step--1: 0.8125rem;
   --step-0: 0.9375rem;
   --step-1: 1.125rem;
@@ -53,6 +55,7 @@
 }
 
 /* ---------- 土台 ---------- */
+input[type="radio"], input[type="checkbox"] { accent-color: var(--accent); }
 *,
 *::before,
 *::after {
@@ -115,7 +118,7 @@ textarea {
   border-radius: 50%;
   box-shadow: inset 0 0 0 1px var(--pip-ring);
   font-size: 0.95em;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
   color: #1b2130;
   flex: none;
@@ -126,7 +129,7 @@ textarea {
 .pip-R { background: var(--mana-R); }
 .pip-G { background: var(--mana-G); }
 .pip-C { background: var(--mana-C); font-size: 0.7em; }
-.mana-chip.is-facedown { background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(0,0,0,0.07) 4px 8px); font-style: italic; }
+.mana-chip.is-facedown { background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(0,0,0,0.07) 4px 8px); }
 .pip-M { background: conic-gradient(var(--mana-W) 0 20%, var(--mana-U) 0 40%, var(--mana-B) 0 60%, var(--mana-R) 0 80%, var(--mana-G) 0); }
 .pip-generic { background: var(--mana-generic); font-size: 0.72em; }
 .pip-hybrid { background: linear-gradient(135deg, var(--a) 50%, var(--b) 50%); }
@@ -137,8 +140,8 @@ textarea {
   gap: 0.12em;
   align-items: center;
 }
-.mana-cost-md { font-size: 1.05rem; }
-.mana-cost-sm { font-size: 0.85rem; }
+.mana-cost-md { font-size: 1rem; }
+.mana-cost-sm { font-size: var(--step--1); }
 
 /* ---------- 上部 ---------- */
 .topbar {
@@ -147,7 +150,7 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem 1.5rem;
-  padding: 0.9rem clamp(1rem, 3vw, 2rem);
+  padding: 1rem clamp(1rem, 3vw, 2rem);
   border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
@@ -158,14 +161,14 @@ textarea {
   gap: 0.75rem;
   margin: 0;
   font-family: var(--font-card);
-  font-weight: 800;
+  font-weight: 600;
   font-size: var(--step-2);
   letter-spacing: 0.04em;
 }
 
 .title-pips {
   display: inline-flex;
-  font-size: 1.1rem;
+  font-size: var(--step-1);
 }
 .title-pips .pip + .pip {
   margin-left: -0.3em;
@@ -210,14 +213,14 @@ input[type="search"],
 input:not([type]),
 select,
 textarea {
-  padding: 0.4rem 0.6rem;
+  padding: 0.5rem 0.5rem;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--surface-2);
 }
 
 .btn {
-  padding: 0.4rem 0.9rem;
+  padding: 0.5rem 1rem;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--surface-2);
@@ -255,7 +258,7 @@ textarea {
   border-radius: 50%;
   background: var(--surface-2);
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 600;
 }
 .step:hover:not(:disabled) {
   border-color: var(--accent);
@@ -268,7 +271,7 @@ textarea {
 .step-sm {
   width: 1.6rem;
   height: 1.6rem;
-  font-size: 0.85rem;
+  font-size: var(--step--1);
 }
 
 /* ---------- レイアウト ---------- */
@@ -293,16 +296,16 @@ textarea {
 .color-filter {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0 0 0.6rem;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
   padding: 0;
   border: 0;
 }
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.75rem 0.3rem 0.45rem;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem 0.25rem 0.5rem;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--surface);
@@ -331,7 +334,7 @@ textarea {
 }
 .check {
   display: inline-flex;
-  gap: 0.35rem;
+  gap: 0.25rem;
   align-items: center;
   font-size: var(--step--1);
   color: var(--muted);
@@ -347,9 +350,9 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem 0.75rem;
-  margin: -0.1rem 0 0.7rem;
-  padding: 0.5rem 0.6rem;
+  gap: 0.5rem 0.75rem;
+  margin: -0.1rem 0 0.75rem;
+  padding: 0.5rem 0.5rem;
   border-radius: 8px;
   background: color-mix(in srgb, var(--mana-M) 14%, transparent);
 }
@@ -364,7 +367,7 @@ textarea {
   background: var(--surface-2);
 }
 .segmented button {
-  padding: 0.25rem 0.7rem;
+  padding: 0.25rem 0.75rem;
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -380,23 +383,23 @@ textarea {
 
 /* 数値の絞り込み */
 .ranges {
-  margin-top: 0.6rem;
+  margin-top: 0.5rem;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
 }
 .ranges summary {
-  padding: 0.45rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   cursor: pointer;
   font-size: var(--step--1);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 .ranges[open] summary {
   border-bottom: 1px solid var(--line);
 }
 .ranges-count {
-  margin-left: 0.6rem;
+  margin-left: 0.5rem;
   padding: 0 0.5rem;
   border-radius: 999px;
   background: var(--ink);
@@ -405,28 +408,28 @@ textarea {
 }
 .ranges > .hint {
   margin: 0;
-  padding: 0 0.75rem 0.6rem;
+  padding: 0 0.75rem 0.5rem;
 }
 .range-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 1.5rem;
-  padding: 0.6rem 0.75rem 0.4rem;
+  padding: 0.5rem 0.75rem 0.5rem;
 }
 .range {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
   margin: 0;
   padding: 0;
   border: 0;
 }
 .range legend {
   float: left;
-  margin-right: 0.4rem;
+  margin-right: 0.5rem;
   font-size: var(--step--1);
-  font-weight: 700;
+  font-weight: 600;
 }
 .range input {
   width: 4.2rem;
@@ -444,7 +447,7 @@ textarea {
 .range-error {
   flex-basis: 100%;
   color: var(--danger);
-  font-size: 0.75rem;
+  font-size: var(--step--2);
 }
 
 .filter-foot {
@@ -452,7 +455,7 @@ textarea {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem 1rem;
-  margin-top: 0.6rem;
+  margin-top: 0.5rem;
 }
 .filter-count {
   margin: 0;
@@ -468,7 +471,7 @@ textarea {
   font: inherit;
   line-height: inherit;
   color: inherit;
-  font-weight: 700;
+  font-weight: 600;
   cursor: help;
 }
 .kw:hover,
@@ -479,7 +482,7 @@ textarea {
   position: fixed;
   z-index: 50;
   transform: translateY(-100%);
-  padding: 0.55rem 0.7rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 8px;
   background: var(--ink);
   color: var(--bg);
@@ -495,13 +498,13 @@ textarea {
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.25rem;
   font-family: var(--font-card);
 }
 .kw-tip-kind {
   font-family: var(--font-ui);
   font-weight: 400;
-  font-size: 0.7rem;
+  font-size: var(--step--3);
   opacity: 0.7;
 }
 
@@ -509,14 +512,14 @@ textarea {
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr));
-  gap: 0.9rem;
+  gap: 1rem;
 }
 
 .card {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 0.75rem 0.85rem 0.6rem;
+  padding: 0.75rem 0.75rem 0.5rem;
   border-radius: 10px;
   background: var(--surface-2);
   /* 枠はマナの色。多色はその色のグラデーション */
@@ -536,13 +539,13 @@ textarea {
 .card-name {
   margin: 0;
   font-family: var(--font-card);
-  font-weight: 800;
+  font-weight: 600;
   font-size: var(--step-1);
   line-height: 1.3;
 }
 .card-type {
-  margin: 0.2rem 0 0.5rem;
-  padding-bottom: 0.4rem;
+  margin: 0.25rem 0 0.5rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--line);
   color: var(--muted);
   font-size: var(--step--1);
@@ -553,7 +556,7 @@ textarea {
   line-height: 1.65;
 }
 .card-text p {
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.25rem;
 }
 .card-vanilla,
 .card-flavor {
@@ -566,7 +569,7 @@ textarea {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-top: 0.3rem;
+  margin-top: 0.25rem;
   font-size: var(--step--1);
   color: var(--muted);
 }
@@ -575,15 +578,15 @@ textarea {
 }
 .card-pack {
   margin-right: auto;
-  font-size: 0.72rem;
+  font-size: var(--step--2);
   letter-spacing: 0.02em;
 }
 .card-based {
-  margin-top: 0.4rem !important;
-  padding: 0.15rem 0.4rem;
+  margin-top: 0.5rem !important;
+  padding: 0.125rem 0.5rem;
   border-left: 3px solid var(--line);
   color: var(--muted);
-  font-size: 0.75rem;
+  font-size: var(--step--2);
 }
 .pack-info {
   margin: 0.5rem 0 0;
@@ -599,7 +602,7 @@ textarea {
 }
 .card-pt {
   font-family: var(--font-card);
-  font-weight: 800;
+  font-weight: 600;
   font-size: var(--step-1);
   color: var(--ink);
 }
@@ -623,7 +626,7 @@ textarea {
   top: 1rem;
   max-height: calc(100vh - 2rem);
   overflow: auto;
-  padding: 1rem 1.1rem 1.25rem;
+  padding: 1rem 1rem 1.25rem;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
@@ -645,13 +648,13 @@ textarea {
 }
 .deck-name input {
   width: 100%;
-  padding: 0.15rem 0;
+  padding: 0.125rem 0;
   border: 0;
   border-bottom: 1px solid var(--line);
   border-radius: 0;
   background: transparent;
   font-family: var(--font-card);
-  font-weight: 800;
+  font-weight: 600;
   font-size: var(--step-1);
 }
 .deck-total {
@@ -672,13 +675,13 @@ textarea {
 .deck-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.5rem;
   margin-top: 0.75rem;
 }
 
 .issues {
   margin: 0.75rem 0 0;
-  padding: 0.5rem 0.75rem 0.5rem 1.6rem;
+  padding: 0.5rem 0.75rem 0.5rem 1.5rem;
   border-radius: 8px;
   background: color-mix(in srgb, var(--danger) 10%, transparent);
   color: var(--danger);
@@ -688,9 +691,9 @@ textarea {
 .panel-sub {
   display: flex;
   justify-content: space-between;
-  margin: 1.1rem 0 0.4rem;
+  margin: 1rem 0 0.5rem;
   font-size: var(--step--1);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 .panel-sub-count {
@@ -709,10 +712,10 @@ textarea {
   grid-template-columns: 1.4rem minmax(0, 1fr) auto auto;
   gap: 0.5rem;
   align-items: center;
-  padding: 0.2rem 0;
+  padding: 0.25rem 0;
 }
 .deck-row-n {
-  font-weight: 700;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -725,14 +728,14 @@ textarea {
 }
 .deck-row-steps {
   display: inline-flex;
-  gap: 0.2rem;
+  gap: 0.25rem;
 }
 
 /* マナカーブ */
 .curve {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
-  gap: 0.3rem;
+  gap: 0.25rem;
   height: 6.5rem;
   align-items: end;
 }
@@ -764,15 +767,15 @@ textarea {
   grid-template-columns: 1.2rem 2.2rem minmax(0, 1fr) 4.6rem;
   gap: 0.5rem;
   align-items: center;
-  padding: 0.3rem 0;
+  padding: 0.25rem 0;
   font-size: var(--step--1);
 }
 .balance-row .pip {
-  font-size: 1.1rem;
+  font-size: var(--step-1);
 }
 .balance-bars {
   display: grid;
-  gap: 3px;
+  gap: 4px;
 }
 .bar {
   display: block;
@@ -787,7 +790,7 @@ textarea {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   line-height: 1.3;
-  font-size: 0.75rem;
+  font-size: var(--step--2);
 }
 
 .deck-note {
@@ -811,7 +814,7 @@ textarea {
   flex: 1;
   display: grid;
   text-align: left;
-  padding: 0.35rem 0.5rem;
+  padding: 0.25rem 0.5rem;
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -821,7 +824,7 @@ textarea {
   font-weight: 600;
 }
 .saved-meta {
-  font-size: 0.75rem;
+  font-size: var(--step--2);
   color: var(--muted);
 }
 
@@ -843,7 +846,7 @@ textarea {
     background: var(--ink);
     color: var(--bg);
     text-decoration: none;
-    font-weight: 700;
+    font-weight: 600;
   }
   .mobile-bar strong {
     font-family: var(--font-card);
@@ -865,18 +868,18 @@ textarea {
 .tabs {
   display: inline-flex;
   gap: 0.25rem;
-  padding: 0.2rem;
+  padding: 0.25rem;
   border-radius: 8px;
   background: var(--bg);
   margin-right: auto;
 }
 .tab {
-  padding: 0.35rem 0.9rem;
+  padding: 0.25rem 1rem;
   border: 0;
   border-radius: 6px;
   background: transparent;
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
 }
 .tab[aria-current="page"] {
@@ -900,7 +903,7 @@ textarea {
   font-size: var(--step-2);
 }
 .setup-lead {
-  margin: 0.4rem 0 1rem;
+  margin: 0.5rem 0 1rem;
   color: var(--muted);
 }
 .setup-grid {
@@ -916,8 +919,8 @@ textarea {
   background: var(--surface);
 }
 .setup-col legend {
-  padding: 0 0.3rem;
-  font-weight: 700;
+  padding: 0 0.25rem;
+  font-weight: 600;
 }
 .deck-choices {
   list-style: none;
@@ -925,14 +928,14 @@ textarea {
   padding: 0;
   display: grid;
   gap: 0.25rem;
-  max-height: 22rem;
+  max-height: max(22rem, calc(100dvh - 21rem));
   overflow: auto;
 }
 .deck-choice {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.4rem 0.5rem;
+  padding: 0.5rem 0.5rem;
   border-radius: 6px;
   cursor: pointer;
 }
@@ -945,12 +948,12 @@ textarea {
   font-weight: 600;
 }
 .deck-choice-kind {
-  font-size: 0.75rem;
+  font-size: var(--step--2);
   color: var(--muted);
 }
 .btn-start {
   margin-top: 1rem;
-  padding: 0.6rem 1.6rem;
+  padding: 0.5rem 1.5rem;
   font-size: var(--step-1);
 }
 .howto {
@@ -960,7 +963,7 @@ textarea {
 }
 .howto summary {
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* ======================================================== 対戦の盤面 */
@@ -986,8 +989,8 @@ textarea {
 
 .zone-label {
   margin: 0;
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: var(--step--2);
+  font-weight: 600;
   color: var(--muted);
   white-space: nowrap;
 }
@@ -1001,13 +1004,13 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem 0.9rem;
+  gap: 0.5rem 1rem;
 }
 .life {
   display: inline-flex;
   align-items: baseline;
-  gap: 0.3rem;
-  padding: 0.15rem 0.7rem;
+  gap: 0.25rem;
+  padding: 0.125rem 0.75rem;
   border: 2px solid var(--line);
   border-radius: 999px;
   background: var(--surface-2);
@@ -1018,17 +1021,17 @@ textarea {
 }
 .life-n {
   font-family: var(--font-card);
-  font-weight: 800;
+  font-weight: 600;
   font-size: var(--step-2);
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
 }
 .life-label {
-  font-size: 0.75rem;
+  font-size: var(--step--2);
   color: var(--muted);
 }
 .player-name {
-  font-weight: 700;
+  font-weight: 600;
 }
 .player-stats {
   display: inline-flex;
@@ -1040,36 +1043,36 @@ textarea {
 }
 .turn-flag {
   margin-left: auto;
-  padding: 0.1rem 0.6rem;
+  padding: 0.125rem 0.5rem;
   border-radius: 999px;
   background: var(--ink);
   color: var(--bg);
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: var(--step--2);
+  font-weight: 600;
 }
 
 /* マナゾーン */
 .mana-row {
   display: flex;
-  gap: 0.6rem;
+  gap: 0.5rem;
   align-items: center;
 }
 .mana-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem;
+  gap: 0.25rem;
 }
 .mana-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.25rem;
   max-width: 8.5rem;
-  padding: 0.15rem 0.5rem 0.15rem 0.2rem;
+  padding: 0.125rem 0.5rem 0.125rem 0.25rem;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--surface-2);
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: var(--step--2);
 }
 .mana-chip-color {
   width: 0.9rem;
@@ -1112,10 +1115,10 @@ textarea {
 .mini {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.125rem;
   width: 8.5rem;
   min-height: 6.6rem;
-  padding: 0.4rem 0.5rem;
+  padding: 0.5rem 0.5rem;
   text-align: left;
   border: 3px solid transparent;
   border-radius: 8px;
@@ -1123,7 +1126,7 @@ textarea {
   background-origin: border-box;
   background-clip: padding-box, border-box;
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: var(--step--2);
   line-height: 1.35;
   transition: transform 0.15s ease;
 }
@@ -1138,13 +1141,13 @@ textarea {
 .mini-head {
   display: flex;
   justify-content: space-between;
-  gap: 0.2rem;
+  gap: 0.25rem;
   align-items: flex-start;
 }
 .mini-name {
   font-family: var(--font-card);
-  font-weight: 800;
-  font-size: 0.8rem;
+  font-weight: 600;
+  font-size: var(--step--1);
 }
 .mini-type {
   color: var(--muted);
@@ -1157,10 +1160,10 @@ textarea {
   color: var(--ink);
 }
 .mini-kws {
-  font-weight: 700;
+  font-weight: 600;
 }
 .mini-aura {
-  padding: 0 0.3rem;
+  padding: 0 0.25rem;
   border-radius: 4px;
   background: color-mix(in srgb, var(--mana-W) 40%, transparent);
 }
@@ -1169,27 +1172,27 @@ textarea {
   justify-content: space-between;
   align-items: flex-end;
   margin-top: auto;
-  gap: 0.2rem;
+  gap: 0.25rem;
 }
 .mini-flags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.2rem;
+  gap: 0.25rem;
   color: var(--muted);
-  font-size: 0.65rem;
+  font-size: var(--step--3);
 }
 .flag-attack {
   color: var(--danger);
-  font-weight: 700;
+  font-weight: 600;
 }
 .flag-block {
   color: var(--accent);
-  font-weight: 700;
+  font-weight: 600;
 }
 .mini-pt {
   font-family: var(--font-card);
-  font-weight: 800;
-  font-size: 0.95rem;
+  font-weight: 600;
+  font-size: var(--step-0);
 }
 .mini-pt.is-buffed {
   color: var(--ok);
@@ -1223,7 +1226,7 @@ textarea {
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
-  padding: 0.4rem 0.2rem 0.6rem;
+  padding: 0.5rem 0.25rem 0.5rem;
 }
 .hand-cards .mini {
   flex: none;
@@ -1232,8 +1235,8 @@ textarea {
 /* 中央 */
 .center {
   display: grid;
-  gap: 0.4rem;
-  padding: 0.6rem 0.75rem;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 10px;
   background: var(--ink);
   color: var(--bg);
@@ -1246,14 +1249,14 @@ textarea {
   font-size: var(--step--1);
 }
 .center-turn {
-  font-weight: 700;
+  font-weight: 600;
 }
 .center-charge {
   opacity: 0.8;
 }
 .stack {
   margin: 0;
-  padding: 0.4rem 0.6rem 0.4rem 1.6rem;
+  padding: 0.5rem 0.5rem 0.5rem 1.5rem;
   border-radius: 6px;
   background: color-mix(in srgb, var(--bg) 12%, transparent);
   font-size: var(--step--1);
@@ -1268,13 +1271,13 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem;
-  margin-top: 0.35rem;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
 }
 .prompt-card {
   font-family: var(--font-card);
-  font-weight: 800;
-  margin-right: 0.3rem;
+  font-weight: 600;
+  margin-right: 0.25rem;
 }
 .center .btn {
   background: color-mix(in srgb, var(--bg) 10%, transparent);
@@ -1285,7 +1288,7 @@ textarea {
   background: var(--bg);
   border-color: var(--bg);
   color: var(--ink);
-  font-weight: 700;
+  font-weight: 600;
 }
 .center .btn-on {
   background: var(--bg);
@@ -1299,8 +1302,8 @@ textarea {
   font-variant-numeric: tabular-nums;
 }
 .block-list {
-  margin: 0.3rem 0 0;
-  padding-left: 1.2rem;
+  margin: 0.25rem 0 0;
+  padding-left: 1.25rem;
   font-size: var(--step--1);
 }
 
@@ -1339,8 +1342,8 @@ textarea {
   font-size: var(--step-1);
 }
 .detail-type {
-  margin: 0.2rem 0 0.4rem;
-  padding-bottom: 0.4rem;
+  margin: 0.25rem 0 0.5rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--line);
   color: var(--muted);
   font-size: var(--step--1);
@@ -1349,32 +1352,32 @@ textarea {
   font-size: var(--step--1);
 }
 .detail-text p {
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.25rem;
 }
 .detail-pt {
-  margin: 0.2rem 0 0;
+  margin: 0.25rem 0 0;
   text-align: right;
   font-family: var(--font-card);
-  font-weight: 800;
+  font-weight: 600;
   font-size: var(--step-1);
 }
 .detail-damage {
-  margin-left: 0.4rem;
+  margin-left: 0.5rem;
   font-size: var(--step--1);
   color: var(--danger);
 }
 .graves summary {
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 600;
   font-size: var(--step--1);
 }
 .graves h4 {
-  margin: 0.5rem 0 0.2rem;
+  margin: 0.5rem 0 0.25rem;
   font-size: var(--step--1);
 }
 .graves ul {
   margin: 0;
-  padding-left: 1.1rem;
+  padding-left: 1rem;
   font-size: var(--step--1);
 }
 .link {
@@ -1387,15 +1390,15 @@ textarea {
 }
 .log ol {
   list-style: none;
-  margin: 0.4rem 0 0;
+  margin: 0.5rem 0 0;
   padding: 0;
   max-height: 18rem;
   overflow: auto;
-  font-size: 0.75rem;
+  font-size: var(--step--2);
   line-height: 1.5;
 }
 .log li {
-  padding: 0.1rem 0 0.1rem 0.5rem;
+  padding: 0.125rem 0 0.125rem 0.5rem;
   border-left: 3px solid transparent;
 }
 .log li.is-me {
@@ -1405,7 +1408,7 @@ textarea {
   border-left-color: var(--danger);
 }
 .log li.is-sys {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* 結果 */
@@ -1470,7 +1473,7 @@ textarea {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 1rem;
-  padding: 0.6rem 1rem;
+  padding: 0.5rem 1rem;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--surface-2);
@@ -1493,25 +1496,25 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem;
-  margin: 0.3rem 0 0.5rem;
+  gap: 0.5rem;
+  margin: 0.25rem 0 0.5rem;
 }
 .result-box .log-copy {
   justify-content: center;
-  margin-top: 0.8rem;
+  margin-top: 0.75rem;
 }
 .btn-small {
-  padding: 0.25rem 0.6rem;
-  font-size: 0.78rem;
+  padding: 0.25rem 0.5rem;
+  font-size: var(--step--2);
 }
 .log-copy-status {
-  font-size: 0.75rem;
+  font-size: var(--step--2);
   color: var(--muted);
 }
 
 /* ---------- 秘蔵庫・生成 ---------- */
 .extra-zone .zone-label { display: flex; gap: 0.5rem; align-items: baseline; }
-.zone-hint { font-size: 0.72rem; color: var(--muted); font-weight: 400; }
+.zone-hint { font-size: var(--step--2); color: var(--muted); font-weight: 400; }
 .extra-zone .mini { border-style: dashed; }
 .flag-generated { color: var(--accent); }
 
@@ -1527,7 +1530,7 @@ textarea {
 .type-filter {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 14px;
+  gap: 4px 16px;
   border: 0;
   padding: 0;
   margin: 0 0 8px;
@@ -1535,8 +1538,8 @@ textarea {
 .type-check {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.9rem;
+  gap: 4px;
+  font-size: var(--step-0);
   cursor: pointer;
 }
 
@@ -1561,7 +1564,7 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  padding: 0.6rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 8px;
   background: var(--ink);
   color: var(--bg);
@@ -1579,11 +1582,11 @@ textarea {
 }
 .card-tip-type {
   opacity: 0.75;
-  font-size: 0.75rem;
+  font-size: var(--step--2);
 }
 .card-tip-pt {
   align-self: flex-end;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* ======================================================== 対戦の演出 */
@@ -1671,7 +1674,7 @@ textarea {
 .life { position: relative; }
 .life-float {
   position: absolute; right: -6px; top: -4px;
-  font-weight: 800; font-size: 1.1rem; color: var(--danger);
+  font-weight: 600; font-size: var(--step-1); color: var(--danger);
   pointer-events: none;
   animation: fx-float 1s ease-out both;
 }
@@ -1707,7 +1710,7 @@ textarea {
   12%, 86% { transform: scaleX(1); }
   100%     { transform: scaleX(0); }
 }
-.fx-curtain-text { position: relative; font-family: var(--font-card); font-weight: 800; font-size: clamp(2.5rem, 10vw, 4.5rem); opacity: 0; }
+.fx-curtain-text { position: relative; font-family: var(--font-card); font-weight: 600; font-size: clamp(2.5rem, 10vw, 4.5rem); opacity: 0; }
 
 /* 勝利の文字:塗り(紺の幕に白マナのクリーム色) */
 .fx-curtain.is-win .fx-curtain-text {
@@ -1761,7 +1764,7 @@ textarea {
 
 /* ======================================================== デッキ画面(アコーディオン・ページ・表示の設定) */
 .motion-toggle {
-  padding: 0.3rem 0.7rem;
+  padding: 0.25rem 0.75rem;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--surface-2);
@@ -1785,10 +1788,10 @@ textarea {
 .ui-acc-head {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   width: 100%;
   min-height: 44px;
-  padding: 0.5rem 0.85rem;
+  padding: 0.5rem 0.75rem;
   border: 0;
   background: none;
   text-align: left;
@@ -1797,13 +1800,13 @@ textarea {
 .ui-acc-title {
   flex: 1;
   min-width: 0;
-  font-weight: 700;
+  font-weight: 600;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 .ui-filter-summary {
-  margin-left: 0.3rem;
+  margin-left: 0.25rem;
   white-space: nowrap;
   font-weight: 400;
   color: var(--muted);
@@ -1820,7 +1823,7 @@ textarea {
   color: var(--muted);
 }
 .ui-acc-body {
-  padding: 0 0.85rem 0.85rem;
+  padding: 0 0.75rem 0.75rem;
 }
 .ui-acc-body .filters {
   margin: 0;
@@ -1842,7 +1845,7 @@ textarea {
   scroll-margin-top: 0.5rem;
 }
 .list-foot {
-  margin: 0.9rem 0 0;
+  margin: 1rem 0 0;
 }
 .pager {
   display: flex;
@@ -1855,7 +1858,7 @@ textarea {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.15rem;
+  gap: 0.125rem;
 }
 .ui-tab-indicator {
   position: absolute;
@@ -1870,7 +1873,7 @@ textarea {
   position: relative;
   min-width: 2.25rem;
   height: 2.25rem;
-  padding: 0 0.4rem;
+  padding: 0 0.5rem;
   border: 0;
   border-radius: 8px;
   background: transparent;
@@ -1886,7 +1889,7 @@ textarea {
 }
 .pager-num.is-current {
   color: var(--accent-ink);
-  font-weight: 700;
+  font-weight: 600;
 }
 .pager-gap {
   min-width: 1.2rem;
@@ -1909,9 +1912,9 @@ textarea {
 .ui-settings-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.25rem;
   min-height: 44px;
-  padding: 0 0.7rem;
+  padding: 0 0.75rem;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface-2);
@@ -1923,9 +1926,9 @@ textarea {
   top: calc(100% + 0.4rem);
   z-index: 25;
   display: grid;
-  gap: 0.6rem;
+  gap: 0.5rem;
   width: min(22rem, calc(100vw - 2rem));
-  padding: 0.85rem;
+  padding: 0.75rem;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--surface-2);
@@ -1938,7 +1941,7 @@ textarea {
 .ui-settings-name {
   font-size: var(--step--1);
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 600;
 }
 .ui-settings-panel .segmented {
   flex-wrap: wrap;
@@ -1960,7 +1963,7 @@ textarea {
 /* 小さい表示のカード */
 .card.card-compact {
   min-height: 0;
-  padding: 0.45rem 0.55rem 0.4rem;
+  padding: 0.5rem 0.5rem 0.5rem;
   gap: 0.25rem;
 }
 .card-compact .card-head {
@@ -1975,22 +1978,22 @@ textarea {
   border: 0;
   background: none;
   text-align: left;
-  font-size: 0.85rem;
+  font-size: var(--step--1);
   cursor: help;
 }
 .card-compact-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.3rem;
+  gap: 0.25rem;
   margin-top: auto;
 }
 .card-compact-type {
-  font-size: 0.72rem;
+  font-size: var(--step--2);
   color: var(--muted);
 }
 .card-compact .card-pt {
-  font-size: 0.95rem;
+  font-size: var(--step-0);
 }
 .card-compact .card-actions {
   display: inline-flex;
@@ -2141,7 +2144,7 @@ textarea {
   justify-content: flex-end;
 }
 .mini-foot .mini-type {
-  font-size: 0.65rem;
+  font-size: var(--step--3);
   color: var(--muted);
 }
 .mini.is-attacking {
@@ -2154,7 +2157,7 @@ textarea {
 }
 .detail-rarity {
   margin-left: 0.5rem;
-  font-size: 0.75rem;
+  font-size: var(--step--2);
   color: var(--muted);
 }
 
@@ -2184,7 +2187,7 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
 }
 .sheet-close {
   width: 44px;
@@ -2192,7 +2195,7 @@ textarea {
   margin: -0.4rem -0.6rem -0.4rem 0;
   border: 0;
   background: none;
-  font-size: 1.4rem;
+  font-size: var(--step-2);
   color: var(--muted);
   cursor: pointer;
 }
@@ -2245,7 +2248,7 @@ textarea {
     flex-direction: column;
     gap: 0.25rem;
     height: 100%;
-    padding: 0.3rem 0.45rem calc(0.3rem + env(safe-area-inset-bottom));
+    padding: 0.25rem 0.5rem calc(0.25rem + env(safe-area-inset-bottom));
     border: 0;
     border-radius: 0;
     overflow: hidden;
@@ -2263,17 +2266,25 @@ textarea {
 
   /* バー */
   .battle.is-mobile .player-bar {
-    flex-wrap: nowrap;
-    gap: 0.35rem;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "life name icons" "life stats icons";
+    align-items: center;
+    column-gap: 0.5rem;
+    row-gap: 0;
     min-height: 44px;
   }
+  .battle.is-mobile .player-bar > .life { grid-area: life; }
+  .battle.is-mobile .player-bar > .player-name { grid-area: name; align-self: end; }
+  .battle.is-mobile .player-bar > .player-stats { grid-area: stats; align-self: start; }
+  .battle.is-mobile .player-bar > .bar-icons { grid-area: icons; }
   .battle.is-mobile .life {
     min-height: 40px;
     padding: 0 0.5rem;
     flex: none;
   }
   .battle.is-mobile .life-n {
-    font-size: 1.2rem;
+    font-size: var(--step-1);
   }
   .battle.is-mobile .life-label,
   .battle.is-mobile .turn-flag {
@@ -2282,11 +2293,10 @@ textarea {
   .battle.is-mobile .player-name {
     flex: 0 1 auto;
     min-width: 0;
-    max-width: 7rem;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    font-size: 0.75rem;
+    font-size: var(--step--2);
   }
   .battle.is-mobile .player-stats {
     flex: 1;
@@ -2294,8 +2304,8 @@ textarea {
     flex-wrap: nowrap;
     overflow-x: auto;
     white-space: nowrap;
-    font-size: 0.68rem;
-    gap: 0.35rem;
+    font-size: var(--step--3);
+    gap: 0.25rem;
   }
   .battle.is-mobile .bar-icons {
     display: flex;
@@ -2306,7 +2316,7 @@ textarea {
     place-items: center;
     min-width: 40px;
     height: 44px;
-    padding: 0 0.3rem;
+    padding: 0 0.25rem;
     border: 0;
     border-radius: 8px;
     background: none;
@@ -2314,7 +2324,7 @@ textarea {
     cursor: pointer;
   }
   .bar-icon-text {
-    font-size: 0.72rem;
+    font-size: var(--step--2);
     border: 1px solid var(--line);
     height: 36px;
   }
@@ -2323,11 +2333,11 @@ textarea {
   .battle.is-mobile .mana-row {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.5rem;
     min-height: 26px;
   }
   .battle.is-mobile .mana-row .zone-label {
-    font-size: 0.68rem;
+    font-size: var(--step--3);
   }
   .battle.is-mobile .mana-chips {
     display: none;
@@ -2335,15 +2345,15 @@ textarea {
   .battle.is-mobile .mana-dots {
     display: flex;
     flex-wrap: nowrap;
-    gap: 1px;
+    gap: 2px;
     overflow-x: auto;
     min-width: 0;
   }
   .mana-dot {
     display: grid;
     place-items: center;
-    width: 22px;
-    height: 26px;
+    width: 24px;
+    height: 28px;
     padding: 0;
     border: 0;
     border-radius: 50%;
@@ -2352,8 +2362,8 @@ textarea {
     -webkit-touch-callout: none;
   }
   .mana-dot-pip {
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     box-shadow: inset 0 0 0 1px var(--pip-ring);
   }
@@ -2383,7 +2393,7 @@ textarea {
   .battle.is-mobile .field .zone-empty {
     grid-column: 1 / -1;
     align-self: center;
-    font-size: 0.72rem;
+    font-size: var(--step--2);
   }
   .battle.is-mobile .hand .zone-label {
     display: none;
@@ -2398,11 +2408,11 @@ textarea {
     width: auto;
     height: 60px;
     min-height: 0;
-    padding: 0.15rem 0.25rem 0.15rem 0.3rem;
+    padding: 0.125rem 0.25rem 0.125rem 0.25rem;
     border-width: 2px;
     border-radius: 6px;
     gap: 0;
-    font-size: 0.66rem;
+    font-size: var(--step--3);
   }
   .battle.is-mobile .mini-head,
   .sheet-cards .mini-head {
@@ -2411,14 +2421,14 @@ textarea {
   .battle.is-mobile .mini-name,
   .sheet-cards .mini-name {
     grid-area: name;
-    font-size: 0.68rem;
+    font-size: var(--step--3);
     line-height: 1.2;
   }
   .battle.is-mobile .mini-head .mana-cost,
   .sheet-cards .mini-head .mana-cost {
     grid-area: cost;
     align-self: end;
-    font-size: 0.62rem;
+    font-size: var(--step--3);
   }
   .battle.is-mobile .mini-foot,
   .sheet-cards .mini-foot {
@@ -2437,32 +2447,32 @@ textarea {
     text-overflow: ellipsis;
   }
   .battle.is-mobile .mini-pt {
-    font-size: 0.78rem;
+    font-size: var(--step--2);
     line-height: 1;
   }
   .battle.is-mobile .mini-foot .mini-type {
-    font-size: 0.58rem;
+    font-size: var(--step--3);
     white-space: nowrap;
   }
 
   /* 中央の帯:フェーズと主なボタン。案内は2行まで、全文は「i」で */
   .battle.is-mobile .center {
-    gap: 0.2rem;
-    padding: 0.3rem 0.5rem;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
     border-radius: 8px;
   }
   .battle.is-mobile .center-status {
-    font-size: 0.72rem;
+    font-size: var(--step--2);
   }
   .battle.is-mobile .stack {
     max-height: 2.6em;
     overflow-y: auto;
-    font-size: 0.7rem;
+    font-size: var(--step--3);
     margin: 0;
   }
   .battle.is-mobile .prompt {
     position: relative;
-    padding-right: 2.4rem;
+    padding-right: 2.5rem;
   }
   .battle.is-mobile .prompt-text {
     display: -webkit-box;
@@ -2470,7 +2480,7 @@ textarea {
     -webkit-box-orient: vertical;
     overflow: hidden;
     margin: 0;
-    font-size: 0.74rem;
+    font-size: var(--step--2);
     line-height: 1.4;
   }
   .battle.is-mobile .prompt-info {
@@ -2484,7 +2494,7 @@ textarea {
     border: 0;
     background: none;
     color: inherit;
-    font: italic 700 0.95rem/1 var(--font-card);
+    font: 600 0.9375rem/1 var(--font-card);
     cursor: pointer;
   }
   .battle.is-mobile .prompt-info::before {
@@ -2502,8 +2512,8 @@ textarea {
   /* ボタンが多いとき(対象の一覧など)は、帯の高さを変えずに横へスクロール */
   .battle.is-mobile .prompt-actions {
     flex-wrap: nowrap;
-    gap: 0.3rem;
-    margin-top: 0.2rem;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -2512,13 +2522,13 @@ textarea {
   }
   .battle.is-mobile .center .btn {
     min-height: 44px;
-    padding: 0.3rem 0.7rem;
-    font-size: 0.8rem;
+    padding: 0.25rem 0.75rem;
+    font-size: var(--step--1);
   }
   .battle.is-mobile .block-list {
     max-height: 2.6em;
     overflow-y: auto;
-    font-size: 0.7rem;
+    font-size: var(--step--3);
   }
 }
 
@@ -2546,7 +2556,7 @@ textarea {
   }
   .card:not(.card-compact) .card-head .mana-cost {
     margin-left: 0;
-    font-size: 0.9rem;
+    font-size: var(--step-0);
   }
   .card:not(.card-compact) .card-name {
     flex: none;
@@ -2569,18 +2579,38 @@ textarea {
 }
 
 .detail-under {
-  margin: 0.4rem 0 0;
+  margin: 0.5rem 0 0;
   font-size: var(--step--1);
   color: var(--muted);
 }
 
 /* 制限カード */
 .card-limit {
-  margin-left: 0.35rem;
-  padding: 0 0.35rem;
+  margin-left: 0.25rem;
+  padding: 0 0.25rem;
   border-radius: 999px;
   background: color-mix(in srgb, var(--danger) 14%, transparent);
   color: var(--danger);
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: var(--step--3);
+  font-weight: 600;
+}
+
+/* PCの対戦画面:盤面を画面の高さいっぱいに広げ、手札は折り返して全部見せる */
+@media (min-width: 961px) {
+  .battle:not(.is-mobile) .battle-main {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh - 8rem);
+  }
+  .battle:not(.is-mobile) .field {
+    flex: 1 1 auto;
+  }
+  .battle:not(.is-mobile) .hand-cards {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+  .battle:not(.is-mobile) .mini.in-hand {
+    width: 8.5rem;
+    min-height: 5rem;
+  }
 }
