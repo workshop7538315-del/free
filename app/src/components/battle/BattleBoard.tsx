@@ -293,6 +293,9 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks, 
           answer={answer}
           onPickAll={() => d?.kind === "attackers" && setAttackSel(d.options)}
           onInfo={(text) => openSheet({ kind: "info", text })}
+          onLong={onLong}
+          hoverOn={hoverOn}
+          hoverOff={hoverOff}
         />
 
         <Field g={g} p={me} markOf={markOf} onCard={onCard} onLong={onLong} hoverOn={hoverOn} hoverOff={hoverOff} label="あなたの場" />
@@ -308,7 +311,7 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks, 
         {me.extra.length > 0 && !mobile && (
           <section className="hand extra-zone" aria-label="あなたの秘蔵庫">
             <h3 className="zone-label">
-              秘蔵庫 {me.extra.length}枚<span className="zone-hint">(リリース召喚・エントラータ・開拓進化・組み立てで出す)</span>
+              秘蔵庫 {me.extra.length}枚<span className="zone-hint">(リリース召喚・エントラータ・開拓進化・組み立て・龍生で出す)</span>
             </h3>
             <div className="hand-cards">
               {me.extra.map((o) => (
@@ -426,7 +429,7 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks, 
               {result === ME ? "勝利" : result === CPU ? "敗北" : "引き分け"}
             </h2>
             <p>
-              {Math.ceil(g.turn / 2)}ターン目で決着しました。あなたのライフ {me.life}、相手のライフ {cpu.life}。
+              {Math.max(g.players[0].turnCount, g.players[1].turnCount)}ターン目で決着しました。あなたのライフ {me.life}、相手のライフ {cpu.life}。
             </p>
             <div className="result-actions">
               {rematchLabel && (
@@ -761,6 +764,11 @@ function MiniCard({
         {o.card.cost && <ManaCost cost={o.card.cost} size="sm" />}
       </span>
       <span className="mini-foot">
+        {onField && (o.under?.length ?? 0) > 0 && (
+          <span className="mini-under" title={`下に${o.under!.length}枚重なっている`}>
+            重{o.under!.length}
+          </span>
+        )}
         {creature ? (
           <span className={`mini-pt ${buffed ? "is-buffed" : ""} ${o.damage > 0 ? "is-damaged" : ""}`}>
             {pw}/{onField && o.damage > 0 ? `${(tg ?? 0) - o.damage}` : tg}
@@ -789,12 +797,14 @@ type CenterProps = {
   onPickAll: () => void;
   /** スマホ:案内文の全文をシートで出す */
   onInfo: (text: string) => void;
-};
+  /** カードの詳細(招集などで、場にないカードを選ぶとき) */
+  onLong?: (o: Obj) => void;
+} & HoverFns;
 
 function Center(props: CenterProps) {
   const { g } = props;
   const promptRef = useRef<HTMLDivElement>(null);
-  const phase = g.turn > 0 ? `${g.active === ME ? "あなた" : "相手"}のターン${Math.ceil(g.turn / 2)}・${STEP_NAMES[g.step]}` : "対戦の準備";
+  const phase = g.turn > 0 ? `${g.active === ME ? "あなた" : "相手"}のターン${g.players[g.active].turnCount}・${STEP_NAMES[g.step]}` : "対戦の準備";
   return (
     <section className="center" aria-live="polite">
       <div className="center-status">
@@ -834,7 +844,7 @@ function Center(props: CenterProps) {
   );
 }
 
-function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNum, setChosen, answer, onPickAll }: Omit<CenterProps, "onInfo">) {
+function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNum, setChosen, answer, onPickAll, onLong, hoverOn, hoverOff }: Omit<CenterProps, "onInfo">) {
   if (g.winner !== undefined) return <p className="prompt-text">対戦が終わりました。</p>;
   if (!d) {
     return <p className="prompt-text prompt-wait">{g.waitingFor === CPU ? "相手が考えています…" : "処理しています…"}</p>;
@@ -927,12 +937,24 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
           </div>
         </>
       );
-    case "chooseCards":
+    case "chooseCards": {
+      // 場にないカード(招集の候補、ライブラリーの上、重なりの下、秘蔵庫の九子)は、カードの形で見せる
+      const asCards = ["muster", "dig", "rotate", "dragon", "underToVault", "tutor"].includes(d.reason);
+      const toggle = (u: number) => setChosen((s) => (s.includes(u) ? s.filter((x) => x !== u) : s.length < d.count ? [...s, u] : s));
       return (
         <>
           <p className="prompt-text">
             {d.prompt}({chosen.length}/{d.count})
           </p>
+          {asCards && (
+            <div className="prompt-cards">
+              {d.options.map((u) => {
+                const o = g.find(u);
+                return o ? <MiniCard key={u} g={g} o={o} mark={chosen.includes(u) ? "is-selected" : "is-actionable"} onClick={() => toggle(u)} onLong={onLong} hoverOn={hoverOn} hoverOff={hoverOff} inHand /> : null;
+              })}
+            </div>
+          )}
+          {!asCards && (
           <div className="prompt-actions">
             {d.options.map((u) => {
               const o = g.find(u);
@@ -957,6 +979,7 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
               );
             })}
           </div>
+          )}
           <div className="prompt-actions">
             <button type="button" className="btn btn-primary" disabled={chosen.length !== d.count} onClick={() => answer(chosen)}>
               決定
@@ -964,6 +987,7 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
           </div>
         </>
       );
+    }
     case "mode":
       return (
         <>
@@ -1101,6 +1125,14 @@ function actionLabel(g: Game, a: Action): string {
       }
       if (a.via === "assemble") return "組み立てる(コストを払い、クリーチャーをタップしてつける)";
       if (a.via === "evolve") return "武装進化する";
+      if (a.via === "dragon") {
+        const o = g.find(a.uid);
+        const base = a.base !== undefined ? g.find(a.base) : undefined;
+        if (!o || !base) return "龍生(重ねる)";
+        const cost = g.dragonCost(ME, o, base);
+        const alt = g.altText(o);
+        return `龍生:${base.card.name}の上に重ねる(${cost || "{0}"}${alt ? `か「${alt}」` : ""})`;
+      }
       if (a.via === "curtain") {
         const o = g.find(a.uid);
         const cc = o ? abilitiesOf(o.card).find((ab) => ab.a === "curtainCall") : undefined;

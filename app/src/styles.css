@@ -2735,3 +2735,23 @@ textarea {
     grid-row: 2;
   }
 }
+
+/* 招集などで、場にないカードを選ぶとき(第12弾) */
+.prompt-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+.prompt-cards .mini {
+  color: var(--ink);
+}
+.mini-under {
+  margin-right: auto;
+  padding: 0 0.25rem;
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: var(--step--3);
+  font-variant-numeric: tabular-nums;
+}

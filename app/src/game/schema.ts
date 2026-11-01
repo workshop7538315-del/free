@@ -29,6 +29,8 @@ export type Filter = {
 export type Applause = "狂気" | "悲劇" | "喜劇";
 
 export type CondName =
+  /** 替天行道:対戦相手のライフかクリーチャーの数があなたより多い(第12弾) */
+  | "underdog"
   /** 燃焼した */
   | "burned"
   /** 追加払いを支払った */
@@ -96,13 +98,15 @@ export type Cond =
   | { navy: number }
   /** 縁:名前にこれらのどれかを含むクリーチャーをコントロールしている */
   | { anyName: string[] }
+  /** 集結 N:このゲームで自分の戦場に出た、名前の違う好漢の数がN以上(第12弾) */
+  | { gather: number }
   /** 対戦相手の手札がn枚以上 */
   | { oppHand: number };
 
 export type CountKind = "mana" | "creatures" | "graveyard" | "graveyardCreatures" | "colorsInMana" | "hand" | "oppCreatures" | "burned" | "crests" | "colorlessMana";
 
 /** 数。"X"=唱えたときのX、count=数を数える、perm=条件に合う自分のパーマネントの数 */
-export type Amount = number | "X" | { count: CountKind } | { count: "perm"; filter: Filter } | { count: "applause"; cat: Applause } | { count: "primary"; color: Color };
+export type Amount = number | "X" | { count: CountKind } | { count: "under" } | { count: "perm"; filter: Filter } | { count: "applause"; cat: Applause } | { count: "primary"; color: Color };
 
 export type TargetSpec =
   | {
@@ -215,6 +219,28 @@ export type Effect = Common &
      * 相手のクリーチャーだけが致死ダメージを負ったら「勝った」とし、win を行う
      */
     | { do: "duel"; tg: number[]; self?: boolean; win?: Effect[] }
+    /** 天罡招集・地煞招集:まだ自分の戦場に出ていないその宿星の好漢をランダムに3枚見せ、1枚を選んでデッキの外から戦場に出す(第12弾) */
+    | { do: "muster"; star: "天罡星" | "地煞星" }
+    /** ライブラリーの上から n+plus 枚を見て、min(n, max) 枚を手札に加え、残りを一番下に置く(螭吻) */
+    | { do: "dig"; n: Amount; plus: number; max: number }
+    /** 「ランダムな相手のクリーチャーに dmg 点、いなければ相手に1点」を n 回(狻猊) */
+    | { do: "volley"; n: Amount; dmg: number }
+    /** 対象のクリーチャーに -n/-n(ターン終了時まで) */
+    | { do: "shrink"; tg: number; n: Amount }
+    /** このクリーチャーと対象のクリーチャーが格闘する */
+    | { do: "fightSelf"; tg: number }
+    /** 相手のアーティファクトとエンチャントを n 個まで選んで破壊する(蒲牢) */
+    | { do: "shatter"; n: Amount }
+    /** 相手の墓地のカードをすべてライブラリーの一番下に置く(覇下) */
+    | { do: "washGrave" }
+    /** マナ総量が n 以下の相手のクリーチャー1体を選び、持ち主のライブラリーの一番下に置く(覇下) */
+    | { do: "tuckUpTo"; n: Amount }
+    /** 重なったカード1枚を一番上にして、その「出たとき」を使う(椒図・九子の巡り)。tg がなければこのカードの重なり */
+    | { do: "rotate"; tg?: number }
+    /** 睚眦:九子9種がすべて重なっていれば、トランプルと破壊不能を得て追加ターン(ゲームに1回) */
+    | { do: "yazi" }
+    /** 登龍門:インスタントのタイミングで九子1体を重ねる */
+    | { do: "dragonNow" }
   );
 
 export type TriggerEvent =
@@ -268,7 +294,27 @@ export type StaticSpec =
   /** オーラ・装備品:つけているクリーチャーの強化 */
   | { s: "auraBuff"; p: number; t: number; kw?: string[] }
   /** filter に合うあなたの呪文のコストが{n}少なくなる */
-  | { s: "discount"; filter: Filter; n: number };
+  | { s: "discount"; filter: Filter; n: number }
+  /** 龍生の進化コストが{n}少なくなる(第12弾) */
+  | { s: "dragonDiscount"; n: number };
+
+/** 龍生の代わりの払い方(第12弾) */
+export type DragonAlt = {
+  /** ライブラリーの上から N 枚を墓地に置く */
+  mill?: number;
+  /** 手札を N 枚捨てる */
+  discard?: number;
+  /** ライフを N 点払う */
+  life?: number;
+  /** ほかの自分のクリーチャー1体を生け贄に捧げる */
+  sacOther?: boolean;
+  /** タップしていない自分のクリーチャーを N 体タップする */
+  tapCreatures?: number;
+  /** 自分のマナゾーンのカードを N 枚墓地に置く */
+  manaToGrave?: number;
+  /** 重なり(土台)の下のカードを N 枚秘蔵庫に戻す */
+  underToVault?: number;
+};
 
 export type ActivatedCost = {
   mana?: string;
@@ -287,6 +333,9 @@ export type ActivatedCost = {
 
 export type Ability = { text?: string } & (
   | { a: "kw"; kw: string }
+  /** 龍生:秘蔵庫の九子。マナコストを進化コストとして払い、贔屓を含む自分のクリーチャーの上に重ねて出す(第12弾)。
+   *  alt は代わりの払い方、ambush は相手が悪事を働いたときインスタントとして重ねられる、selfReduce は睚眦の軽減 */
+  | { a: "dragon"; alt?: DragonAlt; ambush?: boolean; selfReduce?: boolean }
   /** 燃焼 N。upTo なら烈燃 N(0〜N枚の好きな枚数を燃焼できる) */
   | { a: "burn"; n: number; upTo?: boolean }
   /** 疾駆:このコストで唱えると速攻を得て、終了ステップに手札に戻る */

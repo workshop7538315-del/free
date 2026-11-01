@@ -26,9 +26,9 @@ export function deckText(title: string, deck: DeckInfo): string {
 
 /** 結果の見出し */
 export function resultLine(g: Game, me: 0 | 1): string {
-  if (g.winner === undefined) return `対戦中(ターン${Math.ceil(g.turn / 2)})`;
+  if (g.winner === undefined) return `対戦中(ターン${Math.max(g.players[0].turnCount, g.players[1].turnCount)})`;
   const r = g.winner === me ? "勝利" : g.winner === null ? "引き分け" : "敗北";
-  return `結果:${r}(${Math.ceil(g.turn / 2)}ターン目、あなたのライフ ${g.players[me].life}、相手のライフ ${g.players[1 - me].life})`;
+  return `結果:${r}(${Math.max(g.players[0].turnCount, g.players[1].turnCount)}ターン目、あなたのライフ ${g.players[me].life}、相手のライフ ${g.players[1 - me].life})`;
 }
 
 /** クリップボードにコピーする(使えない環境では選択してコピーする方法に切り替える) */

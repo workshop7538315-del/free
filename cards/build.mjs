@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { cardText } from "./lib.mjs";
 import { PACKS } from "./packs.mjs";
 import { RESTRICTED as RESTRICTED_BASE } from "./restricted.mjs";
+import { SUIKODEN_GEN } from "./sets/sh-suikoden.mjs";
 
 /** 制限カード(検証用に RESTRICT 環境変数で一時的に足せる) */
 const RESTRICTED = { ...RESTRICTED_BASE, ...(process.env.RESTRICT ? JSON.parse(process.env.RESTRICT) : {}) };
@@ -136,6 +137,15 @@ for (const c of out) {
 for (const id of Object.keys(RESTRICTED)) if (!out.some((c) => c.id === id)) throw new Error(`制限カード ${id} がありません`);
 writeFileSync(join(here, "cards.json"), JSON.stringify(out, null, 2) + "\n");
 
+// 招集で出てくる好漢(108人すべて。デッキに入るものと、レアリティ「生成」のもの)
+{
+  const gen = SUIKODEN_GEN.map((c) => ({ ...c, pack: "p12", text: cardText(c) }));
+  const deckable = out.filter((c) => /(^|・)(天罡星|地煞星)($|・)/.test(c.subtype ?? ""));
+  const all = [...deckable, ...gen].sort((a, b) => a.id.localeCompare(b.id));
+  if (all.length !== 108 || new Set(all.map((c) => c.name)).size !== 108) throw new Error(`好漢が108人になりません(${all.length})`);
+  writeFileSync(join(here, "summons.json"), JSON.stringify(all, null, 2) + "\n");
+}
+
 // パックの一覧(アプリの絞り込みと表示に使う)
 const packsJson = PACKS.map(({ sets, reprints, ...p }) => {
   const newCards = out.filter((c) => c.pack === p.id).map((c) => c.id);
@@ -188,7 +198,7 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
   };
   // 秘蔵庫のカードはメインには入れない
   // 第11弾の英雄と関連カード(hr)は、core で指定したデッキにだけ入れる(自動では足さない)
-  const pool = out.filter((c) => fits(c) && !c.id.startsWith("hr") && !c.id.startsWith("sg") && !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast", "lesson"].includes(a.a)));
+  const pool = out.filter((c) => fits(c) && !c.id.startsWith("hr") && !c.id.startsWith("sg") && !c.id.startsWith("sh") && !c.id.startsWith("ry") && !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast", "lesson", "dragon"].includes(a.a)));
   const inSet = (c) => !!set && c.id.startsWith(set);
   const themed = (c) => inSet(c) || (!!theme && theme(c));
   const score = (c) => {
@@ -255,7 +265,7 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
   let ex = 0;
   for (const [id, n] of Object.entries(extra)) {
     const c = out.find((x) => x.id === id);
-    if (!c || !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast", "lesson"].includes(a.a))) throw new Error(`秘蔵庫のカード ${id} がありません`);
+    if (!c || !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast", "lesson", "dragon"].includes(a.a))) throw new Error(`秘蔵庫のカード ${id} がありません`);
     if (n > 2) throw new Error(`秘蔵庫の ${id} は2枚まで`);
     deck[id] = Math.min(n, RESTRICTED[id] ?? n);
     ex += n;
@@ -297,12 +307,18 @@ const DECKS = [
     extra: { eld01: 2, pc46: 1, eld02: 1, eld03: 2, eld05: 2 } },
   // スターター限定《三国志》:魏(上級者向けコントロール)・呉(中級者向けミッドレンジ)・蜀(初心者向けアグロ)
   { id: "sg-wei", name: "三国志:魏(白黒赤)", colors: ["W", "B", "R"], theme: tag("魏"), archetype: "三国志",
-    core: { sg01: 2, sg02: 2, sg03: 3, sg04: 2, sg05: 2, sg06: 2, sg07: 2, sg08: 3, sg09: 3, sg10: 3, sg11: 2, sg12: 3, w021: 1, hz58: 1, ct17: 3, b021: 2, ct13: 2, hum28: 2 },
-    extra: { sg20: 1, sg21: 2, sg22: 1, sg23: 2, sg24: 1, sg25: 1 } },
+    core: { sg01: 2, sg02: 2, sg03: 3, sg04: 2, sg05: 2, sg06: 2, sg07: 2, sg08: 3, sg09: 3, sg10: 3, sg11: 2, sg12: 3, sg66: 2, ct17: 1, hz58: 2, b021: 2, ct13: 2, hum28: 2 },
+    extra: { sg20: 1, sg21: 2, sg22: 1, sg23: 2, sg67: 1, sg25: 1 } },
   { id: "sg-wu", name: "三国志:呉(青赤緑)", colors: ["U", "R", "G"], theme: tag("呉"), archetype: "三国志",
-    core: { sg30: 3, sg31: 3, sg32: 2, sg33: 3, sg34: 2, sg35: 3, sg36: 3, sg37: 4, sg38: 3, sg39: 2, sg40: 3, sg41: 3, sg42: 2, sg43: 1, sg44: 3 } },
+    core: { sg30: 3, sg31: 3, sg32: 2, sg33: 3, sg34: 2, sg35: 3, sg36: 3, sg37: 4, sg38: 3, sg39: 2, sg41: 3, sg42: 2, sg44: 3, sg68: 2, sg69: 2 } },
   { id: "sg-shu", name: "三国志:蜀(白赤緑)", colors: ["W", "R", "G"], theme: tag("蜀"), archetype: "三国志",
-    core: { sg50: 2, sg51: 2, sg52: 2, sg53: 2, sg54: 2, sg55: 2, sg56: 2, sg57: 3, sg58: 4, sg59: 4, sg60: 2, sg61: 2, sg62: 3, sg63: 3, sg64: 3, sg65: 3 } },
+    core: { sg50: 2, sg51: 2, sg52: 2, sg53: 2, sg54: 2, sg55: 2, sg56: 2, sg57: 3, sg58: 4, sg59: 4, sg70: 2, sg71: 2, sg62: 3, sg63: 3, sg64: 3, sg65: 3 } },
+  // 第12弾:梁山泊(白青緑)と龍生九子(黒赤)
+  { id: "sh-ryozan", name: "梁山泊:替天行道(白青緑)", colors: ["W", "U", "G"], theme: tag("梁山泊"), archetype: "梁山泊",
+    core: { sh001: 2, sh002: 2, sh201: 2, sh003: 3, sh037: 3, sh023: 3, sh092: 3, sh010: 2, sh005: 2, sh006: 2, sh014: 2, sh013: 1, sh022: 2, sh016: 2, sh026: 1, sh056: 2, sh105: 2, sh107: 2, sh020: 2 } },
+  { id: "ry-kyushi", name: "龍生九子:九つの背(黒赤)", colors: ["B", "R"], theme: tag("龍生九子"), archetype: "龍生九子",
+    core: { ry01: 4, ry12: 3, ry11: 2, ry10: 2, ry13: 1, ry14: 2, ry15: 3, ry16: 2 },
+    extra: { ry02: 1, ry03: 1, ry04: 1, ry05: 1, ry06: 1, ry07: 1, ry08: 1, ry09: 1 } },
   // 第11.5弾:白単(回復)と青単(ドロー)
   { id: "t-mono-w", name: "原色:白単の癒しの聖堂", colors: ["W"], pure: true, theme: tag("原色"), archetype: "原色",
     core: { pc01: 2, pc02: 1, pc03: 2, pc04: 4, pc06: 2, pc07: 2, pc08: 4, pc09: 3, pc10: 3, pc11: 3, pc12: 2, pc13: 3, pc15: 2, hz65: 3, pc48: 2 } },

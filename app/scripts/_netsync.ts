@@ -10,7 +10,8 @@ const expand = (l: Record<string, number>) => Object.entries(l).flatMap(([id, n]
 const N = Number(process.env.N ?? 30);
 let bad = 0, msgs = 0;
 for (let i = 0; i < N; i++) {
-  const A = decks[(i * 7) % decks.length], B = decks[(i * 11 + 3) % decks.length];
+  const pick = (id: string | undefined, k: number) => (id ? decks.find((d) => d.id === id)! : decks[k % decks.length]);
+  const A = pick(process.env.A, i * 7), B = pick(process.env.B, i * 11 + 3);
   const seed = 1000 + i, first = (i % 2) as PlayerId;
   const inbox: ((m: NetMsg) => void)[] = [];
   const mk = (side: 0 | 1) => {

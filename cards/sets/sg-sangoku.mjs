@@ -20,7 +20,7 @@ const GENERAL = { sub: "武将" };
 /** 計略:秘蔵庫に入れる呪文(種類は「計略」) */
 const plan = (c) => wei({ ...c, subtype: "計略", abilities: [lesson(), ...c.abilities], text: undefined });
 
-export const SANGOKU = [
+const SANGOKU_ALL = [
   // ================================================================ 魏(白・黒・赤):献策と計略のコントロール
   wei(cr("sg01", "魏王 曹操 孟徳", "{2}{W}{B}{R}", "人間・武将・君主", 5, 5, "M", [
     etb(E.discard(1, "opp")),
@@ -65,7 +65,7 @@ export const SANGOKU = [
   wu(sor("sg40", "長江の流れ", "{1}{U}{G}", "C", spell([E.ramp(1), E.draw(1)]))),
   wu(sor("sg41", "揚州の豊穣", "{1}{G}", "C", spell([E.ramp(1), { ...E.draw(1), if: "hegemonyWu" }]))),
   wu(sor("sg42", "火計", "{4}{R}{R}", "R", [costDown({ n: 2, if: { oppHand: 3 } }), spell({ ...E.destroyAll(undefined, { minToughness: 4 }, "opp"), untapped: true })], { flavor: "連環の船団は、逃げることもできずに燃えた。" })),
-  wu(cr("sg44", "魯粛 子敬", "{2}{U}", "人間・武将", 1, 3, "U", [etb([E.draw(1), { ...E.draw(1), if: { oppHand: 3 } }])], { flavor: "「曹操に降れば、将軍はどこに座られるおつもりか」" })),
+  wu(cr("sg44", "魯粛 子敬", "{1}{U}", "人間・武将", 1, 3, "U", [etb([E.draw(1), { ...E.draw(1), if: { oppHand: 3 } }])], { flavor: "「曹操に降れば、将軍はどこに座られるおつもりか」" })),
   wu(cr("sg43", "江東の斥候船", "{U}", "船・水軍", 1, 2, "C", [kw("飛行"), etb(E.lookTop())])),
 
   // ================================================================ 蜀(白・赤・緑):縁で武将を安く並べるアグロ
@@ -91,4 +91,21 @@ export const SANGOKU = [
   shu(cr("sg64", "魏延 文長", "{2}{R}", "人間・武将", 3, 2, "U", [kw("速攻"), selfIf("fewerMana", 2, 0, ["トランプル"])], { flavor: "「わしを殺せる者がおるか!」" })),
   shu(sor("sg65", "荊州借用", "{1}{G}", "C", spell([E.ramp(1), { ...E.draw(2), if: "fewerMana" }]), { flavor: "借りたものは、返すつもりで借りるとは限らない。" })),
   shu(cr("sg62", "関平", "{1}{R}", "人間・武将", 2, 2, "U", [en(["関羽"], 1), kw("速攻")], { flavor: "父の青龍偃月刀を、いつか自分が担ぐと信じていた。" })),
+
+  // ================================================================ 第12弾で足したカード(パックに入る)
+  wei(cr("sg66", "悪来 典韋", "{2}{B}{R}", "人間・武将", 4, 4, "R", [lord(GENERAL, 0, 0, ["呪禁"])], { flavor: "曹操の寝所の前で、両手に戟を持ったまま立って死んだ。" })),
+  plan(ins("sg67", "駆虎呑狼の計", "{1}{R}", "U", spell(E.bite(), [T.opp, T.opp]))),
+  wu(cr("sg68", "太史慈 子義", "{2}{U}{R}", "人間・武将・水軍", 4, 4, "R", [en(["孫策"], 1), etb({ ...E.fightSelf(), if: { navy: 5 } }, T.opp)], {
+    flavor: "神亭の一騎討ち。孫策と互角に渡り合い、のちに呉に降った。",
+  })),
+  wu(ench("sg69", "二喬", "{U}{G}", "U", [lord(GENERAL, 1, 1, undefined, false), etb(E.tutor({ name: "孫策" }))], { flavor: "江東の二輪の花。姉は孫策に、妹は周瑜に嫁いだ。" })),
+  shu(cr("sg70", "鳳雛 龐統 士元", "{2}{R}{G}", "人間・武将", 3, 3, "R", [en(["諸葛亮"], 2), etb(E.countersAll(1, GENERAL))], { flavor: "臥龍と鳳雛、どちらかを得れば天下を取れる。" })),
+  shu(cr("sg71", "姜維 伯約", "{2}{W}{R}", "人間・武将", 4, 3, "R", [en(["諸葛亮"], 2), kw("先制攻撃"), etb(E.ret("hand"), T.gyF(GENERAL))], {
+    flavor: "丞相の兵法を継いだ、ただひとりの弟子。",
+  })),
 ];
+
+/** 第12弾のパックに入る三国志のカード(調整で足した3枚と、新しい6枚) */
+const PACK12_IDS = new Set(["sg44", "sg64", "sg65", "sg66", "sg67", "sg68", "sg69", "sg70", "sg71"]);
+export const SANGOKU = SANGOKU_ALL.filter((c) => !PACK12_IDS.has(c.id));
+export const SANGOKU12 = SANGOKU_ALL.filter((c) => PACK12_IDS.has(c.id));

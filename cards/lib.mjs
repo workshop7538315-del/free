@@ -224,7 +224,24 @@ export const T = {
 };
 
 // 効果
+/** 龍生:九子(秘蔵庫)。alt は代わりの払い方 */
+export const dragon = (alt, opts = {}) => ({ a: "dragon", ...(alt ? { alt } : {}), ...opts });
+/** 下に重なっている枚数 */
+export const UNDER = { count: "under" };
+/** 集結 N */
+export const gather = (n) => ({ gather: n });
 export const E = {
+  muster: (star) => ({ do: "muster", star }),
+  dig: (n, plus, max) => ({ do: "dig", n, plus, max }),
+  volley: (n, dmg) => ({ do: "volley", n, dmg }),
+  shrink: (n) => ({ do: "shrink", tg: 0, n }),
+  fightSelf: () => ({ do: "fightSelf", tg: 0 }),
+  shatter: (n) => ({ do: "shatter", n }),
+  washGrave: () => ({ do: "washGrave" }),
+  tuckUpTo: (n) => ({ do: "tuckUpTo", n }),
+  rotate: (tg) => ({ do: "rotate", ...(tg !== undefined ? { tg } : {}) }),
+  yazi: () => ({ do: "yazi" }),
+  dragonNow: () => ({ do: "dragonNow" }),
   dmg: (n, tg = 0) => ({ do: "damage", n, tg }),
   dmgOpp: (n) => ({ do: "damage", n, to: "opp" }),
   dmgAll: (n, players = false) => ({ do: "damageAll", n, ...(players ? { players } : {}) }),
@@ -336,6 +353,7 @@ export function filterPhrase(f = {}, ctx = "creature") {
 }
 
 const COUNT_TEXT = {
+  under: "このカードの下に重なっているカードの枚数",
   mana: "あなたのマナゾーンにあるカードの枚数",
   creatures: "あなたがコントロールするクリーチャーの数",
   oppCreatures: "対戦相手がコントロールするクリーチャーの数",
@@ -348,6 +366,7 @@ const COUNT_TEXT = {
   graveyardCreatures: "あなたの墓地にあるクリーチャー・カードの枚数",
 };
 const PER_TEXT = {
+  under: "このカードの下に重なっているカード1枚につき",
   mana: "あなたのマナゾーンにあるカード1枚につき",
   creatures: "あなたがコントロールするクリーチャー1体につき",
   oppCreatures: "対戦相手がコントロールするクリーチャー1体につき",
@@ -386,10 +405,12 @@ export function condLabel(c) {
     if ("applause" in c) return `喝采【${c.applause}】${c.n}`;
     if ("primary" in c) return `原色 ${c.n}(${COLOR_JA[c.primary]})`;
     if ("navy" in c) return `水軍 ${c.navy}`;
+    if ("gather" in c) return `集結 ${c.gather}`;
     return null;
   }
   return (
     {
+      underdog: "替天行道",
       bloom: "開花",
       fullBloom: "満開",
       threshold: "深淵",
@@ -446,6 +467,7 @@ function condPlain(c) {
     if ("manaMV" in c) return `あなたのマナゾーンにあるカードのマナ総量の合計が${c.manaMV}以上である`;
     if ("navy" in c) return `あなたのマナゾーンに青のカードが${c.navy}枚以上ある`;
     if ("oppHand" in c) return `対戦相手の手札が${c.oppHand}枚以上ある`;
+    if ("gather" in c) return `このゲームであなたの戦場に出た、名前の違う好漢が${c.gather}人以上いる`;
     if ("anyName" in c) return `あなたが${c.anyName.map((n) => `《${n}》`).join("か")}をコントロールしている`;
     return `あなたが${filterPhrase(c.control, "permanent")}を${c.n}${unitOf(c.control)}以上コントロールしている`;
   }
@@ -465,6 +487,7 @@ function condPlain(c) {
     hegemonyShu: "戦場でパワーが最も高いクリーチャーをあなたがコントロールしている",
     buriedInMana: "あなたのマナゾーンに埋蔵を持つカードがある",
     vacuum: "あなたのマナゾーンのカードがすべて欠色である",
+    underdog: "対戦相手のライフかクリーチャーの数があなたより多い",
     intrigue: "このターン、対戦相手がカードを捨てたか、対戦相手のクリーチャーが戦場を離れた",
     threshold: "あなたの墓地にカードが7枚以上ある",
     hellbent: "あなたの手札がない",
@@ -633,6 +656,34 @@ function effectText(e, name, abil, notes) {
       return `${name}は、純色払いで支払った色に応じて、白なら警戒、青なら飛行、黒なら接死、赤なら速攻、緑ならトランプルを得る。`;
     case "perApplause":
       return `このゲームで得た喝采【${e.cat}】の累計${e.div}につき1回、次を行う:「${e.effects.map((x) => effectText(x, name, abil, notes)).join("")}」`;
+    case "muster":
+      return e.star === "天罡星" ? "天罡招集を行う。" : "地煞招集を行う。";
+    case "dig": {
+      const n = amountText(e.n, notes);
+      return `あなたのライブラリーの一番上から${n}+${e.plus}枚を見て、そのうち${n}枚(最大${e.max}枚)を手札に加え、残りを好きな順番でライブラリーの一番下に置く。`;
+    }
+    case "volley":
+      return `次を${amountText(e.n, notes)}回くり返す:「対戦相手のクリーチャーをランダムに1体選び、${e.dmg}点のダメージを与える。いなければ対戦相手に1点のダメージを与える。」`;
+    case "shrink": {
+      const n = amountText(e.n, notes);
+      return `${it(e.tg)}は、ターン終了時まで-${n}/-${n}の修整を受ける。`;
+    }
+    case "fightSelf":
+      return `${name}と${it(e.tg)}は格闘する。(それぞれが相手にパワーに等しいダメージを与える)`;
+    case "shatter":
+      return `対戦相手がコントロールするアーティファクトとエンチャントを${amountText(e.n, notes)}個まで選び、破壊する。`;
+    case "washGrave":
+      return "対戦相手の墓地にあるカードをすべて、好きな順番で持ち主のライブラリーの一番下に置く。";
+    case "tuckUpTo":
+      return `マナ総量が${amountText(e.n, notes)}以下の、対戦相手がコントロールするクリーチャー1体を選び、持ち主のライブラリーの一番下に置く。`;
+    case "rotate":
+      return e.tg === undefined
+        ? `${name}の下に重なっているカード1枚を一番上にする。そのカードの「戦場に出たとき」の能力が誘発する。`
+        : `${it(e.tg)}の下に重なっているカード1枚を一番上にする。そのカードの「戦場に出たとき」の能力が誘発する。`;
+    case "yazi":
+      return `${name}と下に重なっているカードに、龍生九子の9種(贔屓・螭吻・蒲牢・狴犴・饕餮・覇下・睚眦・狻猊・椒図)がすべてそろっているなら、${name}はトランプルと破壊不能を得る。このゲームで初めてなら、このターンのあとに追加の1ターンを得る。`;
+    case "dragonNow":
+      return "龍生を行う。(秘蔵庫の九子1体の進化コストを払い、贔屓を含むあなたのクリーチャーの上に重ねて出す。このタイミングでも行える)";
     case "learn":
       return "献策を行う。(秘蔵庫の計略カード1枚を見せて手札に加えるか、手札を1枚捨ててカードを1枚引く)";
     case "callForest":
@@ -757,6 +808,9 @@ function staticText(abil, name, card) {
     case "discount":
       body = `あなたが唱える${filterPhrase(st.filter, "spell")}を唱えるためのコストは{${st.n}}少なくなる。`;
       break;
+    case "dragonDiscount":
+      body = `あなたが行う龍生の進化コストは{${st.n}}少なくなる。`;
+      break;
   }
   if (abil.if) return condWhile(abil.if) + body;
   return body;
@@ -833,6 +887,15 @@ function abilityTextBody(abil, card) {
         : `${name}は、元のパワーが${abil.maxPower}以下のクリーチャーしかブロックできない(修整は数えない)。`;
     case "pioneerOppBase":
       return `対戦相手がコントロールするクリーチャーが${abil.minOpp}体以上いるなら、元のパワーとタフネスの合計が${abil.maxSum}以下の対戦相手のクリーチャー1体も、${name}の開拓進化の素材にできる。`;
+    case "dragon": {
+      const a = abil.alt ?? {};
+      const altTxt = a.mill ? `ライブラリーの上から${a.mill}枚を墓地に置く` : a.discard ? `手札を${a.discard}枚捨てる` : a.life ? `ライフを${a.life}点払う` : a.sacOther ? "ほかの自分のクリーチャー1体を生け贄に捧げる" : a.tapCreatures ? `タップしていない自分のクリーチャーを${a.tapCreatures}体タップする` : a.manaToGrave ? `自分のマナゾーンのカードを${a.manaToGrave}枚墓地に置く` : a.underToVault ? `重ねる先の下のカードを${a.underToVault}枚秘蔵庫に戻す` : "";
+      const parts = ["龍生(秘蔵庫から、マナコストを払って、贔屓を含むあなたのクリーチャーの上に重ねて出す。重なったカード1枚につき+1/+1。ソーサリーのタイミングで、何回でも)"];
+      if (altTxt) parts.push(`代わりの払い方 ― ${altTxt}。`);
+      if (abil.selfReduce) parts.push("この進化コストは、重ねる先の重なりの枚数と、このターンに死亡したクリーチャー1体につき{1}少なくなる。");
+      if (abil.ambush) parts.push("対戦相手のクリーチャーが攻撃しているか、対戦相手の呪文や能力がスタックにあるあいだ、インスタントのタイミングで龍生してもよい。");
+      return parts.join("\n");
+    }
     case "lesson":
       return "計略(このカードは秘蔵庫に入れる。献策で手札に加えられる。使ったあとは墓地に置かれる)";
     case "navyAlways":

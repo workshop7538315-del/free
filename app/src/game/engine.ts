@@ -3,13 +3,14 @@
  * 決定が必要な場面では agents[p].decide() に「質問(Decision)」を渡して答えを待つ。
  * 人間は画面で、CPUは ai.ts で答える。
  */
+import { SUMMON_POOL } from "./pool";
 import type { Card } from "../types";
 import type { Ability, ActivatedCost, Amount, Applause, Cond, Effect, Filter, StaticSpec, TargetSpec, TriggerEvent, SpellMode } from "./schema";
 import { cardColors, manaValue, parseCost, type Color } from "../lib/mana";
 import { findPayment, type ManaUnit } from "./payment";
 
 export type PlayerId = 0 | 1;
-export type Zone = "library" | "hand" | "mana" | "battlefield" | "graveyard" | "exile" | "stack" | "extra" | "under";
+export type Zone = "library" | "hand" | "mana" | "battlefield" | "graveyard" | "exile" | "stack" | "extra" | "under" | "limbo";
 export type Step = "setup" | "untap" | "upkeep" | "draw" | "main1" | "attack" | "block" | "damage" | "main2" | "end" | "cleanup";
 
 export const STEP_NAMES: Record<Step, string> = {
@@ -121,6 +122,16 @@ export type Player = {
   drawsThisTurn: number;
   assembledThisTurn: boolean;
   evolvedThisTurn: boolean;
+  /** このゲームで自分の戦場に出た好漢の名前(集結・招集) */
+  heroes: Set<string>;
+  /** ゲーム開始時のデッキ(メインと秘蔵庫)のカードID(招集はデッキにない好漢を優先する) */
+  deckIds: Set<string>;
+  /** 残っている追加ターン */
+  extraTurns: number;
+  /** このプレイヤーのターンの数(追加ターンも数える) */
+  turnCount: number;
+  /** 睚眦の追加ターンをこのゲームで使った */
+  yaziUsed: boolean;
 };
 
 export type TargetRef =
@@ -154,14 +165,14 @@ export type Action =
   | { type: "cycle"; uid: number }
   | { type: "equip"; uid: number }
   /** 秘蔵庫からリリース召喚する(via: "entrata" ならエントラータ) */
-  | { type: "summon"; uid: number; via?: "entrata" | "pioneer" | "assemble" | "evolve" | "curtain" };
+  | { type: "summon"; uid: number; via?: "entrata" | "pioneer" | "assemble" | "evolve" | "curtain" | "dragon"; base?: number };
 
 export type Decision =
   | { kind: "action"; options: Action[] }
   | { kind: "target"; prompt: string; spec: TargetSpec; options: TargetRef[]; source: Obj; effects: Effect[]; index: number }
-  | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "kicker" | "lookTop" | "mulligan" | "reclaim" | "blessing" | "learn" | "learnDiscard"; obj?: Obj }
+  | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "kicker" | "lookTop" | "mulligan" | "reclaim" | "blessing" | "learn" | "learnDiscard" | "altCost"; obj?: Obj }
   | { kind: "number"; prompt: string; min: number; max: number; reason?: "x" | "burn"; obj?: Obj }
-  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" | "pioneerBase" | "heist" }
+  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" | "pioneerBase" | "heist" | "muster" | "dig" | "shatter" | "tuck" | "rotate" | "dragon" | "dragonBase" | "altTap" | "manaToGrave" | "underToVault" }
   | { kind: "attackers"; options: number[] }
   /** モード呪文:選択肢から1つ選ぶ(答えは番号) */
   | { kind: "mode"; prompt: string; options: string[]; source: Obj; modes: SpellMode[] }
@@ -210,8 +221,13 @@ export const releaseAbility = (c: Card) => abilitiesOf(c).find((a) => a.a === "r
 export const isAura = (c: Card) => abilitiesOf(c).some((a) => a.a === "enchant");
 export const isEquipment = (c: Card) => abilitiesOf(c).some((a) => a.a === "equip");
 /** 秘蔵庫のカード(リリース召喚を持つ) */
+/** 好漢(第12弾。天罡星か地煞星) */
+export const isHero = (c: Card) => /(^|・)(天罡星|地煞星)($|・)/.test(c.subtype ?? "");
+export const dragonOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "dragon") as Extract<Ability, { a: "dragon" }> | undefined;
+/** 龍生九子の名前(睚眦の「9種がそろう」) */
+export const NINE_SONS = ["贔屓", "螭吻", "蒲牢", "狴犴", "饕餮", "覇下", "睚眦", "狻猊", "椒図"];
 export const isExtraCard = (c: Card) =>
-  abilitiesOf(c).some((a) => a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly" || a.a === "gem" || a.a === "curtainCall" || a.a === "vaultCast" || a.a === "lesson");
+  abilitiesOf(c).some((a) => a.a === "dragon" || a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly" || a.a === "gem" || a.a === "curtainCall" || a.a === "vaultCast" || a.a === "lesson");
 export const curtainOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "curtainCall") as Extract<Ability, { a: "curtainCall" }> | undefined;
 export const pioneerOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "pioneer") as Extract<Ability, { a: "pioneer" }> | undefined;
 export const assembleOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "assemble") as Extract<Ability, { a: "assemble" }> | undefined;
@@ -313,6 +329,10 @@ export class Game {
   /** カードの通し番号。対戦ごとに1から振る(オンライン対戦で両方の端末の番号を揃えるため) */
   private nextUid = 1;
   private aborted = false;
+  /** 招集で見せているカード(どの領域にもない) */
+  limbo: Obj[] = [];
+  /** このターンに死亡したクリーチャーの数(睚眦) */
+  diedThisTurn = 0;
 
   constructor(opts: GameOptions) {
     this.maxTurns = opts.maxTurns ?? Infinity;
@@ -353,6 +373,11 @@ export class Game {
       drawsThisTurn: 0,
       assembledThisTurn: false,
       evolvedThisTurn: false,
+      heroes: new Set(),
+      deckIds: new Set(opts.decks[id].map((c) => c.id)),
+      extraTurns: 0,
+      turnCount: 0,
+      yaziUsed: false,
     });
     this.players = [mk(0), mk(1)];
     this.firstPlayer = opts.first ?? (this.rng() < 0.5 ? 0 : 1);
@@ -413,7 +438,13 @@ export class Game {
         if (o) return o;
       }
     }
-    return this.stack.find((s) => s.obj.uid === uid)?.obj;
+    return this.stack.find((s) => s.obj.uid === uid)?.obj ?? this.limbo.find((x) => x.uid === uid) ?? this.findUnder(uid);
+  }
+
+  /** 重なりの下にあるカード */
+  private findUnder(uid: number): Obj | undefined {
+    for (const p of this.players) for (const o of p.battlefield) for (const u of o.under ?? []) if (u.uid === uid) return u;
+    return undefined;
   }
 
   zoneArray(o: Obj): Obj[] | null {
@@ -433,6 +464,8 @@ export class Game {
         return p.exile;
       case "extra":
         return p.extra;
+      case "limbo":
+        return this.limbo;
       default:
         return null;
     }
@@ -573,6 +606,7 @@ export class Game {
       if ("applause" in c) return (pl.applause[c.applause] ?? 0) >= c.n;
       if ("primary" in c) return this.primaryCount(p, c.primary) >= c.n;
       if ("navy" in c) return this.navyCount(p) >= c.navy || this.navyAlways(p);
+      if ("gather" in c) return pl.heroes.size >= c.gather;
       if ("anyName" in c) return pl.battlefield.some((o) => isCreatureCard(o.card) && c.anyName.some((n) => o.card.name.includes(n)));
       if ("oppHand" in c) return this.players[this.other(p)].hand.length >= c.oppHand;
       if ("manaMV" in c) return pl.mana.reduce((s, o) => s + (o.faceDown ? 0 : manaValue(o.card.cost)), 0) >= c.manaMV;
@@ -601,6 +635,10 @@ export class Game {
         return pl.spellsThisTurn >= 2;
       case "vaultEmpty":
         return pl.extra.length === 0;
+      case "underdog": {
+        const o = this.players[this.other(p)];
+        return o.life > pl.life || this.creatures(o.id).length > this.creatures(p).length;
+      }
       case "hegemonyWei":
         return pl.hand.length > this.players[this.other(p)].hand.length;
       case "hegemonyWu":
@@ -673,6 +711,8 @@ export class Game {
         return this.primaryCount(p, n.color);
       case "graveyardCreatures":
         return pl.graveyard.filter((o) => isCreatureCard(o.card)).length;
+      case "under":
+        return 0;
     }
   }
 
@@ -1144,6 +1184,12 @@ export class Game {
       for (const o of pl.battlefield) if (this.canEvolve(p, o)) out.push({ type: "summon", uid: o.uid, via: "evolve" });
       for (const o of pl.extra) if (this.canCurtain(p, o)) out.push({ type: "summon", uid: o.uid, via: "curtain" });
     }
+    // 龍生:メインフェイズ(狴犴は相手の悪事に割り込める)。回数の制限はない
+    for (const o of pl.extra) {
+      const dr = dragonOf(o.card);
+      if (!dr || (!this.sorcerySpeed(p) && !(dr.ambush && this.ambushWindow(p)))) continue;
+      for (const base of this.dragonBases(p)) if (this.canDragon(p, o, base)) out.push({ type: "summon", uid: o.uid, via: "dragon", base: base.uid });
+    }
     return out;
   }
 
@@ -1167,6 +1213,7 @@ export class Game {
       else if (a.via === "assemble") await this.assemble(p, a.uid);
       else if (a.via === "evolve") this.evolve(p, a.uid);
       else if (a.via === "curtain") this.curtainCall(p, a.uid);
+      else if (a.via === "dragon") await this.dragonEvolve(p, a.uid, a.base, !this.sorcerySpeed(p));
       else await this.releaseSummon(p, a.uid);
     } else if (a.type === "cycle") {
       const o = this.players[p].hand.find((x) => x.uid === a.uid);
@@ -1429,6 +1476,7 @@ export class Game {
 
   /** 戦場に出たときの誘発(自身と、他のパーマネントの「〜が出るたび」) */
   private entered(o: Obj) {
+    if (isHero(o.card)) this.players[o.controller].heroes.add(o.card.name);
     this.queueTriggers("etb", [o]);
     for (const src of this.sources(o.controller)) {
       if (src === o) continue;
@@ -1478,6 +1526,7 @@ export class Game {
   }
 
   private amount(n: Amount, ctx: Ctx): number {
+    if (typeof n === "object" && n.count === "under") return ctx.item.obj.under?.length ?? 0;
     return this.count(n, ctx.item.controller, ctx.item.x, ctx.item.burnCount);
   }
 
@@ -1817,6 +1866,166 @@ export class Game {
     top.under = [...(top.under ?? []), ...below, base];
   }
 
+  // ------------------------------------------------------------ 龍生(第12弾)
+  /** 重なり(このカードと下のカード)の名前 */
+  stackNames(o: Obj): string[] {
+    return [o, ...(o.under ?? [])].map((x) => x.card.name);
+  }
+
+  /** 九子を重ねられる自分のクリーチャー(贔屓を含む重なり) */
+  dragonBases(p: PlayerId): Obj[] {
+    return this.creatures(p).filter((o) => this.stackNames(o).some((n) => n.includes("贔屓")));
+  }
+
+  /** 相手が悪事を働いている:相手のクリーチャーが攻撃しているか、相手の呪文・能力がスタックにある(狴犴) */
+  ambushWindow(p: PlayerId): boolean {
+    if (this.active === p) return false;
+    if (this.combat && this.combat.attackers.length > 0) return true;
+    return this.stack.some((s) => s.controller !== p);
+  }
+
+  /** 進化コスト(睚眦と《守護者の死骸》の軽減を含む) */
+  dragonCost(p: PlayerId, o: Obj, base: Obj): string {
+    const dr = dragonOf(o.card);
+    let n = 0;
+    if (dr?.selfReduce) n += 1 + (base.under?.length ?? 0) + this.diedThisTurn;
+    for (const src of this.players[p].battlefield)
+      for (const ab of this.activeAbilities(src)) if (ab.a === "static" && ab.st.s === "dragonDiscount" && (!ab.if || this.cond(ab.if, p))) n += ab.st.n;
+    return reduceGeneric(o.card.cost, n);
+  }
+
+  /** 代わりの払い方ができるか */
+  private canAlt(p: PlayerId, o: Obj, base: Obj): boolean {
+    const alt = dragonOf(o.card)?.alt;
+    if (!alt) return false;
+    const pl = this.players[p];
+    if (alt.mill && pl.library.length < alt.mill) return false;
+    if (alt.discard && pl.hand.length < alt.discard) return false;
+    if (alt.life && pl.life <= alt.life) return false;
+    if (alt.sacOther && !this.creatures(p).some((c) => c !== base)) return false;
+    if (alt.tapCreatures && this.creatures(p).filter((c) => !c.tapped && c !== base).length < alt.tapCreatures) return false;
+    if (alt.manaToGrave && pl.mana.length < alt.manaToGrave) return false;
+    if (alt.underToVault && (base.under ?? []).filter((u) => isExtraCard(u.card)).length < alt.underToVault) return false;
+    return true;
+  }
+
+  canDragon(p: PlayerId, o: Obj, base: Obj): boolean {
+    if (o.zone !== "extra" || !dragonOf(o.card) || base.controller !== p || base.zone !== "battlefield") return false;
+    return this.canPay(p, this.dragonCost(p, o, base)) || this.canAlt(p, o, base);
+  }
+
+  altText(o: Obj): string {
+    const a = dragonOf(o.card)?.alt;
+    if (!a) return "";
+    if (a.mill) return `ライブラリーの上から${a.mill}枚を墓地に置く`;
+    if (a.discard) return `手札を${a.discard}枚捨てる`;
+    if (a.life) return `ライフを${a.life}点払う`;
+    if (a.sacOther) return "ほかの自分のクリーチャー1体を生け贄に捧げる";
+    if (a.tapCreatures) return `タップしていない自分のクリーチャーを${a.tapCreatures}体タップする`;
+    if (a.manaToGrave) return `マナゾーンのカードを${a.manaToGrave}枚墓地に置く`;
+    if (a.underToVault) return `下に重なったカードを${a.underToVault}枚秘蔵庫に戻す`;
+    return "";
+  }
+
+  private async payAlt(p: PlayerId, o: Obj, base: Obj) {
+    const a = dragonOf(o.card)!.alt!;
+    const pl = this.players[p];
+    if (a.mill) {
+      const cards = pl.library.slice(0, a.mill);
+      for (const c of cards) this.move(c, "graveyard");
+      this.addLog(`ライブラリーの上から${cards.length}枚を墓地に置いた`, p);
+    }
+    if (a.discard) {
+      const picked = await this.askCards(p, `${o.card.name}:捨てるカードを${a.discard}枚選んでください`, pl.hand, a.discard, "discard");
+      for (const c of picked) this.move(c, "graveyard");
+      this.addLog(`${picked.map((c) => c.card.name).join("、")}を捨てた`, p);
+    }
+    if (a.life) {
+      pl.life -= a.life;
+      this.addLog(`ライフを${a.life}点払った`, p);
+    }
+    if (a.sacOther) {
+      const [v] = await this.askCards(p, `${o.card.name}:生け贄に捧げるクリーチャーを選んでください`, this.creatures(p).filter((c) => c !== base), 1, "sacCost");
+      if (v) {
+        this.addLog(`${v.card.name}を生け贄に捧げた`, p);
+        this.die(v);
+      }
+    }
+    if (a.tapCreatures) {
+      const picked = await this.askCards(p, `${o.card.name}:タップするクリーチャーを${a.tapCreatures}体選んでください`, this.creatures(p).filter((c) => !c.tapped && c !== base), a.tapCreatures, "altTap");
+      for (const c of picked) c.tapped = true;
+      this.addLog(`${picked.map((c) => c.card.name).join("、")}をタップした`, p);
+    }
+    if (a.manaToGrave) {
+      const picked = await this.askCards(p, `${o.card.name}:墓地に置くマナゾーンのカードを${a.manaToGrave}枚選んでください`, pl.mana, a.manaToGrave, "manaToGrave");
+      for (const c of picked) this.move(c, "graveyard");
+      this.addLog(`マナゾーンの${picked.map((c) => c.card.name).join("、")}を墓地に置いた`, p);
+    }
+    if (a.underToVault) {
+      const opts = (base.under ?? []).filter((u) => isExtraCard(u.card));
+      const picked = await this.askCards(p, `${o.card.name}:秘蔵庫に戻す下のカードを選んでください`, opts, a.underToVault, "underToVault");
+      for (const u of picked) {
+        base.under = (base.under ?? []).filter((x) => x !== u);
+        u.zone = "extra";
+        pl.extra.push(u);
+      }
+      this.addLog(`${picked.map((c) => c.card.name).join("、")}を秘蔵庫に戻した`, p);
+    }
+  }
+
+  /** 龍生:九子 o を base の上に重ねて出す */
+  private async dragonEvolve(p: PlayerId, uid: number, baseUid: number | undefined, instant: boolean) {
+    const pl = this.players[p];
+    const o = pl.extra.find((x) => x.uid === uid);
+    const base = pl.battlefield.find((x) => x.uid === baseUid) ?? this.dragonBases(p)[0];
+    if (!o || !base) return;
+    const dr = dragonOf(o.card);
+    if (!dr) return;
+    if (instant && !(dr.ambush && this.ambushWindow(p))) return;
+    const cost = this.dragonCost(p, o, base);
+    const canMana = this.canPay(p, cost);
+    const canAlt = this.canAlt(p, o, base);
+    if (!canMana && !canAlt) return;
+    let useAlt = !canMana;
+    if (canMana && canAlt) useAlt = await this.askYesNo(p, `${o.card.name}:進化コスト${cost || "{0}"}の代わりに「${this.altText(o)}」で重ねますか?`, "altCost", o);
+    if (useAlt) await this.payAlt(p, o, base);
+    else if (!this.pay(p, cost, 0)) return;
+    if (base.zone !== "battlefield" || o.zone !== "extra") return;
+    const wasSick = base.sick;
+    this.usedCards.add(o.card.id);
+    this.addLog(`${base.card.name}の上に${o.card.name}を重ねた(龍生${useAlt ? "・" + this.altText(o) : ""})`, p);
+    this.enterBattlefield(o, p);
+    // 進化:下のクリーチャーの召喚酔いを引き継ぐ
+    o.sick = wasSick;
+    this.putUnder(o, base);
+  }
+
+  /** 重なったカード1枚を一番上にして、その「出たとき」を使う(椒図・九子の巡り) */
+  private async rotate(p: PlayerId, top: Obj) {
+    const opts = (top.under ?? []).filter((u) => abilitiesOf(u.card).some((ab) => ab.a === "trigger" && ab.on === "etb"));
+    if (!opts.length || top.zone !== "battlefield") return;
+    const [pick] = await this.askCards(p, "一番上にする、下に重なったカードを選んでください", opts, 1, "rotate");
+    if (!pick) return;
+    const rest = [top, ...(top.under ?? [])].filter((x) => x !== pick);
+    const arr = this.zoneArray(top);
+    const i = arr ? arr.indexOf(top) : -1;
+    // 新しい一番上は、元の一番上の状態(タップ・修整・カウンター)を引き継ぐ
+    Object.assign(pick, { zone: "battlefield", controller: top.controller, tapped: top.tapped, sick: top.sick, damage: top.damage, counters: top.counters, temp: top.temp, perm: top.perm });
+    for (const u of rest) {
+      u.zone = "under";
+      u.tapped = false;
+      u.damage = 0;
+      u.counters = 0;
+      u.temp = [];
+      u.perm = [];
+    }
+    top.under = [];
+    pick.under = rest;
+    if (arr && i >= 0) arr[i] = pick;
+    this.addLog(`${pick.card.name}が一番上になった`, p);
+    this.queueTriggers("etb", [pick]);
+  }
+
   canAssemble(p: PlayerId, o: Obj): boolean {
     const as = assembleOf(o.card);
     const pl = this.players[p];
@@ -1881,6 +2090,7 @@ export class Game {
     const rinne = wasCreature && !o.token && this.hasKw(o, "輪廻");
     const tragic = wasCreature && !o.token && this.colorsOf(o).some((x) => x === "B" || x === "R");
     this.move(o, "graveyard");
+    if (wasCreature) this.diedThisTurn++;
     this.addLog(`${o.card.name}が墓地に置かれた`, controller);
     if (tragic) this.gainApplause(controller, "悲劇", 1, true);
     if (wasCreature) {
@@ -1903,6 +2113,133 @@ export class Game {
     const src = ctx.item.obj;
     const pl = this.players[p];
     switch (e.do) {
+      case "muster": {
+        // 招集:まだ自分の戦場に出ていないその宿星の好漢から3枚。デッキに入っていない好漢を優先する
+        const all = SUMMON_POOL.filter((c) => (c.subtype ?? "").split("・").includes(e.star) && !pl.heroes.has(c.name));
+        const outside = all.filter((c) => !pl.deckIds.has(c.id));
+        const inside = all.filter((c) => pl.deckIds.has(c.id));
+        this.shuffle(outside);
+        this.shuffle(inside);
+        const picks = [...outside, ...inside].slice(0, 3);
+        if (!picks.length) {
+          this.addLog(`${e.star === "天罡星" ? "天罡" : "地煞"}招集:呼べる好漢がいなかった`, p);
+          break;
+        }
+        this.limbo = picks.map((c) => this.newObj(c, p, "limbo"));
+        const [chosen] = await this.askCards(p, `${e.star === "天罡星" ? "天罡" : "地煞"}招集:戦場に出す好漢を1人選んでください`, this.limbo, 1, "muster");
+        const pick = chosen ?? this.limbo[0];
+        this.limbo = this.limbo.filter((x) => x === pick);
+        pick.generated = true;
+        this.addLog(`${e.star === "天罡星" ? "天罡" : "地煞"}招集:${pick.card.name}が駆けつけた`, p);
+        this.enterBattlefield(pick, p);
+        this.limbo = [];
+        break;
+      }
+      case "dig": {
+        const n = this.amount(e.n, ctx);
+        const seen = pl.library.slice(0, n + e.plus);
+        if (!seen.length) break;
+        const take = Math.min(n, e.max, seen.length);
+        const picked = take > 0 ? await this.askCards(p, `手札に加えるカードを${take}枚選んでください(残りはライブラリーの一番下へ)`, seen, take, "dig") : [];
+        for (const o of picked) this.move(o, "hand");
+        for (const o of seen) if (!picked.includes(o)) {
+          pl.library.splice(pl.library.indexOf(o), 1);
+          pl.library.push(o);
+        }
+        this.addLog(`ライブラリーの上から${seen.length}枚を見て、${picked.length}枚を手札に加えた`, p);
+        break;
+      }
+      case "volley": {
+        const n = this.amount(e.n, ctx);
+        let toPlayer = 0;
+        const hit = new Map<Obj, number>();
+        for (let i = 0; i < n; i++) {
+          const alive = this.creatures(opp).filter((c) => c.damage < this.toughness(c) || this.hasKw(c, "破壊不能"));
+          if (!alive.length) {
+            toPlayer++;
+            continue;
+          }
+          const c = alive[Math.floor(this.rng() * alive.length)];
+          this.dealDamage(src, c, e.dmg);
+          hit.set(c, (hit.get(c) ?? 0) + e.dmg);
+        }
+        for (const [o, d] of hit) this.addLog(`${src.card.name}が${o.card.name}に${d}点のダメージ`, p);
+        if (toPlayer) this.dealDamage(src, { kind: "player", id: opp }, toPlayer);
+        break;
+      }
+      case "shrink": {
+        const o = this.refObj(ctx, e.tg);
+        const n = this.amount(e.n, ctx);
+        if (o && n > 0) {
+          o.temp.push({ p: -n, t: -n, kw: [] });
+          this.addLog(`${o.card.name}は-${n}/-${n}の修整を受けた`, p);
+        }
+        break;
+      }
+      case "fightSelf": {
+        const o = this.refObj(ctx, e.tg);
+        if (o && src.zone === "battlefield") {
+          this.dealDamage(src, o, this.power(src));
+          this.dealDamage(o, src, this.power(o));
+          this.addLog(`${src.card.name}と${o.card.name}が格闘した`, p);
+        }
+        break;
+      }
+      case "shatter": {
+        const n = this.amount(e.n, ctx);
+        const opts = this.players[opp].battlefield.filter((o) => !isCreatureCard(o.card) && (o.card.type.includes("アーティファクト") || o.card.type.includes("エンチャント")));
+        if (!opts.length || n <= 0) break;
+        const picked = await this.askCards(p, `破壊するアーティファクトとエンチャントを${Math.min(n, opts.length)}個選んでください`, opts, Math.min(n, opts.length), "shatter");
+        for (const o of picked) this.destroy(o);
+        this.addLog(`${picked.map((o) => o.card.name).join("、")}を破壊した`, p);
+        break;
+      }
+      case "washGrave": {
+        const g = [...this.players[opp].graveyard];
+        for (const o of g) this.move(o, "library");
+        if (g.length) this.addLog(`相手の墓地のカード${g.length}枚をライブラリーの一番下に置いた`, p);
+        break;
+      }
+      case "tuckUpTo": {
+        const n = this.amount(e.n, ctx);
+        const opts = this.creatures(opp).filter((o) => manaValue(o.card.cost) <= n);
+        if (!opts.length) break;
+        const [o] = await this.askCards(p, `ライブラリーの一番下に置く相手のクリーチャーを選んでください(マナ総量${n}以下)`, opts, 1, "tuck");
+        if (o) {
+          this.move(o, "library");
+          this.addLog(`${o.card.name}を持ち主のライブラリーの一番下に置いた`, p);
+        }
+        break;
+      }
+      case "rotate": {
+        const top = e.tg === undefined ? src : this.refObj(ctx, e.tg);
+        if (top) await this.rotate(p, top);
+        break;
+      }
+      case "yazi": {
+        const names = this.stackNames(src);
+        if (src.zone !== "battlefield" || !NINE_SONS.every((n) => names.some((x) => x.includes(n)))) break;
+        src.perm.push({ p: 0, t: 0, kw: ["トランプル", "破壊不能"] });
+        this.addLog(`九子がそろった。${src.card.name}はトランプルと破壊不能を得た`, p);
+        if (!pl.yaziUsed) {
+          pl.yaziUsed = true;
+          pl.extraTurns++;
+          this.addLog("このターンのあと、追加のターンを得る", p);
+        }
+        break;
+      }
+      case "dragonNow": {
+        const pairs: { o: Obj; base: Obj }[] = [];
+        for (const o of pl.extra) if (dragonOf(o.card)) for (const base of this.dragonBases(p)) if (this.canDragon(p, o, base)) pairs.push({ o, base });
+        if (!pairs.length) break;
+        const sons = pairs.map((x) => x.o).filter((o, i, a) => a.indexOf(o) === i);
+        const [son] = await this.askCards(p, "重ねる九子を選んでください", sons, 1, "dragon");
+        const bases = pairs.filter((x) => x.o === son).map((x) => x.base);
+        const [base] = bases.length > 1 ? await this.askCards(p, "重ねる先のクリーチャーを選んでください", bases, 1, "dragonBase") : bases;
+        // 登龍門はいつでも重ねられる(タイミングの判定をしない)
+        if (son && base) await this.dragonEvolve(p, son.uid, base.uid, false);
+        break;
+      }
       case "perApplause": {
         // このゲームで得た喝采の累計 div ごとに1回、効果をくり返す
         const rounds = Math.floor((pl.applauseTotal[e.cat] ?? 0) / e.div);
@@ -2707,13 +3044,15 @@ export class Game {
 
   private async takeTurn() {
     this.turn++;
+    this.diedThisTurn = 0;
     if (this.turn > this.maxTurns) {
       this.winner = null;
       throw new GameOver(null);
     }
     const p = this.active;
     const pl = this.players[p];
-    this.addLog(`― ${pl.name}のターン${Math.ceil(this.turn / 2)} ―`, p);
+    pl.turnCount++;
+    this.addLog(`― ${pl.name}のターン${pl.turnCount} ―`, p);
     // アンタップ
     this.step = "untap";
     for (const o of pl.battlefield) {
@@ -2792,7 +3131,10 @@ export class Game {
       if (fleeting.length) this.addLog(`マナゾーンの《${fleeting[0].card.name}》${fleeting.length}枚が墓地に置かれた`, q.id);
     }
     this.emptyPools();
-    this.active = this.other(p);
+    if (pl.extraTurns > 0) {
+      pl.extraTurns--;
+      this.addLog(`${pl.name}の追加ターン`, p);
+    } else this.active = this.other(p);
   }
 }
 
@@ -2806,6 +3148,10 @@ function effectSummary(e: Effect): string {
   switch (e.do) {
     case "returnCard":
       return e.to === "hand" ? "墓地のカードを手札に戻す" : e.to === "battlefield" ? "墓地のカードを戦場に戻す" : "墓地のカードをマナゾーンに置く";
+    case "fightSelf":
+      return "格闘";
+    case "duel":
+      return "決闘";
     default:
       return "効果";
   }

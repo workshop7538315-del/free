@@ -1,0 +1,2945 @@
+[
+  {
+    "id": "sh001",
+    "name": "天魁星 呼保義 宋江",
+    "cost": "{2}{W}{U}{G}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "flavor": "及時雨。困った者のもとへ、いつも真っ先に雨が降る。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 3,
+    "toughness": 5,
+    "text": [
+      "天魁星 呼保義 宋江が戦場に出たとき、天罡招集を行う。",
+      "あなたがコントロールする他の好漢は+1/+1の修整を受ける。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "muster",
+            "star": "天罡星"
+          }
+        ]
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 1,
+          "t": 1,
+          "filter": {
+            "sub": "好漢"
+          },
+          "others": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "sh002",
+    "name": "天罡星 玉麒麟 盧俊義",
+    "cost": "{3}{G}{W}",
+    "type": "クリーチャー",
+    "rarity": "神話レア",
+    "flavor": "河北一の槍。梁山泊の二番目の椅子は、この男のために空けてあった。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 5,
+    "toughness": 5,
+    "text": [
+      "警戒、トランプル",
+      "集結 6 ― 天罡星 玉麒麟 盧俊義は+2/+2の修整を受ける。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      },
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 2,
+          "t": 2
+        },
+        "if": {
+          "gather": 6
+        }
+      }
+    ]
+  },
+  {
+    "id": "sh003",
+    "name": "天機星 智多星 呉用",
+    "cost": "{2}{U}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "flavor": "生辰綱は、刃を抜かずに奪われた。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 1,
+    "toughness": 3,
+    "text": [
+      "天機星 智多星 呉用が戦場に出たとき、地煞招集を行う。",
+      "替天行道 ― 天機星 智多星 呉用が戦場に出たとき、カードを1枚引く。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "muster",
+            "star": "地煞星"
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1,
+            "if": "underdog"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh004",
+    "name": "天閑星 入雲竜 公孫勝",
+    "cost": "{3}{U}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "flavor": "雲を呼び、風を起こす。道術は、ここぞというときにだけ。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 3,
+    "toughness": 4,
+    "text": [
+      "飛行",
+      "天閑星 入雲竜 公孫勝が戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。それをタップする。それは、そのコントローラーの次のアンタップ・ステップにアンタップしない。",
+      "集結 5 ― 天閑星 入雲竜 公孫勝が戦場に出たとき、地煞招集を行う。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "tap",
+            "tg": 0,
+            "freeze": true
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "muster",
+            "star": "地煞星",
+            "if": {
+              "gather": 5
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh005",
+    "name": "天勇星 大刀 関勝",
+    "cost": "{3}{W}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "flavor": "関羽の末裔。青龍偃月刀は、今も同じ重さで振るわれる。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 3,
+    "toughness": 4,
+    "text": [
+      "警戒",
+      "天勇星 大刀 関勝が戦場に出たとき、地煞招集を行う。",
+      "集結 4 ― 天勇星 大刀 関勝は先制攻撃を持つ。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "muster",
+            "star": "地煞星"
+          }
+        ]
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 0,
+          "t": 0,
+          "kw": [
+            "先制攻撃"
+          ]
+        },
+        "if": {
+          "gather": 4
+        }
+      }
+    ]
+  },
+  {
+    "id": "sh006",
+    "name": "天雄星 豹子頭 林冲",
+    "cost": "{2}{W}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "flavor": "八十万禁軍の槍術師範は、雪の夜、すべてを失って山に登った。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 3,
+    "toughness": 2,
+    "text": [
+      "先制攻撃",
+      "替天行道 ― 天雄星 豹子頭 林冲は+2/+0の修整を受ける。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 2,
+          "t": 0
+        },
+        "if": "underdog"
+      }
+    ]
+  },
+  {
+    "id": "sh007",
+    "name": "天猛星 霹靂火 秦明",
+    "cost": "{2}{G}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "速攻"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 5,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "速攻"
+    ]
+  },
+  {
+    "id": "sh008",
+    "name": "天威星 双鞭 呼延灼",
+    "cost": "{3}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 4,
+    "toughness": 4,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "先制攻撃"
+    ]
+  },
+  {
+    "id": "sh009",
+    "name": "天英星 小李広 花栄",
+    "cost": "{2}{G}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "flavor": "放った矢は、雁の列の何羽目を射るかまで決めてある。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 2,
+    "toughness": 3,
+    "text": [
+      "到達",
+      "天英星 小李広 花栄が戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。天英星 小李広 花栄はそれに2点のダメージを与える。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "到達"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "damage",
+            "n": 2,
+            "tg": 0
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh010",
+    "name": "天貴星 小旋風 柴進",
+    "cost": "{2}{W}{U}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "flavor": "旅の豪傑は、まず柴大官人の屋敷を目指した。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 2,
+    "toughness": 3,
+    "text": [
+      "天貴星 小旋風 柴進が戦場に出たとき、地煞招集を行う。",
+      "あなたがコントロールする他の地煞星は+1/+0の修整を受ける。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "muster",
+            "star": "地煞星"
+          }
+        ]
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 1,
+          "t": 0,
+          "filter": {
+            "sub": "地煞星"
+          },
+          "others": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "sh011",
+    "name": "天富星 撲天鵰 李応",
+    "cost": "{3}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 3,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "飛行"
+    ]
+  },
+  {
+    "id": "sh012",
+    "name": "天満星 美髯公 朱仝",
+    "cost": "{3}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 4,
+    "toughness": 5,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "警戒"
+    ]
+  },
+  {
+    "id": "sh013",
+    "name": "天孤星 花和尚 魯智深",
+    "cost": "{3}{G}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "flavor": "柳の木を、根こそぎ引き抜いた。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 5,
+    "toughness": 4,
+    "text": [
+      "トランプル",
+      "替天行道 ― 天孤星 花和尚 魯智深は+1/+1の修整を受ける。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 1,
+          "t": 1
+        },
+        "if": "underdog"
+      }
+    ]
+  },
+  {
+    "id": "sh014",
+    "name": "天傷星 行者 武松",
+    "cost": "{2}{G}{G}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "flavor": "景陽岡の虎は、素手で打ち殺された。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 4,
+    "toughness": 4,
+    "text": [
+      "天傷星 行者 武松が戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。天傷星 行者 武松とそれは格闘する。(それぞれが相手にパワーに等しいダメージを与える)"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "fightSelf",
+            "tg": 0,
+            "may": true
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh015",
+    "name": "天立星 双鎗将 董平",
+    "cost": "{3}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "二段攻撃"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 3,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "二段攻撃"
+    ]
+  },
+  {
+    "id": "sh016",
+    "name": "天捷星 没羽箭 張清",
+    "cost": "{1}{U}{G}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "flavor": "羽のない矢。投げた石は、名だたる将を次々と馬から落とした。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "天捷星 没羽箭 張清が戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。天捷星 没羽箭 張清はそれに2点のダメージを与える。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "damage",
+            "n": 2,
+            "tg": 0
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh017",
+    "name": "天暗星 青面獣 楊志",
+    "cost": "{3}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 4,
+    "toughness": 4,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "警戒"
+    ]
+  },
+  {
+    "id": "sh018",
+    "name": "天祐星 金鎗手 徐寧",
+    "cost": "{2}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 3,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "先制攻撃"
+    ]
+  },
+  {
+    "id": "sh019",
+    "name": "天空星 急先鋒 索超",
+    "cost": "{3}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "速攻"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 5,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "速攻"
+    ]
+  },
+  {
+    "id": "sh020",
+    "name": "天速星 神行太保 戴宗",
+    "cost": "{1}{U}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "flavor": "甲馬を脚に結べば、一日に八百里。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 1,
+    "toughness": 1,
+    "text": [
+      "飛行",
+      "天速星 神行太保 戴宗が戦場に出たとき、カードを1枚引く。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh021",
+    "name": "天異星 赤髪鬼 劉唐",
+    "cost": "{3}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 4,
+    "toughness": 4,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "トランプル"
+    ]
+  },
+  {
+    "id": "sh022",
+    "name": "天殺星 黒旋風 李逵",
+    "cost": "{2}{G}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "flavor": "二丁の板斧。考えるより先に、もう走っている。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 4,
+    "toughness": 2,
+    "text": [
+      "速攻、トランプル"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "速攻"
+      },
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      }
+    ]
+  },
+  {
+    "id": "sh023",
+    "name": "天微星 九紋竜 史進",
+    "cost": "{1}{G}{W}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "flavor": "背中の九匹の龍が、物語のいちばん最初に動き出す。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "天微星 九紋竜 史進が戦場に出たとき、地煞招集を行う。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "muster",
+            "star": "地煞星"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh024",
+    "name": "天究星 没遮攔 穆弘",
+    "cost": "{3}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・天罡星",
+    "power": 4,
+    "toughness": 5,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh025",
+    "name": "天退星 挿翅虎 雷横",
+    "cost": "{3}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "到達"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 4,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "到達"
+    ]
+  },
+  {
+    "id": "sh026",
+    "name": "天寿星 混江竜 李俊",
+    "cost": "{3}{U}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "flavor": "長江の波は、この男の言うことを聞く。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 3,
+    "toughness": 4,
+    "text": [
+      "天寿星 混江竜 李俊が戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。それを持ち主の手札に戻す。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "bounce",
+            "tg": 0
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh027",
+    "name": "天剣星 立地太歳 阮小二",
+    "cost": "{3}{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "呪禁"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 3,
+    "toughness": 4,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "呪禁"
+    ]
+  },
+  {
+    "id": "sh028",
+    "name": "天平星 船火児 張横",
+    "cost": "{3}{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "威迫"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 4,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "威迫"
+    ]
+  },
+  {
+    "id": "sh029",
+    "name": "天罪星 短命二郎 阮小五",
+    "cost": "{3}{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 3,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "飛行"
+    ]
+  },
+  {
+    "id": "sh030",
+    "name": "天損星 浪裏白跳 張順",
+    "cost": "{2}{U}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "flavor": "水の中で七日七晩。白い魚のように波間を跳ぶ。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "呪禁",
+      "替天行道 ― 天損星 浪裏白跳 張順は+1/+0の修整を受け、飛行を持つ。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "呪禁"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 1,
+          "t": 0,
+          "kw": [
+            "飛行"
+          ]
+        },
+        "if": "underdog"
+      }
+    ]
+  },
+  {
+    "id": "sh031",
+    "name": "天敗星 活閻羅 阮小七",
+    "cost": "{3}{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "呪禁"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 4,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "呪禁"
+    ]
+  },
+  {
+    "id": "sh032",
+    "name": "天牢星 病関索 楊雄",
+    "cost": "{3}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "絆魂"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 4,
+    "toughness": 4,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "絆魂"
+    ]
+  },
+  {
+    "id": "sh033",
+    "name": "天慧星 拚命三郎 石秀",
+    "cost": "{2}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "速攻"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 4,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "速攻"
+    ]
+  },
+  {
+    "id": "sh034",
+    "name": "天暴星 両頭蛇 解珍",
+    "cost": "{2}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "到達"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 3,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "到達"
+    ]
+  },
+  {
+    "id": "sh035",
+    "name": "天哭星 双尾蝎 解宝",
+    "cost": "{2}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "接死"
+      }
+    ],
+    "subtype": "人間・好漢・天罡星",
+    "power": 3,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "接死"
+    ]
+  },
+  {
+    "id": "sh036",
+    "name": "天巧星 浪子 燕青",
+    "cost": "{1}{U}",
+    "type": "クリーチャー",
+    "rarity": "レア",
+    "flavor": "相撲、笛、方言、どれも一流。主人のためなら、どれでも使う。",
+    "subtype": "人間・好漢・天罡星",
+    "power": 2,
+    "toughness": 1,
+    "text": [
+      "呪禁",
+      "天巧星 浪子 燕青が攻撃するたび、カードを1枚引く。カードを1枚捨てる。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "呪禁"
+      },
+      {
+        "a": "trigger",
+        "on": "attacks",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          },
+          {
+            "do": "discard",
+            "n": 1,
+            "who": "you"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh037",
+    "name": "地魁星 神機軍師 朱武",
+    "cost": "{2}{U}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "flavor": "地煞の筆頭。陣を敷けば、少華山は落ちなかった。",
+    "subtype": "人間・好漢・地煞星",
+    "power": 0,
+    "toughness": 3,
+    "text": [
+      "地魁星 神機軍師 朱武が戦場に出たとき、地煞招集を行う。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "muster",
+            "star": "地煞星"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh038",
+    "name": "地煞星 鎮三山 黄信",
+    "cost": "{2}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 3,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "警戒"
+    ]
+  },
+  {
+    "id": "sh039",
+    "name": "地勇星 病尉遅 孫立",
+    "cost": "{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "絆魂"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 1,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "絆魂"
+    ]
+  },
+  {
+    "id": "sh040",
+    "name": "地傑星 醜郡馬 宣賛",
+    "cost": "{1}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh041",
+    "name": "地雄星 井木犴 郝思文",
+    "cost": "{2}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "絆魂"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 4,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "絆魂"
+    ]
+  },
+  {
+    "id": "sh042",
+    "name": "地威星 百勝将 韓滔",
+    "cost": "{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "警戒"
+    ]
+  },
+  {
+    "id": "sh043",
+    "name": "地英星 天目将 彭玘",
+    "cost": "{1}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "先制攻撃"
+    ]
+  },
+  {
+    "id": "sh044",
+    "name": "地奇星 聖水将 単廷珪",
+    "cost": "{2}{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "飛行"
+    ]
+  },
+  {
+    "id": "sh045",
+    "name": "地猛星 神火将 魏定国",
+    "cost": "{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "到達"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "到達"
+    ]
+  },
+  {
+    "id": "sh046",
+    "name": "地文星 聖手書生 蕭譲",
+    "cost": "{1}{U}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "flavor": "どんな筆跡も写し取る。偽の手紙で、宋江は一度救われた。",
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 2,
+    "text": [
+      "地文星 聖手書生 蕭譲が戦場に出たとき、あなたのライブラリーの一番上のカードを見る。そのカードをライブラリーの一番下に置いてもよい。",
+      "集結 3 ― 地文星 聖手書生 蕭譲が戦場に出たとき、カードを1枚引く。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "lookTop"
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1,
+            "if": {
+              "gather": 3
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh047",
+    "name": "地正星 鉄面孔目 裴宣",
+    "cost": "{1}{W}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "flavor": "賞罰を司る。顔色ひとつ変えずに。",
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "替天行道 ― 地正星 鉄面孔目 裴宣が戦場に出たとき、対戦相手がコントロールするクリーチャー1体を対象とする。それをタップする。それは、そのコントローラーの次のアンタップ・ステップにアンタップしない。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "tap",
+            "tg": 0,
+            "freeze": true,
+            "if": "underdog"
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "opp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh048",
+    "name": "地闊星 摩雲金翅 欧鵬",
+    "cost": "{W}{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "警戒"
+    ]
+  },
+  {
+    "id": "sh049",
+    "name": "地闔星 火眼狻猊 鄧飛",
+    "cost": "{1}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "到達"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "到達"
+    ]
+  },
+  {
+    "id": "sh050",
+    "name": "地強星 錦毛虎 燕順",
+    "cost": "{2}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 3,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "トランプル"
+    ]
+  },
+  {
+    "id": "sh051",
+    "name": "地暗星 錦豹子 楊林",
+    "cost": "{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・地煞星",
+    "power": 0,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh052",
+    "name": "地軸星 轟天雷 凌振",
+    "cost": "{3}{U}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "flavor": "大砲の名手。山が鳴った。",
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 3,
+    "text": [
+      "地軸星 轟天雷 凌振が戦場に出たとき、クリーチャー1体を対象とする。地軸星 轟天雷 凌振はそれに2点のダメージを与える。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "damage",
+            "n": 2,
+            "tg": 0
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh053",
+    "name": "地会星 神算子 蔣敬",
+    "cost": "{1}{U}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "flavor": "梁山泊の帳簿は、一文の狂いもない。",
+    "subtype": "人間・好漢・地煞星",
+    "power": 0,
+    "toughness": 3,
+    "text": [
+      "替天行道 ― 地会星 神算子 蔣敬が戦場に出たとき、カードを1枚引く。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1,
+            "if": "underdog"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh054",
+    "name": "地佐星 小温侯 呂方",
+    "cost": "{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "警戒"
+    ]
+  },
+  {
+    "id": "sh055",
+    "name": "地祐星 賽仁貴 郭盛",
+    "cost": "{1}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "先制攻撃"
+    ]
+  },
+  {
+    "id": "sh056",
+    "name": "地霊星 神医 安道全",
+    "cost": "{1}{G}{W}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "flavor": "死にかけた宋江の背中の腫れ物も、この男が治した。",
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 4,
+    "text": [
+      "地霊星 神医 安道全が戦場に出たとき、あなたは3点のライフを得る。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "gainLife",
+            "n": 3
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh057",
+    "name": "地獣星 紫髯伯 皇甫端",
+    "cost": "{1}{G}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "flavor": "馬を診る医者。馬の病は、目を見ればわかる。",
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 2,
+    "text": [
+      "地獣星 紫髯伯 皇甫端が戦場に出たとき、あなたがコントロールするクリーチャー1体を対象とする。それの上に+1/+1カウンターを2個置く。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "counters",
+            "tg": 0,
+            "n": 2
+          }
+        ],
+        "targets": [
+          {
+            "t": "creature",
+            "who": "you"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh058",
+    "name": "地微星 矮脚虎 王英",
+    "cost": "{1}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh059",
+    "name": "地慧星 一丈青 扈三娘",
+    "cost": "{2}{W}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "flavor": "二振りの日月双刀。梁山泊でいちばん強い女将軍。",
+    "subtype": "人間・好漢・地煞星",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "先制攻撃、警戒"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      },
+      {
+        "a": "kw",
+        "kw": "警戒"
+      }
+    ]
+  },
+  {
+    "id": "sh060",
+    "name": "地暴星 喪門神 鮑旭",
+    "cost": "{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 1,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh061",
+    "name": "地然星 混世魔王 樊瑞",
+    "cost": "{2}{U}{G}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "flavor": "妖術使いは、公孫勝に敗れて弟子になった。",
+    "subtype": "人間・好漢・地煞星",
+    "power": 3,
+    "toughness": 3,
+    "text": [
+      "地然星 混世魔王 樊瑞が戦場に出たとき、地煞招集を行う。",
+      "集結 5 ― 地然星 混世魔王 樊瑞が戦場に出たとき、天罡招集を行う。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "muster",
+            "star": "地煞星",
+            "unless": {
+              "gather": 5
+            }
+          }
+        ]
+      },
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "muster",
+            "star": "天罡星",
+            "if": {
+              "gather": 5
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh062",
+    "name": "地猖星 毛頭星 孔明",
+    "cost": "{2}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 3,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "トランプル"
+    ]
+  },
+  {
+    "id": "sh063",
+    "name": "地狂星 独火星 孔亮",
+    "cost": "{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "到達"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "到達"
+    ]
+  },
+  {
+    "id": "sh064",
+    "name": "地飛星 八臂那吒 項充",
+    "cost": "{1}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・地煞星",
+    "power": 3,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh065",
+    "name": "地走星 飛天大聖 李袞",
+    "cost": "{2}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・地煞星",
+    "power": 4,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh066",
+    "name": "地巧星 玉臂匠 金大堅",
+    "cost": "{2}{U}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "flavor": "印を彫らせれば、本物より本物らしい。",
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 3,
+    "text": [
+      "地巧星 玉臂匠 金大堅が戦場に出たとき、カードを1枚引く。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh067",
+    "name": "地明星 鉄笛仙 馬麟",
+    "cost": "{1}{W}{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 3,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "飛行"
+    ]
+  },
+  {
+    "id": "sh068",
+    "name": "地進星 出洞蛟 童威",
+    "cost": "{2}{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "飛行"
+    ]
+  },
+  {
+    "id": "sh069",
+    "name": "地退星 翻江蜃 童猛",
+    "cost": "{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・地煞星",
+    "power": 0,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh070",
+    "name": "地満星 玉幡竿 孟康",
+    "cost": "{1}{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 1,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "飛行"
+    ]
+  },
+  {
+    "id": "sh071",
+    "name": "地遂星 通臂猿 侯健",
+    "cost": "{2}{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "呪禁"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 4,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "呪禁"
+    ]
+  },
+  {
+    "id": "sh072",
+    "name": "地周星 跳澗虎 陳達",
+    "cost": "{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 1,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh073",
+    "name": "地隠星 白花蛇 楊春",
+    "cost": "{1}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "到達"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "到達"
+    ]
+  },
+  {
+    "id": "sh074",
+    "name": "地異星 白面郎君 鄭天寿",
+    "cost": "{2}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 3,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "警戒"
+    ]
+  },
+  {
+    "id": "sh075",
+    "name": "地理星 九尾亀 陶宗旺",
+    "cost": "{1}{G}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "flavor": "鍬一本で、梁山泊の城壁を築いた。",
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 3,
+    "text": [
+      "地理星 九尾亀 陶宗旺が戦場に出たとき、あなたのライブラリーの一番上のカードをあなたのマナゾーンに置く。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "rampTop",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh076",
+    "name": "地俊星 鉄扇子 宋清",
+    "cost": "{W}{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh077",
+    "name": "地楽星 鉄叫子 楽和",
+    "cost": "{2}{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "呪禁"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 4,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "呪禁"
+    ]
+  },
+  {
+    "id": "sh078",
+    "name": "地捷星 花項虎 龔旺",
+    "cost": "{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 1,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh079",
+    "name": "地速星 中箭虎 丁得孫",
+    "cost": "{1}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "到達"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "到達"
+    ]
+  },
+  {
+    "id": "sh080",
+    "name": "地鎮星 小遮攔 穆春",
+    "cost": "{2}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 3,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "トランプル"
+    ]
+  },
+  {
+    "id": "sh081",
+    "name": "地羈星 操刀鬼 曹正",
+    "cost": "{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "到達"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "到達"
+    ]
+  },
+  {
+    "id": "sh082",
+    "name": "地魔星 雲裏金剛 宋万",
+    "cost": "{1}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh083",
+    "name": "地妖星 摸着天 杜遷",
+    "cost": "{2}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "絆魂"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 4,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "絆魂"
+    ]
+  },
+  {
+    "id": "sh084",
+    "name": "地幽星 病大虫 薛永",
+    "cost": "{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 1,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "飛行"
+    ]
+  },
+  {
+    "id": "sh085",
+    "name": "地伏星 金眼彪 施恩",
+    "cost": "{1}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "先制攻撃"
+    ]
+  },
+  {
+    "id": "sh086",
+    "name": "地僻星 打虎将 李忠",
+    "cost": "{2}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 3,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "警戒"
+    ]
+  },
+  {
+    "id": "sh087",
+    "name": "地空星 小覇王 周通",
+    "cost": "{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "到達"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "到達"
+    ]
+  },
+  {
+    "id": "sh088",
+    "name": "地孤星 金銭豹子 湯隆",
+    "cost": "{W}{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh089",
+    "name": "地全星 鬼臉児 杜興",
+    "cost": "{2}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "絆魂"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 4,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "絆魂"
+    ]
+  },
+  {
+    "id": "sh090",
+    "name": "地短星 出林竜 鄒淵",
+    "cost": "{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 1,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "飛行"
+    ]
+  },
+  {
+    "id": "sh091",
+    "name": "地角星 独角竜 鄒潤",
+    "cost": "{1}{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh092",
+    "name": "地囚星 旱地忽律 朱貴",
+    "cost": "{1}{U}{G}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "flavor": "湖のほとりの居酒屋は、梁山泊の見張り台。鏑矢が上がれば、舟が迎えに来る。",
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 2,
+    "text": [
+      "地囚星 旱地忽律 朱貴が戦場に出たとき、地煞招集を行う。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "trigger",
+        "on": "etb",
+        "effects": [
+          {
+            "do": "muster",
+            "star": "地煞星"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sh093",
+    "name": "地蔵星 笑面虎 朱富",
+    "cost": "{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・地煞星",
+    "power": 0,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh094",
+    "name": "地平星 鉄臂膊 蔡福",
+    "cost": "{1}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh095",
+    "name": "地損星 一枝花 蔡慶",
+    "cost": "{2}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "絆魂"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 4,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "絆魂"
+    ]
+  },
+  {
+    "id": "sh096",
+    "name": "地奴星 催命判官 李立",
+    "cost": "{U}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "警戒"
+    ]
+  },
+  {
+    "id": "sh097",
+    "name": "地察星 青眼虎 李雲",
+    "cost": "{1}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "先制攻撃"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "先制攻撃"
+    ]
+  },
+  {
+    "id": "sh098",
+    "name": "地悪星 没面目 焦挺",
+    "cost": "{2}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "トランプル"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 3,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "トランプル"
+    ]
+  },
+  {
+    "id": "sh099",
+    "name": "地醜星 石将軍 石勇",
+    "cost": "{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "到達"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "到達"
+    ]
+  },
+  {
+    "id": "sh100",
+    "name": "地数星 小尉遅 孫新",
+    "cost": "{1}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": []
+  },
+  {
+    "id": "sh101",
+    "name": "地陰星 母大虫 顧大嫂",
+    "cost": "{1}{G}{W}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "速攻"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 3,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "速攻"
+    ]
+  },
+  {
+    "id": "sh102",
+    "name": "地刑星 菜園子 張青",
+    "cost": "{U}{G}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "警戒"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 2,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "警戒"
+    ]
+  },
+  {
+    "id": "sh103",
+    "name": "地壮星 母夜叉 孫二娘",
+    "cost": "{1}{U}{G}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "flavor": "十字坡の饅頭屋。中身のことは、聞かないほうがいい。",
+    "subtype": "人間・好漢・地煞星",
+    "power": 3,
+    "toughness": 2,
+    "text": [
+      "接死"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "接死"
+      }
+    ]
+  },
+  {
+    "id": "sh104",
+    "name": "地劣星 活閃婆 王定六",
+    "cost": "{2}{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 3,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "飛行"
+    ]
+  },
+  {
+    "id": "sh105",
+    "name": "地健星 険道神 郁保四",
+    "cost": "{1}{G}{W}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "flavor": "大男の旗持ち。「替天行道」の旗は、この男が掲げる。",
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 3,
+    "text": [
+      "替天行道 ― あなたがコントロールする他の好漢は+1/+0の修整を受ける。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "static",
+        "st": {
+          "s": "anthem",
+          "p": 1,
+          "t": 0,
+          "filter": {
+            "sub": "好漢"
+          },
+          "others": true
+        },
+        "if": "underdog"
+      }
+    ]
+  },
+  {
+    "id": "sh106",
+    "name": "地耗星 白日鼠 白勝",
+    "cost": "{1}{U}",
+    "type": "クリーチャー",
+    "rarity": "生成",
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      }
+    ],
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 1,
+    "tags": [
+      "梁山泊"
+    ],
+    "pack": "p12",
+    "text": [
+      "飛行"
+    ]
+  },
+  {
+    "id": "sh107",
+    "name": "地賊星 鼓上蚤 時遷",
+    "cost": "{U}",
+    "type": "クリーチャー",
+    "rarity": "アンコモン",
+    "flavor": "太鼓の上を跳ねる蚤。足音ひとつ立てずに、何でも盗む。",
+    "subtype": "人間・好漢・地煞星",
+    "power": 1,
+    "toughness": 1,
+    "text": [
+      "飛行",
+      "集結 4 ― 地賊星 鼓上蚤 時遷が攻撃するたび、カードを1枚引く。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "飛行"
+      },
+      {
+        "a": "trigger",
+        "on": "attacks",
+        "effects": [
+          {
+            "do": "draw",
+            "n": 1
+          }
+        ],
+        "if": {
+          "gather": 4
+        }
+      }
+    ]
+  },
+  {
+    "id": "sh108",
+    "name": "地狗星 金毛犬 段景住",
+    "cost": "{1}{G}{W}",
+    "type": "クリーチャー",
+    "rarity": "コモン",
+    "flavor": "馬泥棒。盗んだ名馬が、梁山泊と曾頭市の戦いを呼んだ。",
+    "subtype": "人間・好漢・地煞星",
+    "power": 2,
+    "toughness": 2,
+    "text": [
+      "速攻",
+      "集結 3 ― 地狗星 金毛犬 段景住は+1/+1の修整を受ける。"
+    ],
+    "tags": [
+      "梁山泊",
+      "人間"
+    ],
+    "pack": "p12",
+    "packs": [
+      "p12"
+    ],
+    "abilities": [
+      {
+        "a": "kw",
+        "kw": "速攻"
+      },
+      {
+        "a": "static",
+        "st": {
+          "s": "self",
+          "p": 1,
+          "t": 1
+        },
+        "if": {
+          "gather": 3
+        }
+      }
+    ]
+  }
+]

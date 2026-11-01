@@ -17,6 +17,8 @@ import {
   isEquipment,
   isInstantCard,
   isExtraCard,
+  dragonOf,
+  NINE_SONS,
   APPLAUSE_CAP,
   BLESSING_ELDORADO,
   releaseAbility,
@@ -138,7 +140,14 @@ function keepValue(g: Game, p: PlayerId, c: Card): number {
   if (abilityOf(c, "equip")) v += 1.2;
   // 生け贄の起動型能力を持つものは、生け贄にするクリーチャーとの組み合わせで強い
   if (abilitiesOf(c).some((a) => a.a === "activated" && (a.cost.sac || a.cost.sacSelf))) v += 0.6;
+  // 龍生九子:土台の贔屓と、それを探すカードは手札に残す
+  if ((c.name === "贔屓" || JSON.stringify(c.abilities).includes('"name":"贔屓"')) && needsBixi(g, p)) v += 3;
   return v;
+}
+
+/** 秘蔵庫に九子がいるのに、九子を重ねる土台(贔屓を含むクリーチャー)がまだない */
+function needsBixi(g: Game, p: PlayerId): boolean {
+  return g.players[p].extra.some((o) => dragonOf(o.card)) && g.dragonBases(p).length === 0;
 }
 
 /** まだ足りない色(手札の色マナ記号と、マナゾーンの色の差) */
@@ -196,6 +205,13 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
   if (top && top.controller !== p) {
     const counter = options.find((a) => a.type === "cast" && isCounter(g, a) && worthCountering(g, p, top));
     if (counter) return counter;
+    // 狴犴:相手の悪事に割り込んで重ねる
+    let ambush: { a: Action; s: number } | null = null;
+    for (const a of options) if (a.type === "summon" && a.via === "dragon") {
+      const s = scoreDragon(g, p, a.uid, a.base);
+      if (s > 3 && (!ambush || s > ambush.s)) ambush = { a, s };
+    }
+    if (ambush) return ambush.a;
     return pass;
   }
   if (top) return pass;
@@ -247,6 +263,7 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
         : a.via === "assemble" ? scoreAssemble(g, p, a.uid)
         : a.via === "evolve" ? scoreEvolve(g, p, a.uid)
         : a.via === "curtain" ? scoreCurtain(g, p, a.uid)
+        : a.via === "dragon" ? scoreDragon(g, p, a.uid, a.base)
         : scoreSummon(g, p, a.uid);
     if (s > 0 && (!best || s > best.s)) best = { a, s };
   }
@@ -453,12 +470,17 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
     case "fight":
     case "bite": {
       let best = 0;
-      for (const mine of myCreatures)
+      // 相手のクリーチャー同士(離間の計・駆虎呑狼の計など)
+      const bothOpp = (targets[0] as { who?: string } | undefined)?.who === "opp";
+      const attackers = bothOpp ? oppCreatures : myCreatures;
+      for (const mine of attackers)
         for (const t of oppCreatures) {
-          if (g.hasKw(t, "呪禁")) continue;
+          if (g.hasKw(t, "呪禁") || t === mine) continue;
           const kill = kills(g, mine, t);
           const die = e.do === "fight" && kills(g, t, mine);
-          if (kill) best = Math.max(best, creatureValue(g, t) - (die ? creatureValue(g, mine) : 0));
+          if (bothOpp) {
+            if (kill || die) best = Math.max(best, (kill ? creatureValue(g, t) : 0) + (die ? creatureValue(g, mine) : 0));
+          } else if (kill) best = Math.max(best, creatureValue(g, t) - (die ? creatureValue(g, mine) : 0));
         }
       return best;
     }
@@ -480,6 +502,8 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
     case "untap":
       return e.all ? myCreatures.filter((o) => o.tapped).length * 0.6 : 0.4;
     case "tutor":
+      // 贔屓を探す:九子を重ねる土台がなければ最優先
+      if (e.filter.name === "贔屓" && needsBixi(g, p)) return 4.5;
       return e.to === "battlefield" ? 3 : e.to === "hand" ? 2 : 1.5;
     case "manifest": {
       const cands = me.mana.filter((o) => isCreatureCard(o.card) && manaValue(o.card.cost) <= e.maxMV);
@@ -559,8 +583,87 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       });
       return enables ? 2.5 : 0;
     }
+    case "muster":
+      return e.star === "天罡星" ? 5 : 3;
+    case "dig":
+      return 2;
+    case "volley":
+      return oppCreatures.length ? 2.5 : 1;
+    case "shrink":
+      return bestKillable(3);
+    case "fightSelf":
+      return bestKillable(3) * 0.8;
+    case "shatter":
+      return them.battlefield.some((o) => !isCreatureCard(o.card)) ? 3 : 0;
+    case "washGrave":
+      return them.graveyard.length * 0.1;
+    case "tuckUpTo":
+      return bestOpp * 0.6;
+    case "rotate":
+      return g.dragonBases(p).some((o) => (o.under ?? []).some((u) => dragonOf(u.card))) ? 3 : 0;
+    case "dragonNow": {
+      const can = me.extra.some((o) => dragonOf(o.card) && g.dragonBases(p).some((b) => g.canDragon(p, o, b)));
+      return can ? 3.5 : 0;
+    }
   }
   return 0;
+}
+
+// ---------------------------------------------------------------- 龍生(第12弾)
+/** 九子 o を base の上に重ねたときの「出たとき」の価値(シルバーバレット) */
+function dragonEtbValue(g: Game, p: PlayerId, o: Obj, x: number): number {
+  const opp = g.other(p);
+  const them = g.players[opp];
+  const oppC = g.creatures(opp);
+  const name = o.card.name;
+  const val = (c: Obj) => creatureValue(g, c);
+  if (name.includes("螭吻")) return Math.min(x, 3) * 1.2 + (g.players[p].hand.length <= 2 ? 1 : 0);
+  if (name.includes("狻猊")) {
+    const small = oppC.filter((c) => g.toughness(c) - c.damage <= 2).length;
+    return Math.min(x, small) * 2 + Math.max(0, x - oppC.length) * 0.6 + (them.life <= x ? 50 : 0);
+  }
+  if (name.includes("狴犴")) return Math.max(0, ...oppC.filter((c) => !g.hasKw(c, "呪禁") && g.toughness(c) - c.damage <= x).map(val));
+  if (name.includes("饕餮")) {
+    const pw = (o.card.power ?? 5) + x + x;
+    return 1 + Math.max(0, ...oppC.filter((c) => !g.hasKw(c, "呪禁") && g.toughness(c) - c.damage <= pw).map(val));
+  }
+  if (name.includes("蒲牢")) return Math.min(x, them.battlefield.filter((c) => !isCreatureCard(c.card) && /アーティファクト|エンチャント/.test(c.card.type)).length) * 3;
+  if (name.includes("覇下")) return them.graveyard.length * 0.15 + Math.max(0, ...oppC.filter((c) => manaValue(c.card.cost) <= x).map(val));
+  if (name.includes("椒図")) return 2;
+  if (name.includes("睚眦")) return x * 0.8 + 2;
+  return 1;
+}
+
+function scoreDragon(g: Game, p: PlayerId, uid: number, baseUid?: number): number {
+  const o = g.find(uid);
+  const base = baseUid !== undefined ? g.find(baseUid) : undefined;
+  if (!o || !base) return -1;
+  const x = (base.under?.length ?? 0) + 1;
+  // 九子9種がそろう睚眦は最優先
+  if (o.card.name.includes("睚眦")) {
+    const names = g.stackNames(base);
+    if (NINE_SONS.filter((n) => n !== "睚眦").every((n) => names.some((m) => m.includes(n)))) return 30;
+  }
+  const etb = dragonEtbValue(g, p, o, x);
+  // 体が大きくなる分(新しい一番上のP/Tと、重なりの+1/+1)
+  const grow = ((o.card.power ?? 0) + (o.card.toughness ?? 0) - (base.card.power ?? 0) - (base.card.toughness ?? 0)) * 0.15 + 0.6;
+  // 1体に積みすぎると、除去1枚で崩れる。積むほど少し慎重に
+  const risk = x >= 4 ? 0.3 * (x - 3) : 0;
+  return etb + grow - risk;
+}
+
+/** 代わりの払い方を使うか */
+function altIsCheap(g: Game, p: PlayerId, o: Obj | undefined): boolean {
+  const a = o && dragonOf(o.card)?.alt;
+  if (!a) return false;
+  const me = g.players[p];
+  if (a.mill) return me.library.length >= 15;
+  if (a.discard) return me.hand.length >= 4 || me.hand.every((h) => manaValue(h.card.cost) > me.mana.length + 2);
+  if (a.life) return me.life >= 12;
+  if (a.sacOther) return g.creatures(p).some((c) => c.token || c.generated || creatureValue(g, c) < 2);
+  if (a.tapCreatures) return g.step !== "main1";
+  if (a.manaToGrave) return me.mana.length >= 7;
+  return false;
 }
 
 function scoreActivate(g: Game, p: PlayerId, a: Extract<Action, { type: "activate" }>): number {
@@ -741,8 +844,18 @@ function chooseYesNo(g: Game, p: PlayerId, d: Extract<Decision, { kind: "yesno" 
       return me.hand.some((o) => manaValue(o.card.cost) > me.mana.length + 3);
     case "lookTop":
       return !!d.obj && manaValue(d.obj.card.cost) > me.mana.length + 3;
-    case "may":
+    case "may": {
+      // 格闘:勝てて、自分が生き残る相手がいるときだけ
+      if (d.prompt.includes("格闘") && d.obj) {
+        const src = d.obj;
+        const pw = g.power(src);
+        const hp = g.toughness(src) - src.damage;
+        return g.creatures(g.other(p)).some((c) => g.toughness(c) - c.damage <= pw && (g.power(c) < hp || creatureValue(g, c) > creatureValue(g, src)));
+      }
       return true;
+    }
+    case "altCost":
+      return altIsCheap(g, p, d.obj);
   }
   return true;
 }
@@ -815,6 +928,42 @@ function chooseCards(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseC
       break;
     case "tutor":
       sorted = [...objs].sort((a, b) => cardScore(b.card) - cardScore(a.card));
+      break;
+    case "muster":
+      // 招集:いちばん強い好漢を呼ぶ
+      sorted = [...objs].sort((a, b) => cardScore(b.card) + cardCreatureValue(b.card) - cardScore(a.card) - cardCreatureValue(a.card));
+      break;
+    case "dig":
+      sorted = [...objs].sort((a, b) => keepValue(g, p, b.card) - keepValue(g, p, a.card));
+      break;
+    case "shatter":
+    case "tuck":
+      sorted = [...objs].sort((a, b) => manaValue(b.card.cost) + (isCreatureCard(b.card) ? creatureValue(g, b) : 0) - manaValue(a.card.cost) - (isCreatureCard(a.card) ? creatureValue(g, a) : 0));
+      break;
+    case "rotate": {
+      // いちばん効く「出たとき」を持つ九子を上にする(椒図自身は選ばない)
+      const top = objs[0] && g.players[p].battlefield.find((b) => (b.under ?? []).includes(objs[0]));
+      const x = top?.under?.length ?? 1;
+      sorted = [...objs].sort((a, b) => dragonEtbValue(g, p, b, x) - dragonEtbValue(g, p, a, x));
+      break;
+    }
+    case "dragon": {
+      const base = g.dragonBases(p)[0];
+      const x = (base?.under?.length ?? 0) + 1;
+      sorted = [...objs].sort((a, b) => dragonEtbValue(g, p, b, x) - dragonEtbValue(g, p, a, x));
+      break;
+    }
+    case "dragonBase":
+      sorted = [...objs].sort((a, b) => (b.under?.length ?? 0) - (a.under?.length ?? 0));
+      break;
+    case "altTap":
+      sorted = [...objs].sort((a, b) => creatureValue(g, a) - creatureValue(g, b));
+      break;
+    case "manaToGrave":
+      sorted = [...objs].sort((a, b) => Number(b.tapped) - Number(a.tapped) || keepValue(g, p, a.card) - keepValue(g, p, b.card));
+      break;
+    case "underToVault":
+      sorted = [...objs].sort((a, b) => dragonEtbValue(g, p, a, 1) - dragonEtbValue(g, p, b, 1));
       break;
   }
   void me;
