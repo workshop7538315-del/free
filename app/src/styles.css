@@ -2614,3 +2614,124 @@ textarea {
     min-height: 5rem;
   }
 }
+
+/* オンライン対戦のお知らせ(相手の切断など) */
+.battle-notice {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface-2));
+  color: var(--ink);
+  font-size: var(--step--1);
+}
+
+/* ======================================================== オンライン対戦の部屋 */
+.vs-tabs {
+  margin: 0 0 1rem;
+}
+.online-side {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+.online-block {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.online-field {
+  display: grid;
+  gap: 0.25rem;
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+.online-field input {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--step-0);
+}
+.online-room {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.online-code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+.online-code-label {
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+.online-code-value {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: var(--step-2);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+.online-code .btn {
+  margin-left: auto;
+}
+.online-seats {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.online-seats li {
+  display: grid;
+  grid-template-columns: minmax(0, 12rem) minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--line);
+}
+.online-seat-who {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.online-seat-deck {
+  font-family: var(--font-card);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.online-seat-state {
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+.online-notice {
+  margin: 0;
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+.online-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+@media (max-width: 600px) {
+  .online-seats li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .online-seat-deck {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

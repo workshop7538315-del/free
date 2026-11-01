@@ -275,7 +275,6 @@ export function reduceGeneric(cost: string, n: number): string {
 
 const AURA_TARGET: TargetSpec = { t: "creature" };
 
-let nextUid = 1;
 
 export type GameOptions = {
   decks: [Card[], Card[]];
@@ -311,6 +310,8 @@ export class Game {
   private maxTurns: number;
   /** 唱えたり能力を使ったりしたカードのID(テスト用の集計) */
   usedCards = new Set<string>();
+  /** カードの通し番号。対戦ごとに1から振る(オンライン対戦で両方の端末の番号を揃えるため) */
+  private nextUid = 1;
   private aborted = false;
 
   constructor(opts: GameOptions) {
@@ -360,7 +361,7 @@ export class Game {
   // ------------------------------------------------------------ 基本
   private newObj(card: Card, owner: PlayerId, zone: Zone): Obj {
     return {
-      uid: nextUid++,
+      uid: this.nextUid++,
       card,
       owner,
       controller: owner,

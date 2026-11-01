@@ -5,6 +5,7 @@ import { Game, type PlayerId } from "../../game/engine";
 import { CpuAgent } from "../../game/ai";
 import { HumanAgent } from "../../game/human";
 import { BattleBoard } from "./BattleBoard";
+import { Online } from "./Online";
 
 /** legacy:旧スターター(選べるが、おまかせ対戦とティア表には入らない) */
 export type StarterDeck = { id: string; name: string; colors: string[]; cards: DeckCards; legacy?: boolean };
@@ -16,7 +17,7 @@ type Props = {
   draft: { name: string; cards: DeckCards };
 };
 
-type Choice = { key: string; name: string; cards: DeckCards; kind: "starter" | "legacy" | "saved" | "draft" };
+export type Choice = { key: string; name: string; cards: DeckCards; kind: "starter" | "legacy" | "saved" | "draft" };
 
 const expand = (cards: DeckCards, byId: Map<string, Card>): Card[] =>
   Object.entries(cards).flatMap(([id, n]) => {
@@ -39,6 +40,8 @@ export function Battle({ byId, starters, saved, draft }: Props) {
     return out;
   }, [draft, saved, starters, byId]);
 
+  const roomParam = useMemo(() => new URLSearchParams(location.search).get("room") ?? "", []);
+  const [vs, setVs] = useState<"cpu" | "online">(roomParam ? "online" : "cpu");
   const [mine, setMine] = useState<string>(() => choices[0]?.key ?? "");
   const [cpu, setCpu] = useState<string>("random");
   const [running, setRunning] = useState<Running | null>(null);
@@ -98,8 +101,24 @@ export function Battle({ byId, starters, saved, draft }: Props) {
     );
   }
 
+  const vsTabs = (
+    <div className="tabs vs-tabs" role="tablist" aria-label="対戦相手">
+      <button type="button" role="tab" className="tab" aria-selected={vs === "cpu"} aria-current={vs === "cpu" ? "page" : undefined} onClick={() => setVs("cpu")}>
+        CPUと対戦
+      </button>
+      <button type="button" role="tab" className="tab" aria-selected={vs === "online"} aria-current={vs === "online" ? "page" : undefined} onClick={() => setVs("online")}>
+        友達とオンライン対戦
+      </button>
+    </div>
+  );
+
+  if (vs === "online") {
+    return <Online byId={byId} choices={choices} initialCode={roomParam} header={vsTabs} />;
+  }
+
   return (
     <section className="battle-setup" aria-labelledby="setup-title">
+      {vsTabs}
       <h2 id="setup-title" className="setup-title">
         CPUと対戦する
       </h2>

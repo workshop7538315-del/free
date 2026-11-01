@@ -52,7 +52,7 @@ export default function App() {
   const [status, setStatus] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<FilterState>(initialFilters);
-  const [mode, setMode] = useState<"build" | "battle">("build");
+  const [mode, setMode] = useState<"build" | "battle">(() => (new URLSearchParams(location.search).get("room") ? "battle" : "build"));
   // 演出のオン・オフ(画面右上)
   const [motion, setMotion] = usePersistent("ui.motion.v1", true);
   // カード一覧の表示設定とページ

@@ -8,8 +8,9 @@ import { ManaCost } from "../ManaCost";
 import { RulesText } from "../CardTile";
 import { copyText, deckText, logText, resultLine, type DeckInfo } from "../../lib/battleLog";
 
-const ME: PlayerId = 0;
-const CPU: PlayerId = 1;
+// 自分と相手。オンライン対戦で後攻側の部屋に入った人は 1 が自分になる(BattleBoard の me で切り替える)
+let ME: PlayerId = 0;
+let CPU: PlayerId = 1;
 
 // ---------------------------------------------------------------- 演出
 /** 演出を出してよいか。対戦開始直後(初期配置)と、動きを減らす設定では出さない */
@@ -82,9 +83,21 @@ type Props = {
   onExit: () => void;
   /** ログと一緒にコピーするデッキ */
   decks?: { mine: DeckInfo; cpu: DeckInfo };
+  /** 自分のプレイヤー番号(オンライン対戦) */
+  me?: PlayerId;
+  /** 盤面の上に出すお知らせ(相手の切断など) */
+  notice?: string;
+  /** 結果画面の「もう一度」ボタン。null なら出さない */
+  rematchLabel?: string | null;
+  rematchDisabled?: boolean;
+  /** 「対戦をやめる」の確認文と、結果画面の戻るボタン */
+  exitConfirm?: string;
+  exitLabel?: string;
 };
 
-export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }: Props) {
+export function BattleBoard({ game: g, human, result, onRematch, onExit, decks, me: meId = 0, notice, rematchLabel = "もう一度対戦する", rematchDisabled, exitConfirm = "対戦をやめてデッキ選択に戻りますか?", exitLabel = "デッキを選び直す" }: Props) {
+  ME = meId;
+  CPU = (1 - meId) as PlayerId;
   // 結果の画面を閉じて、盤面とログを見られるようにする
   const [showResult, setShowResult] = useState(true);
   // 勝敗の幕:結果ダイアログの前に出す。引き分けと、動きを減らす設定では出さない
@@ -257,6 +270,11 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
     <FxContext.Provider value={fxOn}>
     <div className={`battle ${mobile ? "is-mobile" : ""}`}>
       <div className="battle-main">
+        {notice && (
+          <p className="battle-notice" role="status">
+            {notice}
+          </p>
+        )}
         <PlayerBar g={g} p={cpu} targetable={playerTargetable(CPU)} onClick={() => onPlayer(CPU)} onOpen={openSheet} />
         <ManaRow p={cpu} markOf={markOf} onCard={onCard} onLong={onLong} hidden />
         <Field g={g} p={cpu} markOf={markOf} onCard={onCard} onLong={onLong} hoverOn={hoverOn} hoverOff={hoverOff} label="相手の場" />
@@ -307,12 +325,12 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
         <Graveyards g={g} onCard={onCard} />
         <Log g={g} decks={decks} />
         {result === undefined ? (
-          <button type="button" className="btn btn-quiet" onClick={() => window.confirm("対戦をやめてデッキ選択に戻りますか?") && onExit()}>
+          <button type="button" className="btn btn-quiet" onClick={() => window.confirm(exitConfirm) && onExit()}>
             対戦をやめる
           </button>
         ) : (
           <button type="button" className="btn btn-quiet" onClick={onExit}>
-            デッキを選び直す
+            {exitLabel}
           </button>
         )}
       </aside>
@@ -325,9 +343,11 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
             <button type="button" className="btn" onClick={() => setShowResult(true)}>
               結果を表示
             </button>
-            <button type="button" className="btn btn-primary" onClick={onRematch}>
-              もう一度対戦する
-            </button>
+            {rematchLabel && (
+              <button type="button" className="btn btn-primary" onClick={onRematch} disabled={rematchDisabled}>
+                {rematchLabel}
+              </button>
+            )}
           </span>
         </div>
       )}
@@ -376,16 +396,18 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
           {sheet.kind === "menu" && (
             <div className="sheet-menu">
               {result === undefined ? (
-                <button type="button" className="btn" onClick={() => window.confirm("対戦をやめてデッキ選択に戻りますか?") && onExit()}>
+                <button type="button" className="btn" onClick={() => window.confirm(exitConfirm) && onExit()}>
                   対戦をやめる
                 </button>
               ) : (
                 <>
-                  <button type="button" className="btn btn-primary" onClick={onRematch}>
-                    もう一度対戦する
-                  </button>
+                  {rematchLabel && (
+                    <button type="button" className="btn btn-primary" onClick={onRematch} disabled={rematchDisabled}>
+                      {rematchLabel}
+                    </button>
+                  )}
                   <button type="button" className="btn" onClick={onExit}>
-                    デッキを選び直す
+                    {exitLabel}
                   </button>
                 </>
               )}
@@ -407,14 +429,16 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks }
               {Math.ceil(g.turn / 2)}ターン目で決着しました。あなたのライフ {me.life}、相手のライフ {cpu.life}。
             </p>
             <div className="result-actions">
-              <button type="button" className="btn btn-primary" onClick={onRematch}>
-                もう一度対戦する
-              </button>
+              {rematchLabel && (
+                <button type="button" className="btn btn-primary" onClick={onRematch} disabled={rematchDisabled}>
+                  {rematchLabel}
+                </button>
+              )}
               <button type="button" className="btn" onClick={() => setShowResult(false)}>
                 盤面とログを見る
               </button>
               <button type="button" className="btn" onClick={onExit}>
-                デッキを選び直す
+                {exitLabel}
               </button>
             </div>
             <CopyButtons g={g} decks={decks} />
@@ -1190,7 +1214,7 @@ function CopyButtons({ g, decks }: { g: Game; decks?: { mine: DeckInfo; cpu: Dec
   const [done, setDone] = useState<string | null>(null);
   const copy = async (withDecks: boolean) => {
     const parts = [resultLine(g, ME)];
-    if (withDecks && decks) parts.push(deckText("あなたのデッキ", decks.mine), deckText("CPUのデッキ", decks.cpu));
+    if (withDecks && decks) parts.push(deckText("あなたのデッキ", decks.mine), deckText("相手のデッキ", decks.cpu));
     parts.push(`# ログ(${g.log.length}行)\n${logText(g.log)}`);
     const ok = await copyText(parts.join("\n\n"));
     setDone(ok ? (withDecks ? "ログとデッキをコピーしました" : "ログをコピーしました") : "コピーできませんでした");

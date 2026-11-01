@@ -40,7 +40,7 @@ export class HumanAgent implements Agent {
  * 止まる必要のない場面では自動でパスする。
  * 止まるのは:自分のメイン、相手の呪文への対応、ブロック後(両者)、相手の攻撃宣言後、相手の終了ステップ。
  */
-function autoPass(g: Game, p: PlayerId, options: Action[]): boolean {
+export function autoPass(g: Game, p: PlayerId, options: Action[]): boolean {
   const mainOwn = (g.step === "main1" || g.step === "main2") && g.active === p && g.stack.length === 0;
   if (mainOwn) return false;
   if (options.length <= 1) return true;
