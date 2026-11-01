@@ -638,10 +638,10 @@ function dragonEtbValue(g: Game, p: PlayerId, o: Obj, x: number): number {
   }
   if (name.includes("蒲牢")) {
     // 何でも x 個まで破壊:価値の高い順に x 個
-    const vals = them.battlefield.map((c) => (isCreatureCard(c.card) ? val(c) : 1.5 + manaValue(c.card.cost) * 0.4)).sort((a, b) => b - a);
-    return vals.slice(0, x).reduce((s, v) => s + v, 0);
+    const vals = them.battlefield.filter((c) => manaValue(c.card.cost) <= x).map((c) => (isCreatureCard(c.card) ? val(c) : 1.5 + manaValue(c.card.cost) * 0.4)).sort((a, b) => b - a);
+    return vals.slice(0, Math.min(x, 2)).reduce((s, v) => s + v, 0);
   }
-  if (name.includes("覇下")) return x * 1.2 + (g.players[p].graveyard.some((c) => isInstantCard(c.card) || c.card.type === "ソーサリー") ? 1 : 0);
+  if (name.includes("覇下")) return x * 0.8 + (g.players[p].graveyard.some((c) => isInstantCard(c.card) || c.card.type === "ソーサリー") ? 1 : 0);
   if (name.includes("椒図")) return 2;
   if (name.includes("睚眦")) return x * 0.8 + 2;
   return 1;

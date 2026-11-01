@@ -2200,8 +2200,9 @@ export class Game {
         break;
       }
       case "shatter": {
-        const n = this.amount(e.n, ctx);
-        const opts = this.players[opp].battlefield;
+        const n = Math.min(this.amount(e.n, ctx), e.max ?? 99);
+        const mvCap = e.maxMV !== undefined ? this.amount(e.maxMV, ctx) : 99;
+        const opts = this.players[opp].battlefield.filter((o) => manaValue(o.card.cost) <= mvCap);
         if (!opts.length || n <= 0) break;
         const picked = await this.askCards(p, `破壊する相手のパーマネントを${Math.min(n, opts.length)}個選んでください`, [...opts], Math.min(n, opts.length), "shatter");
         for (const o of picked) this.destroy(o);

@@ -232,7 +232,7 @@ export type Effect = Common &
     /** このクリーチャーと対象のクリーチャーが格闘する */
     | { do: "fightSelf"; tg: number }
     /** 相手のパーマネントを n 個まで選んで破壊する(蒲牢) */
-    | { do: "shatter"; n: Amount }
+    | { do: "shatter"; n: Amount; max?: number; maxMV?: Amount }
     /** 相手の墓地のカードをすべてライブラリーの一番下に置く(覇下) */
     | { do: "washGrave" }
     /** マナ総量が n 以下の相手のクリーチャー1体を選び、持ち主のライブラリーの一番下に置く(覇下) */

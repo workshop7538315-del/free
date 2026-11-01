@@ -11,7 +11,8 @@ import { cr, ins, sor, ench, kw, spell, etb, lord, dragon, stat, gen, onTapped, 
 
 /** 《流れる水》:覇下が生成するマナ。タップされたとき、生け贄に捧げて墓地のインスタントかソーサリーを手札に戻す */
 const FLOWING_WATER = gen("ry90", "流れる水", "{U}{B}", "エンチャント", [
-  onTapped([E.sacrificeThis(), E.ret("hand")], T.gyF({ spell: true }), { from: "mana" }),
+  onTapped(E.sacrificeThis(), undefined, { from: "mana" }),
+  onTapped(E.ret("hand"), T.gyF({ spell: true }), { from: "mana" }),
 ]);
 
 const tagged = (c) => ({ ...c, tags: [...new Set([...(c.tags ?? []), "龍生九子"])] });
@@ -34,8 +35,8 @@ export const KYUSHI = [
     { flavor: "喰らうことを好む。四凶にも数えられる、底なしの胃袋。" },
     "ドラゴン・九子・四凶",
   ),
-  son("ry06", "蒲牢", "{2}{R}{R}", 4, 3, "R", [dragon({ tapCreatures: 2 }), etb(E.shatter(UNDER))], { flavor: "吼えることを好む。鐘の上で叫べば、何もかもが砕ける。" }),
-  son("ry07", "覇下", "{3}{B}", 3, 5, "R", [dragon({ manaToGrave: 2 }), etb(E.createMana(FLOWING_WATER, UNDER, { tapped: true, stay: true }))], { flavor: "水を好む。流れは、墓に眠るものまで押し流して運んでくる。" }),
+  son("ry06", "蒲牢", "{2}{R}{R}", 4, 3, "R", [dragon({ tapCreatures: 2 }), etb(E.shatter(2, undefined, UNDER))], { flavor: "吼えることを好む。鐘の上で叫べば、何もかもが砕ける。" }),
+  son("ry07", "覇下", "{3}{B}", 3, 5, "R", [dragon({ manaToGrave: 3 }), etb(E.createMana(FLOWING_WATER, UNDER, { tapped: true, stay: true }))], { flavor: "水を好む。流れは、墓に眠るものまで押し流して運んでくる。" }),
   son("ry08", "椒図", "{2}{B}{R}", 3, 3, "R", [dragon({ underToVault: 1 }), etb(E.rotate())], { flavor: "閉じこもることを好む。扉の輪をくわえて、兄弟の誰かを外に出す。" }),
   son("ry09", "睚眦", "{8}{B}{R}", 6, 6, "M", [dragon(undefined, { selfReduce: true }), etb([E.countersSelf(UNDER), E.yazi()])], {
     flavor: "殺戮を好む。九つの首がそろったとき、戦は一度では終わらない。",

@@ -238,7 +238,7 @@ export const E = {
   volley: (n, dmg) => ({ do: "volley", n, dmg }),
   shrink: (n) => ({ do: "shrink", tg: 0, n }),
   fightSelf: () => ({ do: "fightSelf", tg: 0 }),
-  shatter: (n) => ({ do: "shatter", n }),
+  shatter: (n, max, maxMV) => ({ do: "shatter", n, ...(max ? { max } : {}), ...(maxMV !== undefined ? { maxMV } : {}) }),
   washGrave: () => ({ do: "washGrave" }),
   tuckUpTo: (n) => ({ do: "tuckUpTo", n }),
   rotate: (tg) => ({ do: "rotate", ...(tg !== undefined ? { tg } : {}) }),
@@ -675,7 +675,7 @@ function effectText(e, name, abil, notes) {
     case "fightSelf":
       return `${name}と${it(e.tg)}は格闘する。(それぞれが相手にパワーに等しいダメージを与える)`;
     case "shatter":
-      return `対戦相手がコントロールするパーマネントを${amountText(e.n, notes)}個まで選び、破壊する。`;
+      return `対戦相手がコントロールする${e.maxMV !== undefined ? `マナ総量が${amountText(e.maxMV, notes)}以下の` : ""}パーマネントを${amountText(e.n, notes)}個${e.max ? `(最大${e.max}個)` : ""}まで選び、破壊する。`;
     case "washGrave":
       return "対戦相手の墓地にあるカードをすべて、好きな順番で持ち主のライブラリーの一番下に置く。";
     case "tuckUpTo":
