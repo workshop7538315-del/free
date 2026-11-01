@@ -47,5 +47,6 @@ export const KYUSHI = [
       flavor: "兄弟の誰かが吼えれば、残りも続く。",
     }),
   ),
+  tagged(ins("ry17", "逆鱗", "{1}{B}", "U", spell(E.underToHand(2), T.creF({ sub: "ドラゴン" }, "you")), { flavor: "喉元の一枚だけ逆さに生えた鱗。触れた者を、龍は決して許さない。" })),
   tagged(ench("ry16", "守護者の死骸", "{1}{B}{R}", "R", [stat({ s: "dragonDiscount", n: 1 }), etb(E.tutor({ name: "贔屓" }))], { flavor: "赤と黒の守護者が倒れた場所から、九つの卵が見つかった。" })),
 ];

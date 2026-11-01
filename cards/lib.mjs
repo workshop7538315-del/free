@@ -242,6 +242,7 @@ export const E = {
   rotate: (tg) => ({ do: "rotate", ...(tg !== undefined ? { tg } : {}) }),
   yazi: () => ({ do: "yazi" }),
   dragonNow: () => ({ do: "dragonNow" }),
+  underToHand: (n) => ({ do: "underToHand", tg: 0, n }),
   dmg: (n, tg = 0) => ({ do: "damage", n, tg }),
   dmgOpp: (n) => ({ do: "damage", n, to: "opp" }),
   dmgAll: (n, players = false) => ({ do: "damageAll", n, ...(players ? { players } : {}) }),
@@ -682,6 +683,8 @@ function effectText(e, name, abil, notes) {
         : `${it(e.tg)}の下に重なっているカード1枚を一番上にする。そのカードの「戦場に出たとき」の能力が誘発する。`;
     case "yazi":
       return `${name}と下に重なっているカードに、龍生九子の9種(贔屓・螭吻・蒲牢・狴犴・饕餮・覇下・睚眦・狻猊・椒図)がすべてそろっているなら、${name}はトランプルと破壊不能を得る。このゲームで初めてなら、このターンのあとに追加の1ターンを得る。`;
+    case "underToHand":
+      return `${it(e.tg)}の下に重なっているカード1枚を、持ち主の手札に加える。そのカードは手札にあるあいだ瞬速を持ち、唱えるためのコストは{${e.n}}少なくなる。`;
     case "dragonNow":
       return "龍生を行う。(秘蔵庫の九子1体の進化コストを払い、贔屓を含むあなたのクリーチャーの上に重ねて出す。このタイミングでも行える)";
     case "learn":

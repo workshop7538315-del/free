@@ -317,7 +317,7 @@ const DECKS = [
   { id: "sh-ryozan", name: "梁山泊:替天行道(白青緑)", colors: ["W", "U", "G"], theme: tag("梁山泊"), archetype: "梁山泊",
     core: { sh001: 2, sh002: 2, sh201: 2, sh003: 3, sh037: 3, sh023: 3, sh092: 3, sh010: 2, sh005: 2, sh006: 2, sh014: 2, sh013: 1, sh022: 2, sh016: 2, sh026: 1, sh056: 2, sh105: 2, sh107: 2, sh020: 2 } },
   { id: "ry-kyushi", name: "龍生九子:九つの背(黒赤)", colors: ["B", "R"], theme: tag("龍生九子"), archetype: "龍生九子",
-    core: { ry01: 4, ry12: 3, ry11: 2, ry10: 2, ry13: 1, ry14: 2, ry15: 3, ry16: 2 },
+    core: { ry01: 4, ry12: 3, ry11: 2, ry10: 2, ry13: 1, ry14: 2, ry15: 3, ry16: 2, ry17: 2 },
     extra: { ry02: 1, ry03: 1, ry04: 1, ry05: 1, ry06: 1, ry07: 1, ry08: 1, ry09: 1 } },
   // 第11.5弾:白単(回復)と青単(ドロー)
   { id: "t-mono-w", name: "原色:白単の癒しの聖堂", colors: ["W"], pure: true, theme: tag("原色"), archetype: "原色",

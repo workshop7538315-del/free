@@ -939,7 +939,7 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
       );
     case "chooseCards": {
       // 場にないカード(招集の候補、ライブラリーの上、重なりの下、秘蔵庫の九子)は、カードの形で見せる
-      const asCards = ["muster", "dig", "rotate", "dragon", "underToVault", "tutor"].includes(d.reason);
+      const asCards = ["muster", "dig", "rotate", "dragon", "underToVault", "underToHand", "tutor"].includes(d.reason);
       const toggle = (u: number) => setChosen((s) => (s.includes(u) ? s.filter((x) => x !== u) : s.length < d.count ? [...s, u] : s));
       return (
         <>

@@ -39,6 +39,10 @@ export type Obj = {
   faceDown?: boolean;
   /** 生成されたカード(チャージできず、手札・スタック・戦場以外に移ると消える) */
   generated?: boolean;
+  /** 手札にあるあいだ、唱えるためのコストが少なくなる(《逆鱗》) */
+  handDiscount?: number;
+  /** 手札にあるあいだ瞬速を持つ(《逆鱗》) */
+  handFlash?: boolean;
   card: Card;
   owner: PlayerId;
   controller: PlayerId;
@@ -172,7 +176,7 @@ export type Decision =
   | { kind: "target"; prompt: string; spec: TargetSpec; options: TargetRef[]; source: Obj; effects: Effect[]; index: number }
   | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "kicker" | "lookTop" | "mulligan" | "reclaim" | "blessing" | "learn" | "learnDiscard" | "altCost"; obj?: Obj }
   | { kind: "number"; prompt: string; min: number; max: number; reason?: "x" | "burn"; obj?: Obj }
-  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" | "pioneerBase" | "heist" | "muster" | "dig" | "shatter" | "tuck" | "rotate" | "dragon" | "dragonBase" | "altTap" | "manaToGrave" | "underToVault" }
+  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" | "pioneerBase" | "heist" | "muster" | "dig" | "shatter" | "tuck" | "rotate" | "dragon" | "dragonBase" | "altTap" | "manaToGrave" | "underToVault" | "underToHand" }
   | { kind: "attackers"; options: number[] }
   /** モード呪文:選択肢から1つ選ぶ(答えは番号) */
   | { kind: "mode"; prompt: string; options: string[]; source: Obj; modes: SpellMode[] }
@@ -500,6 +504,11 @@ export class Game {
     }
     // 領域を移ると表向きに戻る
     o.faceDown = false;
+    // 手札を離れると、手札にあるあいだの効果は消える(唱えるときはスタックで使い終わる)
+    if (to !== "hand") {
+      o.handDiscount = undefined;
+      o.handFlash = undefined;
+    }
     // 陰謀:戦場を離れたクリーチャーと、手札から墓地に置かれた(捨てた)カードを数える
     if (wasBattlefield && to !== "battlefield" && isCreatureCard(o.card)) this.players[o.controller].lostThisTurn++;
     if (o.zone === "hand" && to === "graveyard") this.players[o.owner].lostThisTurn++;
@@ -1090,7 +1099,7 @@ export class Game {
       const free = abilityOf(c, "free");
       if (free && this.cond(free.if, p)) return "";
     }
-    let discount = 0;
+    let discount = from === "hand" ? (o.handDiscount ?? 0) : 0;
     const aff = abilityOf(c, "affinity");
     if (aff) discount += this.players[p].battlefield.filter((x) => matchFilter(x.card, aff.filter, this.colorsOf(x))).length;
     if (abilityOf(c, "voidAffinity")) discount += this.players[p].mana.filter((x) => x.faceDown).length;
@@ -1109,7 +1118,7 @@ export class Game {
   /** 唱えられるか(コストと対象の有無とタイミング) */
   canCast(p: PlayerId, o: Obj, from: CastFrom): boolean {
     const c = o.card;
-    const instantSpeed = isInstantCard(c) || hasPrintedKw(c, "瞬速");
+    const instantSpeed = isInstantCard(c) || hasPrintedKw(c, "瞬速") || (from === "hand" && !!o.handFlash);
     if (!instantSpeed && !this.sorcerySpeed(p)) return false;
     const cost = this.effectiveCost(p, o, from);
     if (cost === null) return false;
@@ -2214,6 +2223,22 @@ export class Game {
       case "rotate": {
         const top = e.tg === undefined ? src : this.refObj(ctx, e.tg);
         if (top) await this.rotate(p, top);
+        break;
+      }
+      case "underToHand": {
+        // 《逆鱗》:重なりの下のカード1枚を手札に加え、瞬速とコスト軽減を与える
+        const top = this.refObj(ctx, e.tg);
+        const opts = top?.under ?? [];
+        if (!top || !opts.length) break;
+        const [pick] = await this.askCards(p, "手札に加える、下に重なっているカードを選んでください", opts, 1, "underToHand");
+        if (!pick) break;
+        top.under = opts.filter((u) => u !== pick);
+        pick.zone = "hand";
+        pick.controller = pick.owner;
+        this.players[pick.owner].hand.push(pick);
+        pick.handDiscount = e.n;
+        pick.handFlash = true;
+        this.addLog(`${top.card.name}の下から${pick.card.name}を手札に加えた(瞬速、コスト{${e.n}}軽減)`, p);
         break;
       }
       case "yazi": {

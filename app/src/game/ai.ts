@@ -205,6 +205,15 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
   if (top && top.controller !== p) {
     const counter = options.find((a) => a.type === "cast" && isCounter(g, a) && worthCountering(g, p, top));
     if (counter) return counter;
+    // 《逆鱗》:除去されそうな重なりから、九子を手札に逃がす
+    const threatened = top.targets.some((t) => {
+      const o = findObj(g, t);
+      return !!o && o.controller === p && (o.under ?? []).some((u) => dragonOf(u.card));
+    });
+    if (threatened) {
+      const save = options.find((a) => a.type === "cast" && spellAbility(g.find(a.uid)?.card ?? ({} as Card))?.effects.some((e) => e.do === "underToHand"));
+      if (save) return save;
+    }
     // 狴犴:相手の悪事に割り込んで重ねる
     let ambush: { a: Action; s: number } | null = null;
     for (const a of options) if (a.type === "summon" && a.via === "dragon") {
@@ -601,6 +610,11 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return bestOpp * 0.6;
     case "rotate":
       return g.dragonBases(p).some((o) => (o.under ?? []).some((u) => dragonOf(u.card))) ? 3 : 0;
+    case "underToHand": {
+      // 自分のメインには使わない(相手の終了ステップに使い、瞬速で出し直す)
+      if (g.active === p) return 0;
+      return g.creatures(p).some((o) => (o.under ?? []).some((u) => dragonOf(u.card))) ? 2.5 : 0;
+    }
     case "dragonNow": {
       const can = me.extra.some((o) => dragonOf(o.card) && g.dragonBases(p).some((b) => g.canDragon(p, o, b)));
       return can ? 3.5 : 0;
@@ -964,6 +978,10 @@ function chooseCards(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseC
       break;
     case "underToVault":
       sorted = [...objs].sort((a, b) => dragonEtbValue(g, p, a, 1) - dragonEtbValue(g, p, b, 1));
+      break;
+    case "underToHand":
+      // 体の大きい九子を手札に戻して、瞬速で出し直す(贔屓は土台なので残す)
+      sorted = [...objs].sort((a, b) => Number(a.card.name === "贔屓") - Number(b.card.name === "贔屓") || cardCreatureValue(b.card) - cardCreatureValue(a.card));
       break;
   }
   void me;
