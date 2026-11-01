@@ -547,7 +547,7 @@ export class Game {
     // 秘蔵庫のカードは、戦場を離れたら(どこへ行く場合も)秘蔵庫に戻る
     // (強盗でマナゾーンに置くこと、マナ解放でスタックに置くことはできる)
     // 秘蔵 ―(第11.5弾)のカードは、秘蔵庫から出たあとは普通のカードと同じく墓地などへ行く
-    if (isExtraCard(o.card) && !abilityOf(o.card, "vaultCast") && !abilityOf(o.card, "oneShot") && !abilityOf(o.card, "lesson") && to !== "battlefield" && to !== "extra" && to !== "mana" && to !== "stack") {
+    if (!o.generated && isExtraCard(o.card) && !abilityOf(o.card, "vaultCast") && !abilityOf(o.card, "oneShot") && !abilityOf(o.card, "lesson") && to !== "battlefield" && to !== "extra" && to !== "mana" && to !== "stack") {
       to = "extra";
       o.faceDown = false;
       this.addLog(`${o.card.name}は秘蔵庫に戻った`, o.owner);
@@ -2226,19 +2226,18 @@ export class Game {
         break;
       }
       case "underToHand": {
-        // 《逆鱗》:重なりの下のカード1枚を手札に加え、瞬速とコスト軽減を与える
+        // 《逆鱗》:重なりの下のカード1枚のコピーを生成して手札に加え、瞬速とコスト軽減を与える(重なりはそのまま)
         const top = this.refObj(ctx, e.tg);
         const opts = top?.under ?? [];
         if (!top || !opts.length) break;
-        const [pick] = await this.askCards(p, "手札に加える、下に重なっているカードを選んでください", opts, 1, "underToHand");
+        const [pick] = await this.askCards(p, "コピーを手札に加える、下に重なっているカードを選んでください", opts, 1, "underToHand");
         if (!pick) break;
-        top.under = opts.filter((u) => u !== pick);
-        pick.zone = "hand";
-        pick.controller = pick.owner;
-        this.players[pick.owner].hand.push(pick);
-        pick.handDiscount = e.n;
-        pick.handFlash = true;
-        this.addLog(`${top.card.name}の下から${pick.card.name}を手札に加えた(瞬速、コスト{${e.n}}軽減)`, p);
+        const copy = this.newObj(pick.card, p, "hand");
+        copy.generated = true;
+        copy.handDiscount = e.n;
+        copy.handFlash = true;
+        pl.hand.push(copy);
+        this.addLog(`${top.card.name}の下の${pick.card.name}をコピーして手札に加えた(瞬速、コスト{${e.n}}軽減)`, p);
         break;
       }
       case "yazi": {
