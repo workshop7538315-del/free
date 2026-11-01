@@ -566,14 +566,18 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
     case "mill":
       return e.who === "opp" ? n(e.n, 1) * (them.library.length <= n(e.n, 1) ? 20 : 0.35) : n(e.n, 1) * 0.2;
     case "createMana": {
+      // 残るマナ(流れる水など)は、増えるマナの分だけ価値がある
+      if (e.stay) return n(e.n) * 1.2;
       if (!(g.step === "main1" || g.step === "main2") || g.active !== p) return 0;
       const untapped = me.mana.filter((o) => !o.tapped).length - 1;
       const enables = me.hand.some((o) => {
         const mv = manaValue(o.card.cost);
-        return !spellAbility(o.card)?.effects.some((x) => x.do === "addMana" || x.do === "createMana") && mv > untapped && mv <= untapped + e.n;
+        return !spellAbility(o.card)?.effects.some((x) => x.do === "addMana" || x.do === "createMana") && mv > untapped && mv <= untapped + n(e.n);
       });
       return enables ? 2.5 : 0;
     }
+    case "sacrificeThis":
+      return 0;
     case "addMana": {
       // 加えたマナで、今は唱えられない重いカードが唱えられるようになるなら使う
       if (!(g.step === "main1" || g.step === "main2") || g.active !== p) return 0;
@@ -632,8 +636,12 @@ function dragonEtbValue(g: Game, p: PlayerId, o: Obj, x: number): number {
     const pw = (o.card.power ?? 5) + x + x;
     return 1 + Math.max(0, ...oppC.filter((c) => !g.hasKw(c, "呪禁") && g.toughness(c) - c.damage <= pw).map(val));
   }
-  if (name.includes("蒲牢")) return Math.min(x, them.battlefield.filter((c) => !isCreatureCard(c.card) && /アーティファクト|エンチャント/.test(c.card.type)).length) * 3;
-  if (name.includes("覇下")) return them.graveyard.length * 0.15 + Math.max(0, ...oppC.filter((c) => manaValue(c.card.cost) <= x).map(val));
+  if (name.includes("蒲牢")) {
+    // 何でも x 個まで破壊:価値の高い順に x 個
+    const vals = them.battlefield.map((c) => (isCreatureCard(c.card) ? val(c) : 1.5 + manaValue(c.card.cost) * 0.4)).sort((a, b) => b - a);
+    return vals.slice(0, x).reduce((s, v) => s + v, 0);
+  }
+  if (name.includes("覇下")) return x * 1.2 + (g.players[p].graveyard.some((c) => isInstantCard(c.card) || c.card.type === "ソーサリー") ? 1 : 0);
   if (name.includes("椒図")) return 2;
   if (name.includes("睚眦")) return x * 0.8 + 2;
   return 1;
@@ -665,7 +673,7 @@ function altIsCheap(g: Game, p: PlayerId, o: Obj | undefined): boolean {
   if (a.mill) return me.library.length >= 15;
   if (a.discard) return me.hand.length >= 4 || me.hand.every((h) => manaValue(h.card.cost) > me.mana.length + 2);
   if (a.life) return me.life >= 12;
-  if (a.sacOther) return g.creatures(p).some((c) => c.token || c.generated || creatureValue(g, c) < 2);
+  if (a.sacOther) return me.battlefield.some((c) => c.token || c.generated || abilitiesOf(c.card).some((x) => x.a === "trigger" && x.on === "sacrificed") || (isCreatureCard(c.card) && creatureValue(g, c) < 2));
   if (a.tapCreatures) return g.step !== "main1";
   if (a.manaToGrave) return me.mana.length >= 7;
   return false;
@@ -680,7 +688,10 @@ function scoreActivate(g: Game, p: PlayerId, a: Extract<Action, { type: "activat
   const lateMain = g.step === "main2" && g.active === p && g.stack.length === 0;
   const oppEnd = g.step === "end" && g.active !== p;
   const inCombat = !!g.combat && g.step === "block";
-  const effects = ab.effects;
+  // ラストワード:生け贄に捧げるだけの能力は、「生け贄に捧げられたとき」の効果で評価する
+  const lastWord = !ab.effects.length && ab.cost.sacSelf ? abilitiesOf(o.card).find((x) => x.a === "trigger" && x.on === "sacrificed") : undefined;
+  const effects = lastWord && lastWord.a === "trigger" ? lastWord.effects : ab.effects;
+  const targetSpecs = lastWord && lastWord.a === "trigger" ? lastWord.targets ?? [] : ab.targets ?? [];
   // 攻撃前に相手のブロッカーをタップする
   if (effects.some((e) => e.do === "tap")) {
     if (g.step === "main1" && g.active === p && g.creatures(p).some((x) => g.canAttack(x)) && g.creatures(opp).some((x) => !x.tapped)) return 1.5;
@@ -690,7 +701,7 @@ function scoreActivate(g: Game, p: PlayerId, a: Extract<Action, { type: "activat
   if (pumps && !inCombat) return -1;
   if (!pumps && !(lateMain || oppEnd)) return -1;
   let value = 0;
-  for (const e of effects) value += effectValue(g, p, e, ab.targets ?? [], inCombat);
+  for (const e of effects) value += effectValue(g, p, e, targetSpecs, inCombat);
   let cost = 0;
   if (ab.cost.sac) {
     const opts = g.sacOptions(p, ab.cost);
@@ -928,9 +939,12 @@ function chooseCards(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseC
       break;
     }
     case "sacrifice":
-    case "sacCost":
-      sorted = [...objs].sort((a, b) => creatureValue(g, a) - (a.token ? 2 : 0) - (creatureValue(g, b) - (b.token ? 2 : 0)));
+    case "sacCost": {
+      // 生け贄に捧げると得をするもの(ラストワード)やトークンから
+      const v = (o: Obj) => (isCreatureCard(o.card) ? creatureValue(g, o) : 1 + manaValue(o.card.cost) * 0.3) - (o.token || o.generated ? 2 : 0) - (abilitiesOf(o.card).some((x) => x.a === "trigger" && x.on === "sacrificed") ? 2.5 : 0);
+      sorted = [...objs].sort((a, b) => v(a) - v(b));
       break;
+    }
     case "tutor":
       sorted = [...objs].sort((a, b) => cardScore(b.card) - cardScore(a.card));
       break;
@@ -962,7 +976,8 @@ function chooseCards(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseC
       sorted = [...objs].sort((a, b) => (b.under?.length ?? 0) - (a.under?.length ?? 0));
       break;
     case "altTap":
-      sorted = [...objs].sort((a, b) => creatureValue(g, a) - creatureValue(g, b));
+      // 攻撃に使わないもの(クリーチャー以外、価値の低いクリーチャー)からタップ
+      sorted = [...objs].sort((a, b) => (isCreatureCard(a.card) ? creatureValue(g, a) : -1) - (isCreatureCard(b.card) ? creatureValue(g, b) : -1));
       break;
     case "manaToGrave":
       sorted = [...objs].sort((a, b) => Number(b.tapped) - Number(a.tapped) || keepValue(g, p, a.card) - keepValue(g, p, b.card));

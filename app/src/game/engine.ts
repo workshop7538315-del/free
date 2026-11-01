@@ -1037,7 +1037,10 @@ export class Game {
     for (const g of pay.usedGroups) {
       if (g.startsWith("m")) {
         const o = pl.mana.find((m) => m.uid === Number(g.slice(1)));
-        if (o) o.tapped = true;
+        if (o) {
+          o.tapped = true;
+          this.queueTriggers("tapped", [o]);
+        }
       } else if (g.startsWith("s")) {
         const o = pl.battlefield.find((m) => m.uid === Number(g.slice(1)));
         if (o) this.sacrifice(o, p);
@@ -1387,6 +1390,8 @@ export class Game {
       }
     }
     this.usedCards.add(o.card.id);
+    // 生け贄に捧げるだけの起動型能力(効果は「生け贄に捧げられたとき」の誘発で起きる)
+    if (!a.effects.length) return;
     this.stack.push({ id: this.stackId++, kind: "activated", obj: o, controller: p, ability: a, targets, burned: false, burnCount: 0, kicked: false, dashed: false, flashback: false, x: 0 });
     this.addLog(`${o.card.name}の能力を起動した`, p);
   }
@@ -1614,6 +1619,8 @@ export class Game {
       for (const ab of this.activeAbilities(src))
         if (ab.a === "trigger" && ab.on === "sacrifice" && src !== o && matchFilter(card, ab.filter, colors))
           this.pendingTriggers.push({ obj: src, ability: ab, controller: p });
+    // ラストワード:このパーマネント自身の「生け贄に捧げられたとき」(破壊や死亡では誘発しない)
+    for (const ab of abilitiesOf(card)) if (ab.a === "trigger" && ab.on === "sacrificed") this.pendingTriggers.push({ obj: o, ability: ab, controller: p });
     this.die(o);
   }
 
@@ -1911,8 +1918,8 @@ export class Game {
     if (alt.mill && pl.library.length < alt.mill) return false;
     if (alt.discard && pl.hand.length < alt.discard) return false;
     if (alt.life && pl.life <= alt.life) return false;
-    if (alt.sacOther && !this.creatures(p).some((c) => c !== base)) return false;
-    if (alt.tapCreatures && this.creatures(p).filter((c) => !c.tapped && c !== base).length < alt.tapCreatures) return false;
+    if (alt.sacOther && !pl.battlefield.some((c) => c !== base)) return false;
+    if (alt.tapCreatures && pl.battlefield.filter((c) => !c.tapped && c !== base).length < alt.tapCreatures) return false;
     if (alt.manaToGrave && pl.mana.length < alt.manaToGrave) return false;
     if (alt.underToVault && (base.under ?? []).filter((u) => isExtraCard(u.card)).length < alt.underToVault) return false;
     return true;
@@ -1929,8 +1936,8 @@ export class Game {
     if (a.mill) return `ライブラリーの上から${a.mill}枚を墓地に置く`;
     if (a.discard) return `手札を${a.discard}枚捨てる`;
     if (a.life) return `ライフを${a.life}点払う`;
-    if (a.sacOther) return "ほかの自分のクリーチャー1体を生け贄に捧げる";
-    if (a.tapCreatures) return `タップしていない自分のクリーチャーを${a.tapCreatures}体タップする`;
+    if (a.sacOther) return "ほかの自分のパーマネント1つを生け贄に捧げる";
+    if (a.tapCreatures) return `タップしていない自分のパーマネントを${a.tapCreatures}つタップする`;
     if (a.manaToGrave) return `マナゾーンのカードを${a.manaToGrave}枚墓地に置く`;
     if (a.underToVault) return `下に重なったカードを${a.underToVault}枚秘蔵庫に戻す`;
     return "";
@@ -1954,15 +1961,13 @@ export class Game {
       this.addLog(`ライフを${a.life}点払った`, p);
     }
     if (a.sacOther) {
-      const [v] = await this.askCards(p, `${o.card.name}:生け贄に捧げるクリーチャーを選んでください`, this.creatures(p).filter((c) => c !== base), 1, "sacCost");
-      if (v) {
-        this.addLog(`${v.card.name}を生け贄に捧げた`, p);
-        this.die(v);
-      }
+      const [v] = await this.askCards(p, `${o.card.name}:生け贄に捧げるパーマネントを選んでください`, pl.battlefield.filter((c) => c !== base), 1, "sacCost");
+      if (v) this.sacrifice(v, p);
     }
     if (a.tapCreatures) {
-      const picked = await this.askCards(p, `${o.card.name}:タップするクリーチャーを${a.tapCreatures}体選んでください`, this.creatures(p).filter((c) => !c.tapped && c !== base), a.tapCreatures, "altTap");
+      const picked = await this.askCards(p, `${o.card.name}:タップするパーマネントを${a.tapCreatures}つ選んでください`, pl.battlefield.filter((c) => !c.tapped && c !== base), a.tapCreatures, "altTap");
       for (const c of picked) c.tapped = true;
+      this.queueTriggers("tapped", picked);
       this.addLog(`${picked.map((c) => c.card.name).join("、")}をタップした`, p);
     }
     if (a.manaToGrave) {
@@ -2196,9 +2201,9 @@ export class Game {
       }
       case "shatter": {
         const n = this.amount(e.n, ctx);
-        const opts = this.players[opp].battlefield.filter((o) => !isCreatureCard(o.card) && (o.card.type.includes("アーティファクト") || o.card.type.includes("エンチャント")));
+        const opts = this.players[opp].battlefield;
         if (!opts.length || n <= 0) break;
-        const picked = await this.askCards(p, `破壊するアーティファクトとエンチャントを${Math.min(n, opts.length)}個選んでください`, opts, Math.min(n, opts.length), "shatter");
+        const picked = await this.askCards(p, `破壊する相手のパーマネントを${Math.min(n, opts.length)}個選んでください`, [...opts], Math.min(n, opts.length), "shatter");
         for (const o of picked) this.destroy(o);
         this.addLog(`${picked.map((o) => o.card.name).join("、")}を破壊した`, p);
         break;
@@ -2740,13 +2745,23 @@ export class Game {
         break;
       }
       case "createMana": {
-        for (let i = 0; i < e.n; i++) {
+        const n = this.amount(e.n, ctx);
+        for (let i = 0; i < n; i++) {
           const o = this.newObj(e.card as Card, p, "mana");
           o.generated = true;
-          o.fleeting = true;
+          if (!e.stay) o.fleeting = true;
+          o.tapped = !!e.tapped;
           pl.mana.push(o);
         }
-        this.addLog(`《${e.card.name}》を${e.n}枚生成し、マナゾーンに置いた(ターン終了時に墓地に置かれる)`, p);
+        if (n > 0) this.addLog(`《${e.card.name}》を${n}枚生成し、${e.tapped ? "タップ状態で" : ""}マナゾーンに置いた${e.stay ? "" : "(ターン終了時に墓地に置かれる)"}`, p);
+        break;
+      }
+      case "sacrificeThis": {
+        if (src.zone === "battlefield") this.sacrifice(src, p);
+        else if (src.zone === "mana") {
+          this.addLog(`マナゾーンの${src.card.name}を生け贄に捧げた`, p);
+          this.move(src, "graveyard");
+        }
         break;
       }
       case "create": {

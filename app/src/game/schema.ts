@@ -206,7 +206,9 @@ export type Effect = Common &
     /** 依存:手札を1枚捨てる。捨てられないなら N 点のライフを失う */
     | { do: "addiction"; n: number }
     /** card を N 枚生成してマナゾーンに置く(ターン終了時に墓地に置かれる=消える) */
-    | { do: "createMana"; card: GeneratedCard; n: number }
+    | { do: "createMana"; card: GeneratedCard; n: Amount; tapped?: boolean; stay?: boolean }
+    /** このカードを生け贄に捧げる(マナゾーンにあるものも) */
+    | { do: "sacrificeThis" }
     /** 加護を得る(加護の枠を使う。すでに持っていれば何もしない) */
     | { do: "blessing"; id: string }
     /** 虚化:自分と対戦相手のマナゾーンの表向きのカードをそれぞれN枚、裏向き(欠色)にする(相手の分も自分が選ぶ) */
@@ -229,7 +231,7 @@ export type Effect = Common &
     | { do: "shrink"; tg: number; n: Amount }
     /** このクリーチャーと対象のクリーチャーが格闘する */
     | { do: "fightSelf"; tg: number }
-    /** 相手のアーティファクトとエンチャントを n 個まで選んで破壊する(蒲牢) */
+    /** 相手のパーマネントを n 個まで選んで破壊する(蒲牢) */
     | { do: "shatter"; n: Amount }
     /** 相手の墓地のカードをすべてライブラリーの一番下に置く(覇下) */
     | { do: "washGrave" }
@@ -280,7 +282,11 @@ export type TriggerEvent =
   /** 陶酔:このカードが手札から捨てられたとき */
   | "discarded"
   /** あなたが(filter に合う)カードを手札から捨てるたび */
-  | "discard";
+  | "discard"
+  /** このパーマネントが生け贄に捧げられたとき(死亡したときではない。第12弾のラストワード形式) */
+  | "sacrificed"
+  /** このカードがタップされたとき(紋章。マナを出すためにタップされたときなど) */
+  | "tapped";
 
 export type StaticSpec =
   /** 自分の(他の)クリーチャー全体の強化。filter で種族などを絞れる */
@@ -308,9 +314,9 @@ export type DragonAlt = {
   discard?: number;
   /** ライフを N 点払う */
   life?: number;
-  /** ほかの自分のクリーチャー1体を生け贄に捧げる */
+  /** ほかの自分のパーマネント1つを生け贄に捧げる */
   sacOther?: boolean;
-  /** タップしていない自分のクリーチャーを N 体タップする */
+  /** タップしていない自分のパーマネントを N 個タップする */
   tapCreatures?: number;
   /** 自分のマナゾーンのカードを N 枚墓地に置く */
   manaToGrave?: number;

@@ -73,6 +73,8 @@ const trig =
     ...opts,
   });
 export const etb = trig("etb");
+/** このカードがタップされたとき(紋章で使う) */
+export const onTapped = trig("tapped");
 export const dies = trig("dies");
 export const attacks = trig("attacks");
 export const charge = trig("charge");
@@ -298,7 +300,8 @@ export const E = {
   /** 喝采【cat】を N 増やす */
   applause: (cat, n = 1) => ({ do: "applause", cat, n }),
   /** card を N 枚生成してマナゾーンに置く(ターン終了時に墓地に置かれる) */
-  createMana: (card, n = 1) => ({ do: "createMana", card, n }),
+  createMana: (card, n = 1, opts = {}) => ({ do: "createMana", card, n, ...opts }),
+  sacrificeThis: () => ({ do: "sacrificeThis" }),
   /** 強盗 N(fallback:秘蔵庫が空のときに手札に加える生成カード) */
   perApplause: (cat, div, effects) => ({ do: "perApplause", cat, div, effects: [effects].flat() }),
   learn: () => ({ do: "learn" }),
@@ -672,7 +675,7 @@ function effectText(e, name, abil, notes) {
     case "fightSelf":
       return `${name}と${it(e.tg)}は格闘する。(それぞれが相手にパワーに等しいダメージを与える)`;
     case "shatter":
-      return `対戦相手がコントロールするアーティファクトとエンチャントを${amountText(e.n, notes)}個まで選び、破壊する。`;
+      return `対戦相手がコントロールするパーマネントを${amountText(e.n, notes)}個まで選び、破壊する。`;
     case "washGrave":
       return "対戦相手の墓地にあるカードをすべて、好きな順番で持ち主のライブラリーの一番下に置く。";
     case "tuckUpTo":
@@ -704,7 +707,9 @@ function effectText(e, name, abil, notes) {
     case "addiction":
       return `手札を1枚捨てる。捨てられないなら、あなたは${e.n}点のライフを失う。`;
     case "createMana":
-      return `《${e.card.name}》(${e.card.cost} ${e.card.type}:${(e.card.text ?? []).join(" ")})を${e.n}枚生成し、あなたのマナゾーンに置く。ターン終了時に、それらを墓地に置く。`;
+      return `《${e.card.name}》(${e.card.cost} ${e.card.type}:${(e.card.text ?? []).join(" ")})を${amountText(e.n, notes)}枚生成し、${e.tapped ? "タップ状態で" : ""}あなたのマナゾーンに置く。${e.stay ? "" : "ターン終了時に、それらを墓地に置く。"}`;
+    case "sacrificeThis":
+      return `${name}を生け贄に捧げる。`;
     case "create": {
       const c = e.card;
       const pt = c.power !== undefined ? ` ${c.power}/${c.toughness}` : "";
@@ -757,6 +762,8 @@ function bodyText(abil, name, hoisted = null) {
 const TRIGGER_PREFIX = {
   etb: (n) => `${n}が戦場に出たとき、`,
   dies: (n) => `${n}が死亡したとき、`,
+  sacrificed: (n) => `${n}が生け贄に捧げられたとき、`,
+  tapped: (n) => `${n}がタップされたとき、`,
   attacks: (n) => `${n}が攻撃するたび、`,
   charge: () => "チャージ時 ― ",
   upkeep: () => "あなたのアップキープの開始時に、",
@@ -892,7 +899,7 @@ function abilityTextBody(abil, card) {
       return `対戦相手がコントロールするクリーチャーが${abil.minOpp}体以上いるなら、元のパワーとタフネスの合計が${abil.maxSum}以下の対戦相手のクリーチャー1体も、${name}の開拓進化の素材にできる。`;
     case "dragon": {
       const a = abil.alt ?? {};
-      const altTxt = a.mill ? `ライブラリーの上から${a.mill}枚を墓地に置く` : a.discard ? `手札を${a.discard}枚捨てる` : a.life ? `ライフを${a.life}点払う` : a.sacOther ? "ほかの自分のクリーチャー1体を生け贄に捧げる" : a.tapCreatures ? `タップしていない自分のクリーチャーを${a.tapCreatures}体タップする` : a.manaToGrave ? `自分のマナゾーンのカードを${a.manaToGrave}枚墓地に置く` : a.underToVault ? `重ねる先の下のカードを${a.underToVault}枚秘蔵庫に戻す` : "";
+      const altTxt = a.mill ? `ライブラリーの上から${a.mill}枚を墓地に置く` : a.discard ? `手札を${a.discard}枚捨てる` : a.life ? `ライフを${a.life}点払う` : a.sacOther ? "ほかの自分のパーマネント1つを生け贄に捧げる" : a.tapCreatures ? `タップしていない自分のパーマネントを${a.tapCreatures}つタップする` : a.manaToGrave ? `自分のマナゾーンのカードを${a.manaToGrave}枚墓地に置く` : a.underToVault ? `重ねる先の下のカードを${a.underToVault}枚秘蔵庫に戻す` : "";
       const parts = ["龍生(秘蔵庫から、マナコストを払って、贔屓を含むあなたのクリーチャーの上に重ねて出す。重なったカード1枚につき+1/+1。ソーサリーのタイミングで、何回でも)"];
       if (altTxt) parts.push(`代わりの払い方 ― ${altTxt}。`);
       if (abil.selfReduce) parts.push("この進化コストは、重ねる先の重なりの枚数と、このターンに死亡したクリーチャー1体につき{1}少なくなる。");
@@ -939,6 +946,8 @@ function abilityTextBody(abil, card) {
     case "static":
       return staticText(abil, name, card);
     case "activated":
+      // ラストワード形式:生け贄に捧げるだけの起動型能力
+      if (!abil.effects.length) return `${costSymbolsText(abil.cost, name)}。(いつでも行える。「生け贄に捧げられたとき」の能力が誘発する)`;
       return `${costSymbolsText(abil.cost, name)}:${bodyText(abil, name)}`;
     case "mana":
       if (abil.sacSelf) return `${name}を生け贄に捧げる:${abil.produce[0] === "any" ? "好きな色1色のマナ1つ" : abil.produce.join("か")}を加える。`;
@@ -967,4 +976,21 @@ export function cardText(card) {
   }
   flush();
   return lines;
+}
+
+/**
+ * ラストワード形式(第12弾):自分自身を生け贄に捧げる起動型能力を、
+ * 「生け贄に捧げる(コストだけ)」の起動型能力と「生け贄に捧げられたとき」の誘発に分ける。
+ * 生け贄に捧げられれば(ほかのカードのコストでも)効果が起きる。破壊や死亡では起きない。
+ * マナを出すだけのもの(《黄金》《札束》など)はそのまま。
+ */
+export function toLastWord(abilities) {
+  const out = [];
+  for (const ab of abilities ?? []) {
+    if (ab.a === "activated" && ab.cost?.sacSelf && ab.effects?.length && !ab.effects.every((e) => e.do === "addMana")) {
+      out.push({ a: "activated", cost: ab.cost, effects: [] });
+      out.push({ a: "trigger", on: "sacrificed", effects: ab.effects, ...(ab.targets ? { targets: ab.targets } : {}) });
+    } else out.push(ab);
+  }
+  return out;
 }

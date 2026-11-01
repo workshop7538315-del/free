@@ -4,7 +4,7 @@
 import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { cardText } from "./lib.mjs";
+import { cardText, toLastWord } from "./lib.mjs";
 import { PACKS } from "./packs.mjs";
 import { RESTRICTED as RESTRICTED_BASE } from "./restricted.mjs";
 import { SUIKODEN_GEN } from "./sets/sh-suikoden.mjs";
@@ -117,7 +117,8 @@ function autoTags(c) {
   return [...tags];
 }
 
-const out = CARDS.map((c) => {
+const out = CARDS.map((c0) => {
+  const c = { ...c0, abilities: toLastWord(c0.abilities) };
   const { abilities, tags, pack, basedOn, ...rest } = c;
   const allTags = autoTags(c);
   return {
