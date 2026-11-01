@@ -206,7 +206,7 @@ export type Effect = Common &
     /** 依存:手札を1枚捨てる。捨てられないなら N 点のライフを失う */
     | { do: "addiction"; n: number }
     /** card を N 枚生成してマナゾーンに置く(ターン終了時に墓地に置かれる=消える) */
-    | { do: "createMana"; card: GeneratedCard; n: Amount; tapped?: boolean; stay?: boolean }
+    | { do: "createMana"; card: GeneratedCard; n: Amount; tapped?: boolean; stay?: boolean; max?: number }
     /** このカードを生け贄に捧げる(マナゾーンにあるものも) */
     | { do: "sacrificeThis" }
     /** 加護を得る(加護の枠を使う。すでに持っていれば何もしない) */

@@ -36,7 +36,7 @@ export const KYUSHI = [
     "ドラゴン・九子・四凶",
   ),
   son("ry06", "蒲牢", "{2}{R}{R}", 4, 3, "R", [dragon({ tapCreatures: 2 }), etb(E.shatter(2, undefined, UNDER))], { flavor: "吼えることを好む。鐘の上で叫べば、何もかもが砕ける。" }),
-  son("ry07", "覇下", "{3}{B}", 3, 5, "R", [dragon({ manaToGrave: 3 }), etb(E.createMana(FLOWING_WATER, UNDER, { tapped: true, stay: true }))], { flavor: "水を好む。流れは、墓に眠るものまで押し流して運んでくる。" }),
+  son("ry07", "覇下", "{3}{B}", 3, 5, "R", [dragon({ manaToGrave: 3 }), etb(E.createMana(FLOWING_WATER, UNDER, { tapped: true, stay: true, max: 3 }))], { flavor: "水を好む。流れは、墓に眠るものまで押し流して運んでくる。" }),
   son("ry08", "椒図", "{2}{B}{R}", 3, 3, "R", [dragon({ underToVault: 1 }), etb(E.rotate())], { flavor: "閉じこもることを好む。扉の輪をくわえて、兄弟の誰かを外に出す。" }),
   son("ry09", "睚眦", "{8}{B}{R}", 6, 6, "M", [dragon(undefined, { selfReduce: true }), etb([E.countersSelf(UNDER), E.yazi()])], {
     flavor: "殺戮を好む。九つの首がそろったとき、戦は一度では終わらない。",

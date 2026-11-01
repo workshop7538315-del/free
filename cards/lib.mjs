@@ -707,7 +707,7 @@ function effectText(e, name, abil, notes) {
     case "addiction":
       return `手札を1枚捨てる。捨てられないなら、あなたは${e.n}点のライフを失う。`;
     case "createMana":
-      return `《${e.card.name}》(${e.card.cost} ${e.card.type}:${(e.card.text ?? []).join(" ")})を${amountText(e.n, notes)}枚生成し、${e.tapped ? "タップ状態で" : ""}あなたのマナゾーンに置く。${e.stay ? "" : "ターン終了時に、それらを墓地に置く。"}`;
+      return `《${e.card.name}》(${e.card.cost} ${e.card.type}:${(e.card.text ?? []).join(" ")})を${amountText(e.n, notes)}枚${e.max ? `(最大${e.max}枚)` : ""}生成し、${e.tapped ? "タップ状態で" : ""}あなたのマナゾーンに置く。${e.stay ? "" : "ターン終了時に、それらを墓地に置く。"}`;
     case "sacrificeThis":
       return `${name}を生け贄に捧げる。`;
     case "create": {

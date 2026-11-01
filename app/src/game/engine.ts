@@ -2746,7 +2746,7 @@ export class Game {
         break;
       }
       case "createMana": {
-        const n = this.amount(e.n, ctx);
+        const n = Math.min(this.amount(e.n, ctx), e.max ?? 99);
         for (let i = 0; i < n; i++) {
           const o = this.newObj(e.card as Card, p, "mana");
           o.generated = true;
