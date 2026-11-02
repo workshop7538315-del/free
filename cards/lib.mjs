@@ -75,6 +75,10 @@ const trig =
 export const etb = trig("etb");
 /** このカードがタップされたとき(紋章で使う) */
 export const onTapped = trig("tapped");
+/** このカードが生成されたとき */
+export const onCreated = trig("created");
+/** このカードが(どこからでも)墓地に置かれたとき */
+export const onToGraveyard = trig("toGraveyard");
 export const dies = trig("dies");
 export const attacks = trig("attacks");
 export const charge = trig("charge");
@@ -302,6 +306,7 @@ export const E = {
   /** card を N 枚生成してマナゾーンに置く(ターン終了時に墓地に置かれる) */
   createMana: (card, n = 1, opts = {}) => ({ do: "createMana", card, n, ...opts }),
   sacrificeThis: () => ({ do: "sacrificeThis" }),
+  deplete: () => ({ do: "deplete" }),
   /** 強盗 N(fallback:秘蔵庫が空のときに手札に加える生成カード) */
   perApplause: (cat, div, effects) => ({ do: "perApplause", cat, div, effects: [effects].flat() }),
   learn: () => ({ do: "learn" }),
@@ -707,9 +712,11 @@ function effectText(e, name, abil, notes) {
     case "addiction":
       return `手札を1枚捨てる。捨てられないなら、あなたは${e.n}点のライフを失う。`;
     case "createMana":
-      return `《${e.card.name}》(${e.card.cost} ${e.card.type}:${(e.card.text ?? []).join(" ")})を${amountText(e.n, notes)}枚${e.max ? `(最大${e.max}枚)` : ""}生成し、${e.tapped ? "タップ状態で" : ""}あなたのマナゾーンに置く。${e.stay ? "" : "ターン終了時に、それらを墓地に置く。"}`;
+      return `《${e.card.name}》(${e.card.cost} ${e.card.type}:${(e.card.text ?? []).join(" ")})を${amountText(e.n, notes)}枚${e.max ? `(最大${e.max}枚)` : ""}${e.charges !== undefined ? `、水量${amountText(e.charges, notes)}で` : ""}生成し、${e.tapped ? "タップ状態で" : ""}あなたのマナゾーンに置く。${e.stay ? "" : "ターン終了時に、それらを墓地に置く。"}`;
     case "sacrificeThis":
       return `${name}を生け贄に捧げる。`;
+    case "deplete":
+      return `${name}の水量を1減らす。0になったら、${name}を墓地に置く。`;
     case "create": {
       const c = e.card;
       const pt = c.power !== undefined ? ` ${c.power}/${c.toughness}` : "";
@@ -764,6 +771,7 @@ const TRIGGER_PREFIX = {
   dies: (n) => `${n}が死亡したとき、`,
   sacrificed: (n) => `${n}が生け贄に捧げられたとき、`,
   tapped: (n) => `${n}がタップされたとき、`,
+  created: (n) => `${n}が生成されたとき、`,
   attacks: (n) => `${n}が攻撃するたび、`,
   charge: () => "チャージ時 ― ",
   upkeep: () => "あなたのアップキープの開始時に、",

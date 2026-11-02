@@ -43,6 +43,8 @@ export type Obj = {
   handDiscount?: number;
   /** 手札にあるあいだ瞬速を持つ(《逆鱗》) */
   handFlash?: boolean;
+  /** 残量(《流れる水》の水量)。0になると墓地に置かれる */
+  charges?: number;
   card: Card;
   owner: PlayerId;
   controller: PlayerId;
@@ -559,8 +561,12 @@ export class Game {
     o.controller = opts.controller ?? o.owner;
     o.zone = to;
     if (o.token && to !== "battlefield") return;
-    // 生成されたカードは、手札・スタック・戦場以外に移ると消える
-    if (o.generated && to !== "hand" && to !== "stack" && to !== "battlefield") return;
+    // 生成されたカードは、手札・スタック・戦場以外に移ると消える(墓地に置かれたときの能力は誘発する)
+    if (o.generated && to !== "hand" && to !== "stack" && to !== "battlefield") {
+      if (to === "graveyard")
+        for (const ab of abilitiesOf(o.card)) if (ab.a === "trigger" && ab.on === "toGraveyard") this.pendingTriggers.push({ obj: o, ability: ab, controller: o.owner });
+      return;
+    }
     // マナゾーンに生成されたカードは、マナゾーンを離れると消える
     if (o.fleeting) return;
     const p = this.players[to === "battlefield" ? o.controller : o.owner];
@@ -2752,9 +2758,21 @@ export class Game {
           o.generated = true;
           if (!e.stay) o.fleeting = true;
           o.tapped = !!e.tapped;
+          if (e.charges !== undefined) o.charges = this.amount(e.charges, ctx);
           pl.mana.push(o);
+          this.queueTriggers("created", [o]);
         }
         if (n > 0) this.addLog(`《${e.card.name}》を${n}枚生成し、${e.tapped ? "タップ状態で" : ""}マナゾーンに置いた${e.stay ? "" : "(ターン終了時に墓地に置かれる)"}`, p);
+        break;
+      }
+      case "deplete": {
+        src.charges = (src.charges ?? 1) - 1;
+        if (src.charges > 0) {
+          this.addLog(`${src.card.name}の水量が${src.charges}になった`, p);
+          break;
+        }
+        this.addLog(`${src.card.name}の水量が0になり、墓地に置かれた`, p);
+        this.move(src, "graveyard");
         break;
       }
       case "sacrificeThis": {

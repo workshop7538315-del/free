@@ -634,7 +634,7 @@ function ManaRow({ p, markOf, onCard, onLong, hidden = false }: { p: Player; mar
           // 裏向きのカード:相手のものは名前を見せない
           const secret = o.faceDown && hidden;
           const secretNo = secret ? p.mana.filter((q) => q.faceDown).indexOf(o) + 1 : 0;
-          const label = o.faceDown ? (secret ? `裏向き${secretNo}` : `裏:${o.card.name}`) : o.card.name;
+          const label = o.faceDown ? (secret ? `裏向き${secretNo}` : `裏:${o.card.name}`) : `${o.card.name}${o.charges !== undefined ? `(水量${o.charges})` : ""}`;
           return (
             <ManaChip
               key={o.uid}
@@ -652,7 +652,7 @@ function ManaRow({ p, markOf, onCard, onLong, hidden = false }: { p: Player; mar
         {p.mana.map((o) => {
           const cs = o.faceDown ? [] : manaColors(o);
           const bg = cs.length === 0 ? "var(--mana-C)" : cs.length === 1 ? `var(--mana-${cs[0]})` : `conic-gradient(${cs.map((c, i) => `var(--mana-${c}) ${(i / cs.length) * 100}% ${((i + 1) / cs.length) * 100}%`).join(",")})`;
-          const name = o.faceDown && hidden ? "裏向きのカード" : o.card.name;
+          const name = o.faceDown && hidden ? "裏向きのカード" : `${o.card.name}${o.charges !== undefined ? `(水量${o.charges})` : ""}`;
           return <ManaDot key={o.uid} className={`mana-dot ${o.tapped ? "is-tapped" : ""} ${markOf(o)}`} bg={bg} label={`${name}${o.tapped ? "(使用済み)" : ""}`} onClick={() => onCard(o)} onLong={onLong ? () => onLong(o) : undefined} />;
         })}
       </div>

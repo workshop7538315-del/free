@@ -577,6 +577,7 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return enables ? 2.5 : 0;
     }
     case "sacrificeThis":
+    case "deplete":
       return 0;
     case "addMana": {
       // 加えたマナで、今は唱えられない重いカードが唱えられるようになるなら使う
@@ -641,7 +642,7 @@ function dragonEtbValue(g: Game, p: PlayerId, o: Obj, x: number): number {
     const vals = them.battlefield.filter((c) => manaValue(c.card.cost) <= x).map((c) => (isCreatureCard(c.card) ? val(c) : 1.5 + manaValue(c.card.cost) * 0.4)).sort((a, b) => b - a);
     return vals.slice(0, Math.min(x, 2)).reduce((s, v) => s + v, 0);
   }
-  if (name.includes("覇下")) return Math.min(x, 3) * 0.8 + (g.players[p].graveyard.some((c) => isInstantCard(c.card) || c.card.type === "ソーサリー") ? 1 : 0);
+  if (name.includes("覇下")) return 1 + x * 0.4 + (g.players[p].graveyard.some((c) => isInstantCard(c.card) || c.card.type === "ソーサリー") ? 1 : 0);
   if (name.includes("椒図")) return 2;
   if (name.includes("睚眦")) return x * 0.8 + 2;
   return 1;

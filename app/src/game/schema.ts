@@ -206,7 +206,9 @@ export type Effect = Common &
     /** 依存:手札を1枚捨てる。捨てられないなら N 点のライフを失う */
     | { do: "addiction"; n: number }
     /** card を N 枚生成してマナゾーンに置く(ターン終了時に墓地に置かれる=消える) */
-    | { do: "createMana"; card: GeneratedCard; n: Amount; tapped?: boolean; stay?: boolean; max?: number }
+    | { do: "createMana"; card: GeneratedCard; n: Amount; tapped?: boolean; stay?: boolean; max?: number; charges?: Amount }
+    /** 残量(水量)を1減らし、0になったらこのカードを墓地に置く(《流れる水》) */
+    | { do: "deplete" }
     /** このカードを生け贄に捧げる(マナゾーンにあるものも) */
     | { do: "sacrificeThis" }
     /** 加護を得る(加護の枠を使う。すでに持っていれば何もしない) */
@@ -286,7 +288,9 @@ export type TriggerEvent =
   /** このパーマネントが生け贄に捧げられたとき(死亡したときではない。第12弾のラストワード形式) */
   | "sacrificed"
   /** このカードがタップされたとき(紋章。マナを出すためにタップされたときなど) */
-  | "tapped";
+  | "tapped"
+  /** このカードが生成されたとき(マナゾーンに生成されたものは紋章) */
+  | "created";
 
 export type StaticSpec =
   /** 自分の(他の)クリーチャー全体の強化。filter で種族などを絞れる */
