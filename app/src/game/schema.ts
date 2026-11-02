@@ -100,6 +100,10 @@ export type Cond =
   | { anyName: string[] }
   /** 集結 N:このゲームで自分の戦場に出た、名前の違う好漢の数がN以上(第12弾) */
   | { gather: number }
+  /** 重なり N:このカードの下に重なっている枚数がN以上(below があればそれ未満)(第12弾) */
+  | { under: number; below?: number }
+  /** このカードの残量(水量)がN以上 */
+  | { charges: number }
   /** 対戦相手の手札がn枚以上 */
   | { oppHand: number };
 
@@ -348,6 +352,8 @@ export type Ability = { text?: string } & (
   /** 龍生:秘蔵庫の九子。マナコストを進化コストとして払い、贔屓を含む自分のクリーチャーの上に重ねて出す(第12弾)。
    *  alt は代わりの払い方、ambush は相手が悪事を働いたときインスタントとして重ねられる、selfReduce は睚眦の軽減 */
   | { a: "dragon"; alt?: DragonAlt; ambush?: boolean; selfReduce?: boolean }
+  /** 重なったカード1枚につき+1/+1(龍生九子では睚眦・饕餮だけ) */
+  | { a: "stackBonus" }
   /** 燃焼 N。upTo なら烈燃 N(0〜N枚の好きな枚数を燃焼できる) */
   | { a: "burn"; n: number; upTo?: boolean }
   /** 疾駆:このコストで唱えると速攻を得て、終了ステップに手札に戻る */

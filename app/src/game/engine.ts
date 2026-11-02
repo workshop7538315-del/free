@@ -614,9 +614,14 @@ export class Game {
   }
 
   // ------------------------------------------------------------ 条件・性質
-  cond(c: Cond, p: PlayerId, burned = false, kicked = false): boolean {
+  cond(c: Cond, p: PlayerId, burned = false, kicked = false, obj?: Obj): boolean {
     const pl = this.players[p];
     if (typeof c === "object") {
+      if ("under" in c) {
+        const n = obj?.under?.length ?? 0;
+        return n >= c.under && (c.below === undefined || n < c.below);
+      }
+      if ("charges" in c) return (obj?.charges ?? 0) >= c.charges;
       if ("armed" in c) return pl.mana.filter((o) => manaColors(o).includes(c.armed)).length >= c.n;
       if ("applause" in c) return (pl.applause[c.applause] ?? 0) >= c.n;
       if ("primary" in c) return this.primaryCount(p, c.primary) >= c.n;
@@ -660,7 +665,7 @@ export class Game {
         return pl.mana.length > this.players[this.other(p)].mana.length;
       case "hegemonyShu": {
         // 常在能力(全体強化)は数えない:覇業【蜀】で強くなる効果がまたこの判定に入り、無限に回るのを防ぐ
-        const raw = (o: Obj) => (o.card.power ?? 0) + o.counters + (o.under?.length ?? 0) + [...o.temp, ...o.perm].reduce((s, m) => s + m.p, 0);
+        const raw = (o: Obj) => (o.card.power ?? 0) + o.counters + this.underBonus(o) + [...o.temp, ...o.perm].reduce((s, m) => s + m.p, 0);
         const mine = this.creatures(p).map(raw);
         if (!mine.length) return false;
         const theirs = this.creatures(this.other(p)).map(raw);
@@ -761,6 +766,14 @@ export class Game {
     return [...this.players[p].battlefield, ...this.players[p].mana];
   }
 
+  /** 重なったカード1枚につき+1/+1。龍生九子は「stackBonus」を持つもの(睚眦・饕餮)だけ(ほかは重なりの段階で強くなる) */
+  underBonus(o: Obj): number {
+    const n = o.under?.length ?? 0;
+    if (!n) return 0;
+    if ((o.card.subtype ?? "").split("・").includes("九子") && !abilityOf(o.card, "stackBonus")) return 0;
+    return n;
+  }
+
   private statics(o: Obj): Mod[] {
     const mods: Mod[] = [];
     if (o.zone !== "battlefield") return mods;
@@ -768,7 +781,7 @@ export class Game {
     for (const src of this.sources(o.controller)) {
       for (const a of this.activeAbilities(src)) {
         if (a.a !== "static") continue;
-        if (a.if && !this.cond(a.if, src.controller)) continue;
+        if (a.if && !this.cond(a.if, src.controller, false, false, src)) continue;
         const st = a.st;
         if (st.s === "anthem" && creature && !(st.others && src === o) && matchFilter(o.card, st.filter, this.colorsOf(o)))
           mods.push({ p: st.p, t: st.t, kw: st.kw ?? [] });
@@ -796,11 +809,11 @@ export class Game {
   }
 
   power(o: Obj): number {
-    return (o.card.power ?? 0) + o.counters + (o.under?.length ?? 0) + this.allMods(o).reduce((s, m) => s + m.p, 0);
+    return (o.card.power ?? 0) + o.counters + this.underBonus(o) + this.allMods(o).reduce((s, m) => s + m.p, 0);
   }
 
   toughness(o: Obj): number {
-    return (o.card.toughness ?? 0) + o.counters + (o.under?.length ?? 0) + this.allMods(o).reduce((s, m) => s + m.t, 0);
+    return (o.card.toughness ?? 0) + o.counters + this.underBonus(o) + this.allMods(o).reduce((s, m) => s + m.t, 0);
   }
 
   keywords(o: Obj): Set<string> {
@@ -1415,7 +1428,7 @@ export class Game {
       list.sort((a, b) => (a.controller === this.active ? 0 : 1) - (b.controller === this.active ? 0 : 1));
       for (const t of list) {
         const ab = t.ability;
-        if (ab.if && !this.cond(ab.if, t.controller, t.obj.burned, t.obj.kicked)) continue;
+        if (ab.if && !this.cond(ab.if, t.controller, t.obj.burned, t.obj.kicked, t.obj)) continue;
         // 「1ターンに1回」の誘発
         if (ab.oncePerTurn) {
           const key = `${t.obj.uid}:${abilitiesOf(t.obj.card).indexOf(ab)}`;
@@ -1541,7 +1554,7 @@ export class Game {
       this.addLog(`${item.obj.card.name}は対象が不正になり、効果を発揮しなかった`, item.controller);
       return;
     }
-    if (ab.a === "trigger" && ab.if && !this.cond(ab.if, item.controller, item.burned, item.kicked)) return;
+    if (ab.a === "trigger" && ab.if && !this.cond(ab.if, item.controller, item.burned, item.kicked, item.obj)) return;
     await this.runEffects(ab.effects, { item, legal });
   }
 
@@ -1565,8 +1578,8 @@ export class Game {
   private async runEffects(effects: Effect[], ctx: Ctx) {
     for (const e of effects) {
       const p = ctx.item.controller;
-      if (e.if && !this.cond(e.if, p, ctx.item.burned, ctx.item.kicked)) continue;
-      if (e.unless && this.cond(e.unless, p, ctx.item.burned, ctx.item.kicked)) continue;
+      if (e.if && !this.cond(e.if, p, ctx.item.burned, ctx.item.kicked, ctx.item.obj)) continue;
+      if (e.unless && this.cond(e.unless, p, ctx.item.burned, ctx.item.kicked, ctx.item.obj)) continue;
       if (e.may) {
         if (!(await this.mayApply(e, ctx))) continue;
         const ok = await this.askYesNo(p, `${ctx.item.obj.card.name}:${effectSummary(e)}を行いますか?`, "may", ctx.item.obj);

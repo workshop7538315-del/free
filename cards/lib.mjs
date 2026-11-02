@@ -415,6 +415,8 @@ export function condLabel(c) {
     if ("primary" in c) return `原色 ${c.n}(${COLOR_JA[c.primary]})`;
     if ("navy" in c) return `水軍 ${c.navy}`;
     if ("gather" in c) return `集結 ${c.gather}`;
+    if ("under" in c) return c.below !== undefined ? `重なり ${c.under}〜${c.below - 1}` : `重なり ${c.under}`;
+    if ("charges" in c) return `水量 ${c.charges}`;
     return null;
   }
   return (
@@ -477,6 +479,8 @@ function condPlain(c) {
     if ("navy" in c) return `あなたのマナゾーンに青のカードが${c.navy}枚以上ある`;
     if ("oppHand" in c) return `対戦相手の手札が${c.oppHand}枚以上ある`;
     if ("gather" in c) return `このゲームであなたの戦場に出た、名前の違う好漢が${c.gather}人以上いる`;
+    if ("under" in c) return `このカードの下に${c.under}枚以上${c.below !== undefined ? `${c.below - 1}枚以下` : ""}重なっている`;
+    if ("charges" in c) return `このカードの水量が${c.charges}以上ある`;
     if ("anyName" in c) return `あなたが${c.anyName.map((n) => `《${n}》`).join("か")}をコントロールしている`;
     return `あなたが${filterPhrase(c.control, "permanent")}を${c.n}${unitOf(c.control)}以上コントロールしている`;
   }
@@ -908,12 +912,14 @@ function abilityTextBody(abil, card) {
     case "dragon": {
       const a = abil.alt ?? {};
       const altTxt = a.mill ? `ライブラリーの上から${a.mill}枚を墓地に置く` : a.discard ? `手札を${a.discard}枚捨てる` : a.life ? `ライフを${a.life}点払う` : a.sacOther ? "ほかの自分のパーマネント1つを生け贄に捧げる" : a.tapCreatures ? `タップしていない自分のパーマネントを${a.tapCreatures}つタップする` : a.manaToGrave ? `自分のマナゾーンのカードを${a.manaToGrave}枚墓地に置く` : a.underToVault ? `重ねる先の下のカードを${a.underToVault}枚秘蔵庫に戻す` : "";
-      const parts = ["龍生(秘蔵庫から、マナコストを払って、贔屓を含むあなたのクリーチャーの上に重ねて出す。重なったカード1枚につき+1/+1。ソーサリーのタイミングで、何回でも)"];
+      const parts = ["龍生(秘蔵庫から、マナコストを払って、贔屓を含むあなたのクリーチャーの上に重ねて出す。ソーサリーのタイミングで、何回でも)"];
       if (altTxt) parts.push(`代わりの払い方 ― ${altTxt}。`);
       if (abil.selfReduce) parts.push("この進化コストは、重ねる先の重なりの枚数と、このターンに死亡したクリーチャー1体につき{1}少なくなる。");
       if (abil.ambush) parts.push("対戦相手のクリーチャーが攻撃しているか、対戦相手の呪文や能力がスタックにあるあいだ、インスタントのタイミングで龍生してもよい。");
       return parts.join("\n");
     }
+    case "stackBonus":
+      return `${name}は、下に重なっているカード1枚につき+1/+1の修整を受ける。`;
     case "lesson":
       return "計略(このカードは秘蔵庫に入れる。献策で手札に加えられる。使ったあとは墓地に置かれる)";
     case "navyAlways":

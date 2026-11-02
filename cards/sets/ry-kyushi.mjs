@@ -7,25 +7,29 @@
 //     それぞれが「代わりの払い方」を持ち、マナの代わりにライフ・手札・場などを削って重ねられる。
 //   場を離れると重なったカードも一緒に離れる(九子は秘蔵庫へ戻り、贔屓は墓地へ)。
 //   シルバーバレット:秘蔵庫の九子はいつでも見えていて、相手に合わせて1体を選んで重ねる。
-import { cr, ins, sor, ench, kw, spell, etb, lord, dragon, stat, gen, onTapped, onCreated, onToGraveyard, UNDER, T, E } from "../lib.mjs";
+import { cr, ins, sor, ench, kw, spell, etb, lord, dragon, stat, gen, selfIf, onTapped, onCreated, onToGraveyard, UNDER, T, E } from "../lib.mjs";
 
 /** 《流れる水》:覇下が生成するマナ。水量 x。タップされるたびに水量が減り、0になると墓地に置かれる。
- *  生成されたときと墓地に置かれたときに、墓地のインスタントかソーサリーを手札に戻す */
+ *  生成されたとき(水量3以上なら)と墓地に置かれたときに、墓地のインスタントかソーサリーを手札に戻す */
 const FLOWING_WATER = gen("ry90", "流れる水", "{U}{B}", "エンチャント", [
-  onCreated(E.ret("hand"), T.gyF({ spell: true }), { from: "mana" }),
+  onCreated(E.ret("hand"), T.gyF({ spell: true }), { from: "mana", if: { charges: 3 } }),
   onTapped(E.deplete(), undefined, { from: "mana" }),
   onToGraveyard(E.ret("hand"), T.gyF({ spell: true })),
 ]);
 
+/** 重なりの段階で強くなる(重なり n〜N-1 で +a/+a、重なり N 以上で +b/+b) */
+const tiers = (n, N, a = 1, b = 3) => [selfIf({ under: n, below: N }, a, a), selfIf({ under: N }, b, b)];
+/** 重なったカード1枚につき+1/+1(睚眦・饕餮だけ) */
+const STACK = { a: "stackBonus" };
 const tagged = (c) => ({ ...c, tags: [...new Set([...(c.tags ?? []), "龍生九子"])] });
 const SON = "ドラゴン・九子";
 const son = (id, name, cost, p, t, rar, abilities, extra, sub = SON) => tagged(cr(id, name, cost, sub, p, t, rar, abilities, extra));
 
 export const KYUSHI = [
   son("ry01", "贔屓", "{1}{B}{R}", 1, 5, "U", [], { flavor: "九子の長兄。重いものを背負うことを好む。守護者の石碑も、弟たちも。" }),
-  son("ry02", "螭吻", "{1}{B}", 2, 3, "R", [dragon({ mill: 3 }), etb(E.dig(UNDER, 2, 3))], { flavor: "遠くを望むことを好む。屋根の端から、まだ来ない明日を見ている。" }),
-  son("ry03", "狻猊", "{2}{R}", 3, 3, "R", [dragon({ discard: 2 }), etb(E.volley(UNDER, 2))], { flavor: "火と煙を好む。香炉の上で、退屈そうに炎を吐く。" }),
-  son("ry04", "狴犴", "{2}{B}", 3, 4, "R", [dragon({ life: 4 }, { ambush: true }), etb(E.shrink(UNDER), T.opp)], { flavor: "訴えを好む。悪事を見れば、呼ばれなくても裁きに来る。" }),
+  son("ry02", "螭吻", "{1}{B}", 2, 3, "R", [...tiers(2, 4), dragon({ mill: 3 }), etb(E.dig(UNDER, 2, 3))], { flavor: "遠くを望むことを好む。屋根の端から、まだ来ない明日を見ている。" }),
+  son("ry03", "狻猊", "{2}{R}", 3, 3, "R", [...tiers(2, 4), dragon({ discard: 2 }), etb(E.volley(UNDER, 2))], { flavor: "火と煙を好む。香炉の上で、退屈そうに炎を吐く。" }),
+  son("ry04", "狴犴", "{2}{B}", 3, 4, "R", [...tiers(2, 4), dragon({ life: 4 }, { ambush: true }), etb(E.shrink(UNDER), T.opp)], { flavor: "訴えを好む。悪事を見れば、呼ばれなくても裁きに来る。" }),
   son(
     "ry05",
     "饕餮",
@@ -33,14 +37,14 @@ export const KYUSHI = [
     5,
     4,
     "R",
-    [kw("絆魂"), dragon({ sacOther: true }), etb([E.pumpSelf(UNDER, 0), { ...E.fightSelf(), may: true }], T.opp)],
+    [kw("絆魂"), STACK, dragon({ sacOther: true }), etb([E.pumpSelf(UNDER, 0), { ...E.fightSelf(), may: true }], T.opp)],
     { flavor: "喰らうことを好む。四凶にも数えられる、底なしの胃袋。" },
     "ドラゴン・九子・四凶",
   ),
-  son("ry06", "蒲牢", "{2}{R}{R}", 4, 3, "R", [dragon({ tapCreatures: 2 }), etb(E.shatter(2, undefined, UNDER))], { flavor: "吼えることを好む。鐘の上で叫べば、何もかもが砕ける。" }),
-  son("ry07", "覇下", "{3}{B}", 3, 5, "R", [dragon({ manaToGrave: 3 }), etb(E.createMana(FLOWING_WATER, 1, { tapped: true, stay: true, charges: UNDER }))], { flavor: "水を好む。流れは、墓に眠るものまで押し流して運んでくる。" }),
-  son("ry08", "椒図", "{2}{B}{R}", 3, 3, "R", [dragon({ underToVault: 1 }), etb(E.rotate())], { flavor: "閉じこもることを好む。扉の輪をくわえて、兄弟の誰かを外に出す。" }),
-  son("ry09", "睚眦", "{8}{B}{R}", 6, 6, "M", [dragon(undefined, { selfReduce: true }), etb([E.countersSelf(UNDER), E.yazi()])], {
+  son("ry06", "蒲牢", "{2}{R}{R}", 4, 3, "R", [...tiers(2, 4), dragon({ tapCreatures: 2 }), etb(E.shatter(2, undefined, UNDER))], { flavor: "吼えることを好む。鐘の上で叫べば、何もかもが砕ける。" }),
+  son("ry07", "覇下", "{3}{B}", 3, 5, "R", [...tiers(2, 4), dragon({ manaToGrave: 3 }), etb(E.createMana(FLOWING_WATER, 1, { tapped: true, stay: true, charges: UNDER }))], { flavor: "水を好む。流れは、墓に眠るものまで押し流して運んでくる。" }),
+  son("ry08", "椒図", "{2}{B}{R}", 3, 3, "R", [...tiers(2, 4), dragon({ underToVault: 1 }), etb(E.rotate())], { flavor: "閉じこもることを好む。扉の輪をくわえて、兄弟の誰かを外に出す。" }),
+  son("ry09", "睚眦", "{8}{B}{R}", 6, 6, "M", [STACK, dragon(undefined, { selfReduce: true }), etb([E.countersSelf(UNDER), E.yazi()])], {
     flavor: "殺戮を好む。九つの首がそろったとき、戦は一度では終わらない。",
   }),
 

@@ -1207,7 +1207,7 @@ function CardDetail({ g, o }: { g: Game; o: Obj | null }) {
       )}
       {onField && (o.under?.length ?? 0) > 0 && (
         <p className="detail-under">
-          下に重なっているカード({o.under!.length}枚、1枚につき+1/+1):{o.under!.map((u) => u.card.name).join("、")}
+          下に重なっているカード({o.under!.length}枚{g.underBonus(o) > 0 ? "、1枚につき+1/+1" : ""}):{o.under!.map((u) => u.card.name).join("、")}
         </p>
       )}
     </section>
