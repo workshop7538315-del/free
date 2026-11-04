@@ -1525,6 +1525,14 @@ textarea {
   background: color-mix(in srgb, #c0392b 14%, transparent);
   font-weight: 600;
 }
+button.applause {
+  border: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+button.applause:hover { background: color-mix(in srgb, #c0392b 24%, transparent); }
+button.applause:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 /* カードタイプの絞り込み(複数選べるチェックボックス) */
 .type-filter {

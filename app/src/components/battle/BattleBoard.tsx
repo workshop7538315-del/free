@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { Action, BlockAnswer, Decision, Game, Obj, Player, PlayerId, TargetRef } from "../../game/engine";
-import { STEP_NAMES, abilitiesOf, isCreatureCard, manaColors, releaseAbility, trapOf, questOf, applauseName, BLESSING_TEXT } from "../../game/engine";
+import { STEP_NAMES, abilitiesOf, isCreatureCard, manaColors, releaseAbility, trapOf, questOf, applauseName, BLESSING_TEXT, APPLAUSE_RULE, APPLAUSE_CAP } from "../../game/engine";
 import type { HumanAgent } from "../../game/human";
 import { cardColors, manaValue } from "../../lib/mana";
 import { useIsMobile, useMotion } from "../../lib/motion";
@@ -573,18 +573,26 @@ function PlayerBar({ g, p, targetable, onClick, onOpen }: { g: Game; p: Player; 
         <span>墓地 {p.graveyard.length}</span>
         {p.extra.length > 0 && <span>秘蔵庫 {p.extra.length}</span>}
         {p.blessings.map((b) => (
-          <span key={b} className="applause" title={`加護《${b}》:${BLESSING_TEXT[b] ?? ""}(加護の枠を1つ使う)`}>
+          <button key={b} type="button" className="applause" title={`加護《${b}》:${BLESSING_TEXT[b] ?? ""}(加護の枠を1つ使う)`} onClick={() => onOpen({ kind: "info", text: `加護《${b}》\n${BLESSING_TEXT[b] ?? ""}\n(加護の枠を1つ使う。カードが場を離れても残る)` })}>
             加護《{b}》
-          </span>
+          </button>
         ))}
-        {Object.entries(p.applause).map(([cat, n]) => (
-          <span key={cat} className="applause" title={cat === "呪い" ? `ファラオの呪い:罠を発動するたびに溜まる。加護の枠を1つ使う。( )内はこのゲームで得た累計${p.applauseGains.map((x) => `\n《${x}》:${BLESSING_TEXT[x] ?? ""}`).join("")}` : `喝采【${cat}】:加護の枠を1つ使う。( )内はこのゲームで得た累計(大喝采の判定に使う)`}>
-            {applauseName(cat)}
-            {n}
-            {cat === "呪い" && p.applauseGains.map((x) => `《${x}》`).join("")}
-            <small>(累計{p.applauseTotal[cat as keyof typeof p.applauseTotal] ?? 0})</small>
-          </span>
-        ))}
+        {Object.entries(p.applause).map(([cat, n]) => {
+          const c = cat as keyof typeof APPLAUSE_RULE;
+          const total = p.applauseTotal[c] ?? 0;
+          const turn = p.applauseThisTurn[c] ?? 0;
+          const cap = APPLAUSE_CAP[c];
+          const gains = cat === "呪い" ? p.applauseGains.map((x) => `\n《${x}》:${BLESSING_TEXT[x] ?? ""}`).join("") : "";
+          const info = `${applauseName(cat)}:いま${n}(このゲームの累計${total})\n溜まる条件:${APPLAUSE_RULE[c] ?? ""}${cap < 99 ? `\nこのターンに行動で溜めた分:${turn}/${cap}` : ""}\n加護の枠を1つ使う。${gains ? `\n\n得ている能力:${gains}` : ""}`;
+          return (
+            <button key={cat} type="button" className="applause" title={info} onClick={() => onOpen({ kind: "info", text: info })}>
+              {applauseName(cat)}
+              {n}
+              {cat === "呪い" && p.applauseGains.map((x) => `《${x}》`).join("")}
+              <small>(累計{total})</small>
+            </button>
+          );
+        })}
         {p.pool.length > 0 && <span>浮きマナ {p.pool.join("")}</span>}
       </span>
       {isTurn && <span className="turn-flag">{STEP_NAMES[g.step]}</span>}
