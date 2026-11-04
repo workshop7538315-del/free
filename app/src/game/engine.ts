@@ -182,8 +182,8 @@ export type Action =
   | { type: "activate"; uid: number; index: number }
   | { type: "cycle"; uid: number }
   | { type: "equip"; uid: number }
-  /** 罠(第13弾):set=手札から仕掛ける、flip=裏向きの罠を発動する(コストなし)、use=表向きの罠の効果をコストを払って使う */
-  | { type: "trap"; uid: number; mode: "set" | "flip" | "use" }
+  /** 罠(第13弾):set=手札から仕掛ける、flip=裏向きの罠を発動する(コストなし)、reset=表向きの罠をコストを払って裏向きに仕掛け直す */
+  | { type: "trap"; uid: number; mode: "set" | "flip" | "reset" }
   /** 秘蔵庫からリリース召喚する(via: "entrata" ならエントラータ) */
   | { type: "summon"; uid: number; via?: "entrata" | "pioneer" | "assemble" | "evolve" | "curtain" | "dragon"; base?: number };
 
@@ -279,7 +279,7 @@ export const BLESSING_TEXT: Record<string, string> = {
   迷宮の回廊: "罠を仕掛けたターンでも発動できる。各ターン最初に罠を仕掛けたとき、カードを1枚引く。",
   死者の書: "あなたのターンの終了時、表向きの罠が3つ以上あるならカードを1枚引く。",
   呪われた財宝: "あなたが罠を発動するたび、対戦相手は1点失い、あなたは1点のライフを得る。",
-  不死の王墓: "(ファラオの呪いが得る能力)罠の効果を使ったあと、ファラオの呪いを2消費すれば、裏向きのままにしてよい(次のターンから、また発動できる)。",
+  不死の王墓: "(ファラオの呪いが得る能力)罠を発動したあと、ファラオの呪いを2消費すれば、裏向きのままにしてよい(次のターンから、また発動できる)。",
 };
 /** 行動で溜まる喝采の、1ターンの上限 */
 export const APPLAUSE_CAP: Record<Applause, number> = { 狂気: 2, 悲劇: 3, 喜劇: 3, 呪い: 99 };
@@ -1280,11 +1280,14 @@ export class Game {
     if (this.sorcerySpeed(p)) for (const o of pl.hand) if (isTrapCard(o.card) && this.canPay(p, this.trapSetCost(p, o))) out.push({ type: "trap", uid: o.uid, mode: "set" });
     for (const o of pl.battlefield) {
       const tr = trapOf(o.card);
-      if (!tr || tr.on || o.controller !== p) continue;
-      if (!(tr.targets ?? []).every((t) => this.targetOptions(t, p).length > 0)) continue;
-      if (o.faceDown) {
-        if (this.trapReady(p, o)) out.push({ type: "trap", uid: o.uid, mode: "flip" });
-      } else if (this.canPay(p, tr.cost)) out.push({ type: "trap", uid: o.uid, mode: "use" });
+      if (!tr || o.controller !== p) continue;
+      // 表向きの罠は効果を使えない。コストを払って裏向きに仕掛け直せる(「〜とき」の罠も)
+      if (!o.faceDown) {
+        if (this.canPay(p, tr.cost)) out.push({ type: "trap", uid: o.uid, mode: "reset" });
+        continue;
+      }
+      if (tr.on || !(tr.targets ?? []).every((t) => this.targetOptions(t, p).length > 0)) continue;
+      if (this.trapReady(p, o)) out.push({ type: "trap", uid: o.uid, mode: "flip" });
     }
     // 龍生:メインフェイズ(狴犴は相手の悪事に割り込める)。回数の制限はない
     for (const o of pl.extra) {
@@ -1352,9 +1355,15 @@ export class Game {
       } else {
         const o = pl.battlefield.find((x) => x.uid === a.uid);
         const tr = o && trapOf(o.card);
-        if (!o || !tr || tr.on) return;
-        if (a.mode === "flip" && o.faceDown && this.trapReady(p, o)) await this.useTrap(p, o, true);
-        if (a.mode === "use" && !o.faceDown && this.canPay(p, tr.cost)) await this.useTrap(p, o, false);
+        if (!o || !tr) return;
+        if (a.mode === "flip" && !tr.on && o.faceDown && this.trapReady(p, o)) await this.useTrap(p, o, true);
+        if (a.mode === "reset" && !o.faceDown && this.pay(p, tr.cost, 0)) {
+          o.faceDown = true;
+          o.setTurn = this.turn;
+          o.rearmedTurn = this.turn;
+          this.usedCards.add(o.card.id);
+          this.addLog(`${tr.cost}を払って、${o.card.name}を裏向きに仕掛け直した`, p);
+        }
       }
     }
   }
@@ -1444,8 +1453,9 @@ export class Game {
       for (const o of [...this.players[p].battlefield]) {
         const tr = trapOf(o.card);
         if (!tr || tr.on !== ev.kind || o.zone !== "battlefield") continue;
-        const flip = !!o.faceDown;
-        if (flip ? !this.trapReady(p, o) : !this.canPay(p, tr.cost)) continue;
+        // 表向きの罠は使えない(仕掛け直してから)
+        const flip = true;
+        if (!o.faceDown || !this.trapReady(p, o)) continue;
         let preset: TargetRef[] = [];
         if (ev.kind === "oppEnter") {
           const c = ev.uid !== undefined ? this.find(ev.uid) : undefined;

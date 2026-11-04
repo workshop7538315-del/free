@@ -328,7 +328,7 @@ export const E = {
 // ---------------------------------------------------------------- 第13弾
 /** 系譜:親の神のどれかが自分の戦場か墓地にあるなら、コストが{2}少なくなる */
 export const lineage = (...names) => ({ a: "costDown", n: 1, if: { lineage: names }, lineage: names });
-/** 罠:マナコストで裏向きに仕掛け、次のターンからコストなしで発動。表向きのあとは cost で何度でも */
+/** 罠:マナコストで裏向きに仕掛け、次のターンからコストなしで発動。表向きのあとは効果を使えず、cost を払って裏向きに仕掛け直せる */
 export const trap = (cost, effects, targets, on) => ({ a: "trap", cost, effects: [effects].flat(), ...(targets ? { targets: [targets].flat() } : {}), ...(on ? { on } : {}) });
 /** 任務:on の条件(filter)を満たすたびに任務カウンター。n 個で reward */
 export const quest = (n, on, filter, reward) => [
@@ -711,7 +711,7 @@ function effectText(e, name, abil, notes) {
     case "reanimateAll":
       return `あなたの墓地にある${filterPhrase(e.filter, "card")}をすべて戦場に戻す。`;
     case "applauseGain":
-      return `${applauseName(e.cat)}は《${e.id}》${e.id === "不死の王墓" ? "(罠の効果を使ったあと、ファラオの呪いを2消費すれば、その罠を裏向きのままにしてよい。そのターンには、もう発動できない)" : ""}を得る。`;
+      return `${applauseName(e.cat)}は《${e.id}》${e.id === "不死の王墓" ? "(罠を発動したあと、ファラオの呪いを2消費すれば、その罠を裏向きのままにしてよい。そのターンには、もう発動できない)" : ""}を得る。`;
     case "consume":
       return `${applauseName(e.cat)}を${e.n}消費してもよい。そうしたなら、${e.then.map((x) => effectText(x, name, abil, notes)).join("")}`;
     case "curseSplit":
@@ -943,7 +943,7 @@ function abilityTextBody(abil, card) {
     case "trap": {
       const when = abil.on === "oppEnter" ? "対戦相手のクリーチャーが戦場に出たとき、" : abil.on === "oppDraw" ? "対戦相手がカードを引いたとき、" : "";
       const body = abil.on === "oppEnter" ? abil.effects.map((e) => effectText(e, name, { ...abil, targets: [{ t: "creature" }] }, [])).join("").replace(/それ/g, "そのクリーチャー") : bodyText(abil, name);
-      return `罠 ${abil.cost} ― ${when}${body}`;
+      return `罠 ― ${when}${body}\n仕掛け直し ${abil.cost}(表向きのこの罠を、裏向きに戻す。次のターンから、また発動できる)`;
     }
     case "quest":
       return `任務 ${abil.n} ― 任務カウンターが${abil.n}個になったら達成する:${bodyText({ effects: abil.reward }, name)}そのあと、${name}を墓地に置く。`;

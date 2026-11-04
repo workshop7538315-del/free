@@ -216,7 +216,7 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
     const counter = options.find((a) => a.type === "cast" && isCounter(g, a) && worthCountering(g, p, top));
     if (counter) return counter;
     // 封印の扉など、打ち消しの罠
-    const trapCounter = options.find((a) => a.type === "trap" && a.mode !== "set" && trapOf(g.find(a.uid)!.card)?.effects.some((e) => e.do === "counter") && worthCountering(g, p, top));
+    const trapCounter = options.find((a) => a.type === "trap" && a.mode === "flip" && trapOf(g.find(a.uid)!.card)?.effects.some((e) => e.do === "counter") && worthCountering(g, p, top));
     if (trapCounter) return trapCounter;
     // 狴犴:相手の悪事に割り込んで重ねる
     let ambush: { a: Action; s: number } | null = null;
@@ -333,19 +333,21 @@ function scoreTrap(g: Game, p: PlayerId, a: Extract<Action, { type: "trap" }>, m
     if (!main) return -1;
     return 2.6 + manaValue(o.card.cost) * 0.15;
   }
-  if (tr.effects.some((e) => e.do === "counter")) return -1;
   const myTurn = g.active === p;
+  if (a.mode === "reset") {
+    // 表向きの罠を仕掛け直す:マナが余る相手の終了ステップか、自分のメイン2に
+    const lateMain = g.step === "main2" && myTurn && g.stack.length === 0;
+    const oppEnd = g.step === "end" && !myTurn;
+    return oppEnd || lateMain ? 2.2 + manaValue(o.card.cost) * 0.3 : -1;
+  }
+  if (tr.effects.some((e) => e.do === "counter")) return -1;
   const oppEnd = g.step === "end" && !myTurn;
   const defending = !myTurn && !!g.combat && (g.step === "attack" || g.step === "block");
   const v = trapValue(g, p, o);
   // 対象を取らない罠(トークン・全体弱化)は、守るときか相手の終了ステップに
   const noTarget = !tr.targets?.length;
   if (noTarget && !(defending || oppEnd)) return -1;
-  if (a.mode === "flip") return v >= 2.5 ? v + 1 : -1;
-  // 起動コストを払うのは、相手のターン(余ったマナ)か自分のメイン2
-  const lateMain = g.step === "main2" && myTurn && g.stack.length === 0;
-  if (!(oppEnd || defending || lateMain)) return -1;
-  return v >= 3 ? v - 0.5 : -1;
+  return v >= 2.5 ? v + 1 : -1;
 }
 
 function scoreCycle(g: Game, p: PlayerId, uid: number): number {
@@ -971,13 +973,12 @@ function chooseYesNo(g: Game, p: PlayerId, d: Extract<Decision, { kind: "yesno" 
       // ライブラリーに余裕があれば、マナと戦場を減らさずに済む方を選ぶ
       return me.library.length >= 12;
     case "trap": {
-      const free = !!d.obj?.faceDown;
       if (d.subject) {
         const v = creatureValue(g, d.subject);
-        return free ? v >= 3.2 || manaValue(d.subject.card.cost) >= 3 : v >= 5;
+        return v >= 3.2 || manaValue(d.subject.card.cost) >= 3;
       }
-      // 相手がカードを引いたとき:発動はいつでも得。起動はマナが余っていれば
-      return free || me.mana.filter((x) => !x.tapped).length >= 5;
+      // 相手がカードを引いたとき:発動はいつでも得
+      return true;
     }
     case "kicker":
       return true;

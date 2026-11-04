@@ -1173,7 +1173,7 @@ function actionLabel(g: Game, a: Action): string {
       const tr = o ? trapOf(o.card) : undefined;
       if (a.mode === "set") return o ? `罠を仕掛ける(${g.trapSetCost(ME, o) || "{0}"}・裏向き)` : "罠を仕掛ける";
       if (a.mode === "flip") return "罠を発動する(コストなし)";
-      return `罠の効果を使う(${tr?.cost ?? ""})`;
+      return `裏向きに仕掛け直す(${tr?.cost ?? ""})`;
     }
     case "equip":
       return "装備する";
