@@ -86,6 +86,8 @@ export type Obj = {
   setTurn?: number;
   /** 任務カウンター(第13弾) */
   quest?: number;
+  /** 不死の王墓などで裏向きに戻したターン番号(そのターンはもう発動できない) */
+  rearmedTurn?: number;
 };
 
 export type Player = {
@@ -273,7 +275,7 @@ export const BLESSING_TEXT: Record<string, string> = {
   [BLESSING_ELDORADO_NAME]: "開拓進化をするとき、マナゾーンのカードの代わりに、ライブラリーの上から墓地に置いてもよい。",
   王の継承: "罠を仕掛けるコストは{1}少なくなる。",
   迷宮の回廊: "罠を仕掛けたターンでも発動できる。各ターン最初に罠を仕掛けたとき、カードを1枚引く。",
-  死者の書: "あなたのターンの終了時、表向きの罠が2つ以上あるならカードを1枚引く。",
+  死者の書: "あなたのターンの終了時、表向きの罠が3つ以上あるならカードを1枚引く。",
   呪われた財宝: "あなたが罠を発動するたび、対戦相手は1点失い、あなたは1点のライフを得る。",
   不死の王墓: "罠の効果を使ったあと、ファラオの呪いを2消費すれば、裏向きのままにしてよい(次のターンから、また発動できる)。",
 };
@@ -1355,7 +1357,8 @@ export class Game {
 
   /** 裏向きの罠を発動できるか(仕掛けた次のターンから。加護《迷宮の回廊》なら仕掛けたターンでも) */
   trapReady(p: PlayerId, o: Obj): boolean {
-    return o.zone === "battlefield" && !!o.faceDown && isTrapCard(o.card) && ((o.setTurn ?? -1) < this.turn || this.players[p].blessings.includes(BLESSING_LABYRINTH));
+    if (o.zone !== "battlefield" || !o.faceDown || !isTrapCard(o.card) || o.rearmedTurn === this.turn) return false;
+    return (o.setTurn ?? -1) < this.turn || this.players[p].blessings.includes(BLESSING_LABYRINTH);
   }
 
   /** 罠を裏向きで戦場に置く(コストは払い済み) */
@@ -1407,6 +1410,7 @@ export class Game {
         this.spendApplause(p, "呪い", 2);
         o.faceDown = true;
         o.setTurn = this.turn;
+        o.rearmedTurn = this.turn;
         this.addLog(`加護《${BLESSING_TOMB}》:罠を裏向きに戻した`, p);
       }
     }
@@ -2978,6 +2982,7 @@ export class Game {
           if (o.zone === "battlefield") {
             o.faceDown = true;
             o.setTurn = this.turn;
+            o.rearmedTurn = this.turn;
           } else this.placeTrap(p, o);
         }
         if (picked.length) this.addLog(`罠を${picked.length}つ、裏向きで仕掛け直した`, p);
@@ -3452,8 +3457,8 @@ export class Game {
       }
     }
     this.queueTriggers("endStep", this.sources(p));
-    // 加護《死者の書》:あなたのターンの終了時、表向きの罠が2つ以上あるならカードを1枚引く
-    if (pl.blessings.includes(BLESSING_BOOK) && pl.battlefield.filter((o) => isTrapCard(o.card) && !o.faceDown).length >= 2) {
+    // 加護《死者の書》:あなたのターンの終了時、表向きの罠が3つ以上あるならカードを1枚引く
+    if (pl.blessings.includes(BLESSING_BOOK) && pl.battlefield.filter((o) => isTrapCard(o.card) && !o.faceDown).length >= 3) {
       this.addLog(`加護《${BLESSING_BOOK}》:カードを1枚引いた`, p);
       this.draw(p, 1);
     }

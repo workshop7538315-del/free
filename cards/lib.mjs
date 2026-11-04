@@ -327,7 +327,7 @@ export const E = {
 };
 // ---------------------------------------------------------------- 第13弾
 /** 系譜:親の神のどれかが自分の戦場か墓地にあるなら、コストが{2}少なくなる */
-export const lineage = (...names) => ({ a: "costDown", n: 2, if: { lineage: names }, lineage: names });
+export const lineage = (...names) => ({ a: "costDown", n: 1, if: { lineage: names }, lineage: names });
 /** 罠:マナコストで裏向きに仕掛け、次のターンからコストなしで発動。表向きのあとは cost で何度でも */
 export const trap = (cost, effects, targets, on) => ({ a: "trap", cost, effects: [effects].flat(), ...(targets ? { targets: [targets].flat() } : {}), ...(on ? { on } : {}) });
 /** 任務:on の条件(filter)を満たすたびに任務カウンター。n 個で reward */

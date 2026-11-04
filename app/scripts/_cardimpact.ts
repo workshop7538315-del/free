@@ -16,7 +16,7 @@ for (const [oi, o] of OPP.entries()) for (let i = 0; i < Number(process.env.REP 
   const win = (await g.run()) === 0;
   N++; if (win) W++; turns += g.turn; lifeEnd += g.players[0].life;
   const cast = new Set<string>();
-  for (const l of g.log) if (l.player === 0) for (const nm of names) if ((l.text.startsWith(nm + "を") && /唱えた/.test(l.text)) || l.text.includes(`の上に${nm}を重ねた`)) cast.add(nm);
+  for (const l of g.log) if (l.player === 0) for (const nm of names) if ((l.text.startsWith(nm + "を") && /唱えた/.test(l.text)) || l.text.includes(`の上に${nm}を重ねた`) || l.text.startsWith(`罠《${nm}》を発動`) || l.text.includes(`${nm}が王の目覚め`)) cast.add(nm);
   for (const nm of names) { stat[nm] ??= { w: 0, n: 0 }; if (cast.has(nm)) { stat[nm].n++; if (win) stat[nm].w++; } }
 }
 console.log(A, `勝率${((W / N) * 100).toFixed(1)}% 試合${N} 平均ターン${(turns / N).toFixed(1)} 終了時ライフ${(lifeEnd / N).toFixed(1)}`);
