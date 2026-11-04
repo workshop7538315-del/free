@@ -578,9 +578,10 @@ function PlayerBar({ g, p, targetable, onClick, onOpen }: { g: Game; p: Player; 
           </span>
         ))}
         {Object.entries(p.applause).map(([cat, n]) => (
-          <span key={cat} className="applause" title={cat === "呪い" ? "ファラオの呪い:罠を発動するたびに溜まる。加護の枠を1つ使う。( )内はこのゲームで得た累計" : `喝采【${cat}】:加護の枠を1つ使う。( )内はこのゲームで得た累計(大喝采の判定に使う)`}>
+          <span key={cat} className="applause" title={cat === "呪い" ? `ファラオの呪い:罠を発動するたびに溜まる。加護の枠を1つ使う。( )内はこのゲームで得た累計${p.applauseGains.map((x) => `\n《${x}》:${BLESSING_TEXT[x] ?? ""}`).join("")}` : `喝采【${cat}】:加護の枠を1つ使う。( )内はこのゲームで得た累計(大喝采の判定に使う)`}>
             {applauseName(cat)}
             {n}
+            {cat === "呪い" && p.applauseGains.map((x) => `《${x}》`).join("")}
             <small>(累計{p.applauseTotal[cat as keyof typeof p.applauseTotal] ?? 0})</small>
           </span>
         ))}

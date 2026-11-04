@@ -127,6 +127,8 @@ export type Player = {
   enteredThisTurn: Set<number>;
   /** 加護(第9.5弾)。喝采と同じ加護の枠を使う */
   blessings: string[];
+  /** 喝采(ファラオの呪い)が得た能力(第13弾。シャドウバースの信仰のように、呪いそのものが能力を得る。加護の枠は使わない) */
+  applauseGains: string[];
   pioneeredThisTurn: boolean;
   /** このゲームで開拓進化をしたか */
   pioneeredGame: boolean;
@@ -277,7 +279,7 @@ export const BLESSING_TEXT: Record<string, string> = {
   迷宮の回廊: "罠を仕掛けたターンでも発動できる。各ターン最初に罠を仕掛けたとき、カードを1枚引く。",
   死者の書: "あなたのターンの終了時、表向きの罠が3つ以上あるならカードを1枚引く。",
   呪われた財宝: "あなたが罠を発動するたび、対戦相手は1点失い、あなたは1点のライフを得る。",
-  不死の王墓: "罠の効果を使ったあと、ファラオの呪いを2消費すれば、裏向きのままにしてよい(次のターンから、また発動できる)。",
+  不死の王墓: "(ファラオの呪いが得る能力)罠の効果を使ったあと、ファラオの呪いを2消費すれば、裏向きのままにしてよい(次のターンから、また発動できる)。",
 };
 /** 行動で溜まる喝采の、1ターンの上限 */
 export const APPLAUSE_CAP: Record<Applause, number> = { 狂気: 2, 悲劇: 3, 喜劇: 3, 呪い: 99 };
@@ -415,6 +417,7 @@ export class Game {
       applauseTotal: {},
       enteredThisTurn: new Set(),
       blessings: [],
+      applauseGains: [],
       pioneeredThisTurn: false,
       pioneeredGame: false,
       drawsThisTurn: 0,
@@ -1405,13 +1408,13 @@ export class Game {
       }
     } else this.addLog(`${o.card.name}の罠の効果を使った${tgt}`, p);
     // 加護《不死の王墓》:ファラオの呪いを2消費して、裏向きのままにする
-    if (pl.blessings.includes(BLESSING_TOMB) && (pl.applause["呪い"] ?? 0) >= 2) {
-      if (await this.askYesNo(p, `加護《${BLESSING_TOMB}》:ファラオの呪いを2消費して、《${o.card.name}》を裏向きのままにしますか?(次のターンから、また発動できる)`, "blessing", o)) {
+    if (pl.applauseGains.includes(BLESSING_TOMB) && (pl.applause["呪い"] ?? 0) >= 2) {
+      if (await this.askYesNo(p, `ファラオの呪い《${BLESSING_TOMB}》:ファラオの呪いを2消費して、《${o.card.name}》を裏向きのままにしますか?(次のターンから、また発動できる)`, "blessing", o)) {
         this.spendApplause(p, "呪い", 2);
         o.faceDown = true;
         o.setTurn = this.turn;
         o.rearmedTurn = this.turn;
-        this.addLog(`加護《${BLESSING_TOMB}》:罠を裏向きに戻した`, p);
+        this.addLog(`ファラオの呪い《${BLESSING_TOMB}》:罠を裏向きに戻した`, p);
       }
     }
     const ability: Ability = { a: "activated", cost: {}, effects, ...(tr.targets ? { targets: tr.targets } : {}) };
@@ -2974,6 +2977,11 @@ export class Game {
         if (list.length) this.addLog(`墓地の${list.map((o) => o.card.name).join("、")}が戦場に戻った`, p);
         break;
       }
+      case "applauseGain":
+        if (pl.applause[e.cat] === undefined || pl.applauseGains.includes(e.id)) break;
+        pl.applauseGains.push(e.id);
+        this.addLog(`${applauseName(e.cat)}が《${e.id}》を得た`, p);
+        break;
       case "consume": {
         if ((pl.applause[e.cat] ?? 0) < e.n) break;
         if (!(await this.askYesNo(p, `${src.card.name}:${applauseName(e.cat)}を${e.n}消費しますか?`, "may", src))) break;

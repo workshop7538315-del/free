@@ -350,6 +350,8 @@ export const E13 = {
   setFromGrave: (n) => ({ do: "setFromGrave", n }),
   curseSplit: () => ({ do: "curseSplit" }),
   /** ファラオの呪いを n 消費してもよい。そうしたなら then(シャドウバースの信仰の消費を参考) */
+  /** ファラオの呪いそのものが能力 id を得る */
+  curseGain: (id) => ({ do: "applauseGain", cat: "呪い", id }),
   consume: (n, then) => ({ do: "consume", cat: "呪い", n, then: [then].flat() }),
 };
 export const iff = (cond, e) => ({ ...e, if: cond });
@@ -708,6 +710,8 @@ function effectText(e, name, abil, notes) {
       return "この任務に任務カウンターを1つ置く。";
     case "reanimateAll":
       return `あなたの墓地にある${filterPhrase(e.filter, "card")}をすべて戦場に戻す。`;
+    case "applauseGain":
+      return `${applauseName(e.cat)}は《${e.id}》${e.id === "不死の王墓" ? "(罠の効果を使ったあと、ファラオの呪いを2消費すれば、その罠を裏向きのままにしてよい。そのターンには、もう発動できない)" : ""}を得る。`;
     case "consume":
       return `${applauseName(e.cat)}を${e.n}消費してもよい。そうしたなら、${e.then.map((x) => effectText(x, name, abil, notes)).join("")}`;
     case "curseSplit":

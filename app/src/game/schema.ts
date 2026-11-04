@@ -281,6 +281,8 @@ export type Effect = Common &
     | { do: "curseSplit" }
     /** 喝采(ファラオの呪い)を n 消費してもよい。そうしたなら then を行う */
     | { do: "consume"; cat: Applause; n: number; then: Effect[] }
+    /** 喝采(ファラオの呪い)そのものが能力を得る(加護の枠は使わない。シャドウバースの信仰を参考) */
+    | { do: "applauseGain"; cat: Applause; id: string }
   );
 
 export type TriggerEvent =

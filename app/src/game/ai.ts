@@ -719,6 +719,8 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return 1;
     case "reanimateAll":
       return me.graveyard.filter((o) => isCreatureCard(o.card) && matchFilter(o.card, e.filter)).reduce((s, o) => s + cardCreatureValue(o.card) * 0.5, 0);
+    case "applauseGain":
+      return me.applauseGains.includes(e.id) ? 0 : 4;
     case "consume":
       return (me.applause[e.cat] ?? 0) >= e.n ? e.then.reduce((s, x) => s + effectValue(g, p, x, targets, inCombat), 0) : 0;
     case "curseSplit":
