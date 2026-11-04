@@ -20,7 +20,7 @@ export const AWAKENING = tagAll("紋章", [
   cr("aw08", "目覚めの賢者", "{2}{U}", "マーフォーク・ウィザード", 2, 2, "U", [etb(E.draw(1)), crest(upkeep(E.lookTop()))]),
   ins("aw09", "刻印の渦", "{1}{U}{U}", "U", [spell(E.counter(), T.spell), crest(discount(F.spell, 1))]),
   cr("aw10", "夢見る大海蛇", "{5}{U}", "海蛇", 5, 6, "R", [kw("呪禁"), crest(upkeep(E.draw(1)))]),
-  sor("aw11", "潮の顕現", "{3}{U}", "U", spell([E.manifest(3), E.draw(1)])),
+  sor("aw11", "潮の顕現", "{2}{U}", "U", spell([E.manifest(3), E.draw(1)])),
   cr("aw12", "マナ紋の幻術師", "{U}{U}", "人間・ウィザード", 2, 2, "U", [kw("飛行"), crest(lord(F.wizard, 1, 1, undefined, false))]),
   // 黒:死と輪廻
   cr("aw13", "墓刻の死霊", "{1}{B}", "スピリット", 2, 1, "C", [kw("輪廻"), crest(allyDies(E.lose(1)))]),

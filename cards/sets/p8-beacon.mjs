@@ -31,7 +31,7 @@ export const BEACON = [
   tag("装備", basedOn(equipment("cb05", "炎の籠手", "{2}", "U", "{2}", { p: 1, t: 0, kw: ["速攻", "先制攻撃"] }), "eqp05", "リメイク")),
   tag("装備", basedOn(cr("cb06", "武具の継承者", "{2}{W}", "人間・騎士", 3, 3, "R", [etb(E.tutor(EQ))]), "eqp14", "サポート")),
   tag("装備", basedOn(cr("cb07", "鍛冶神の使徒", "{R}{W}", "人間・騎士", 2, 2, "U", [kw("先制攻撃"), selfIf(control(EQ, 1), 1, 1), once(allyEnter(EQ)(E.draw(1)))]), "eqp14", "強化版")),
-  tag("装備", basedOn(cr("cb08", "剣舞の達人", "{2}{R}{W}", "人間・戦士", 3, 3, "R", [kw("先制攻撃"), attacks(E.pumpAll(1, 0), undefined, { if: control(EQ, 1) })]), "eqp14", "リメイク")),
+  tag("装備", basedOn(cr("cb08", "剣舞の達人", "{2}{R}{W}", "人間・戦士", 3, 4, "R", [kw("先制攻撃"), attacks(E.pumpAll(1, 0), undefined, { if: control(EQ, 1) })]), "eqp14", "リメイク")),
   tag("装備", basedOn(ins("cb09", "鉄の祝福", "{W}", "C", modal([["あなたのクリーチャー1体は+2/+2", E.pump(2, 2), T.you], ["墓地の装備品を手札に戻す", E.ret("hand"), T.gyF(EQ)]])), "eqp11", "サポート")),
   tag("装備", basedOn(sor("cb10", "鋼の行進", "{3}{W}", "U", spell([{ ...E.pumpAll(1, 1, ["警戒"]), unless: control(EQ, 1) }, { ...E.pumpAll(2, 1, ["警戒"]), if: control(EQ, 1) }, E.draw(1)])), "eqp11", "サポート")),
   tag("装備", basedOn(acr("cb11", "武具庫の番人", "{3}", "構築物", 2, 4, "C", [etb(E.create(BLADE))]), "eqp15", "サポート")),
@@ -54,12 +54,12 @@ export const BEACON = [
   // ================================================================ 生け贄(黒赤)
   tag("生け贄", basedOn(cr("cb25", "贄の祭壇守", "{1}{B}", "人間・クレリック", 2, 2, "U", [once(onSacrifice()(E.draw(1)))]), "ari02", "サポート")),
   tag("生け贄", basedOn(ench("cb26", "血の祭具", "{B}", "C", [act({ sacSelf: true }, [E.draw(1), E.lose(1, "you")])]), "ari01", "リメイク")),
-  tag("生け贄", basedOn(cr("cb27", "爆ぜる信者", "{R}", "人間・狂信者", 1, 1, "C", [dies(E.dmg(1), T.any)]), "ari06", "強化版")),
+  tag("生け贄", basedOn(cr("cb27", "爆ぜる信者", "{R}", "人間・狂信者", 2, 1, "C", [dies(E.dmg(1), T.any)]), "ari06", "強化版")),
   tag("生け贄", basedOn(cr("cb28", "屍の献上者", "{2}{B}", "ゾンビ", 2, 2, "C", [act({ sac: {} }, E.countersSelf(1))]), "ari03", "リメイク")),
   tag("生け贄", basedOn(sor("cb29", "冥炎の儀式", "{1}{B}{R}", "U", modal([["対戦相手はクリーチャー1体を生け贄に捧げる", E.sac()], ["2/2のゾンビを2体生成する", E.token(2, 2, 2, "B", "ゾンビ")]])), "ari16", "リメイク")),
   tag("生け贄", basedOn(cr("cb30", "魂の取引人", "{B}{R}", "人間・ならず者", 2, 2, "U", [once(allyDies(E.draw(1)))]), "ari11", "強化版")),
   tag("生け贄", basedOn(cr("cb31", "骨の山の主", "{3}{B}", "ゾンビ", 3, 3, "U", [etb(E.token(2, 2, 2, "B", "ゾンビ"))]), "ari15", "強化版")),
-  tag("生け贄", basedOn(cr("cb32", "生け贄の大司祭", "{2}{B}{R}", "人間・クレリック", 3, 3, "R", [act({ sac: {} }, E.dmg(2), T.any), onSacrifice()(E.gain(1))]), "ari02", "強化版")),
+  tag("生け贄", basedOn(cr("cb32", "生け贄の大司祭", "{2}{B}{R}", "人間・クレリック", 3, 4, "R", [act({ sac: {} }, E.dmg(2), T.any), onSacrifice()(E.gain(1))]), "ari02", "強化版")),
   tag("生け贄", basedOn(ench("cb33", "灰の誓約", "{1}{R}", "C", [act({ sacSelf: true }, E.dmg(2), T.cre)]), "ari07", "サポート")),
   tag("生け贄", basedOn(ench("cb34", "死の契約書", "{2}{B}", "U", [onSacrifice()([E.lose(1), E.gain(1)])]), "ari12", "サポート")),
 

@@ -337,7 +337,7 @@ const DECKS = [
   { id: "t-zombie", name: "部族:ゾンビの行進(黒単)", colors: ["B"], theme: (c) => sub("ゾンビ")(c), archetype: "部族", core: { hr67: 2, hr68: 2, hr69: 2, hr87: 1, hr88: 2 } },
   // 第4弾
   { id: "t-crest", set: "aw", name: "紋章:大地の目覚め(緑白)", colors: ["G", "W"], allowColorless: true, theme: tag("紋章"), archetype: "紋章", core: { hr70: 2, hr71: 2, hr72: 2 }, extra: { cm09: 2, cm10: 2, cm11: 2, cm12: 2 } },
-  { id: "t-manifest", set: "aw", name: "紋章:顕現の潮(緑青)", colors: ["G", "U"], allowColorless: true, theme: tag("紋章"), archetype: "紋章", core: { hr73: 1, hr74: 1, hr75: 1, bm35: 3, bm32: 2, bm60: 3, bm40: 2 }, extra: { cm01: 2, cm02: 2, cm03: 2, cm04: 2 } },
+  { id: "t-manifest", set: "aw", name: "紋章:顕現の潮(緑青)", colors: ["G", "U"], allowColorless: true, theme: tag("紋章"), archetype: "紋章", core: { hr73: 1, hr74: 1, hr75: 1, bm35: 3, bm32: 2, bm60: 3, bm40: 2 }, extra: { cm02: 2 } },
   { id: "t-duel", set: "ct", name: "決闘:剣と薔薇の作法(赤白)", colors: ["R", "W"], allowColorless: true, theme: tag("決闘"), archetype: "決闘", core: { hr76: 2, hr77: 2, hr78: 2, hr85: 2, hr86: 2 }, extra: { eld06: 2, eld07: 2, eld08: 2, eld09: 2 } },
   { id: "t-intrigue", set: "ct", name: "陰謀:影の宮廷(青黒)", colors: ["U", "B"], theme: tag("陰謀"), archetype: "陰謀", core: { hr79: 2, hr80: 2, hr81: 2, hr85: 2, hr86: 2 } },
   { id: "t-gate-beast", set: "hz", name: "秘蔵:神獣の森(緑白)", colors: ["G", "W"], theme: tag("秘蔵"), archetype: "秘蔵", core: { hz18: 4, hz21: 4, hz19: 3, hz20: 3, hz24: 3, hz42: 3, hz55: 2, hz23: 2 }, extra: { hz01: 2, hz02: 2, hz03: 2, hz04: 2 } },

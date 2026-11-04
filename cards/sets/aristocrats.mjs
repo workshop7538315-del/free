@@ -14,7 +14,7 @@ export const ARISTOCRATS = tagAll("生け贄", [
   sor("ari08", "ゴブリンの群れ", "{1}{R}", "C", spell(E.token(2, 1, 1, "R", "ゴブリン", ["速攻"]))),
   cr("ari09", "殉教者", "{W}", "人間・クレリック", 1, 1, "C", [dies(E.gain(3))]),
   cr("ari10", "献身の騎士", "{2}{W}", "人間・騎士", 2, 2, "U", [act({ sacSelf: true }, E.pump(0, 0, ["破壊不能"]), T.you)]),
-  cr("ari11", "悪魔崇拝者", "{B}{R}", "人間・ウォーロック", 2, 2, "U", [act(SAC, E.dmg(1), T.any)]),
+  cr("ari11", "悪魔崇拝者", "{B}{R}", "人間・ウォーロック", 2, 2, "U", [act(SAC, E.dmg(2), T.any)]),
   ench("ari12", "魂の焼却炉", "{1}{B}{R}", "R", [allyDies([E.dmgOpp(1), E.gain(1)])]),
   sor("ari13", "葬送の儀", "{1}{W}{B}", "U", spell([E.token(2, 1, 1, "W", "スピリット", ["飛行"]), E.gain(2)])),
   cr("ari14", "魂の導き手", "{1}{W}{B}", "スピリット", 2, 2, "U", [kw("飛行"), allyDies([E.lose(1), E.gain(1)])]),

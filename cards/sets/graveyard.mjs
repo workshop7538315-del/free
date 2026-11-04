@@ -10,7 +10,7 @@ export const GRAVEYARD = tagAll("墓地", [
   sor("grv04", "冥界からの帰還", "{2}{B}{B}", "U", [spell(E.ret("battlefield"), T.gyCre), flashback("{4}{B}{B}")]),
   cr("grv05", "骨の巨像", "{6}{B}", "ゾンビ・巨人", 6, 6, "R", [kw("威迫"), free(TH)]),
   ins("grv06", "屍肉の宴", "{1}{B}", "C", [spell(E.pump(-2, -2), T.cre), flashback("{3}{B}")]),
-  cr("grv07", "墓所の大司祭", "{3}{B}", "人間・クレリック", 3, 4, "U", [etb(iff(TH, E.destroy()), T.opp)]),
+  cr("grv07", "墓所の大司祭", "{3}{B}", "人間・クレリック", 3, 4, "U", [etb([unless(TH, E.shrink(2)), iff(TH, E.destroy())], T.opp)]),
   sor("grv09", "記憶の洪水", "{1}{U}", "C", spell(E.mill(5, "opp"))),
   ench("grv10", "底なしの淵", "{2}{U}{U}", "R", [upkeep(E.mill(3, "opp"))]),
   cr("grv11", "知識喰らい", "{2}{U}", "ホラー", 2, 4, "U", [etb(E.mill(4, "opp")), selfIf(TH, 1, 0, ["飛行"])]),

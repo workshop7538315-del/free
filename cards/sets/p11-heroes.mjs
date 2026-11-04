@@ -75,9 +75,9 @@ export const HEROES = [
   tagged("鉄機", ace(acr("hr33", "鉄機の斥候", "{2}", "構築物", 2, 1, "U", [kw("飛行")]), "tek07")),
 
   // ================================================================ 墓地:深淵の書庫(青黒)
-  tagged("墓地", ace(cr("hr34", "深淵の司書 モルガナ", "{2}{U}{B}", "人間・ウィザード", 3, 3, "M", [etb(E.ret("hand"), T.gyCre), selfIf("threshold", 2, 2, ["飛行"])]), "grv12")),
+  tagged("墓地", ace(cr("hr34", "深淵の司書 モルガナ", "{2}{U}{B}", "人間・ウィザード", 3, 4, "M", [etb([E.ret("hand"), E.draw(1)], T.gyCre), selfIf("threshold", 2, 2, ["飛行"])]), "grv12")),
   tagged("墓地", ace(sor("hr35", "モルガナの禁書", "{1}{U}{B}", "R", spell([E.ret("hand"), E.draw(1)], T.gyCre)), "grv07")),
-  tagged("墓地", ace(cr("hr36", "書庫の亡者", "{U}{B}", "ゾンビ", 2, 2, "U", [selfIf("threshold", 1, 1, ["飛行"])]), "grv05")),
+  tagged("墓地", ace(cr("hr36", "書庫の亡者", "{U}{B}", "ゾンビ", 2, 3, "U", [selfIf("threshold", 1, 1, ["飛行"])]), "grv05")),
 
   // ================================================================ 生け贄:血の宴(黒赤)
   tagged("生け贄", ace(cr("hr37", "血の宴の主 ザルグ", "{2}{B}{R}", "デーモン", 4, 3, "M", [act({ sac: {} }, E.dmg(2), T.any), once(onSacrifice()(E.draw(1)))]), "rk08")),
@@ -105,9 +105,9 @@ export const HEROES = [
   tagged("装備", ace(cr("hr51", "ベルトランの従騎士", "{R}{W}", "人間・騎士", 2, 2, "U", [etb(E.create(BLADE))]), "rk13")),
 
   // ================================================================ 鼓動:大地の脈動(赤緑)
-  tagged("鼓動", ace(cr("hr52", "大地の鼓動 ドルガン", "{2}{R}{G}", "巨人", 4, 4, "M", [kw("トランプル"), etb(E.ramp(1)), manaEnter(E.dmgOpp(1))]), "hrt11")),
-  tagged("鼓動", ace(sor("hr53", "ドルガンの脈動の儀", "{R}{G}", "R", spell([E.ramp(1), E.dmg(2)], T.cre)), "hrt03")),
-  tagged("鼓動", ace(cr("hr54", "地脈の獣", "{1}{R}{G}", "ビースト", 3, 3, "U", [once(manaEnter(E.pumpSelf(1, 1)))]), "hrt19")),
+  tagged("鼓動", ace(cr("hr52", "大地の鼓動 ドルガン", "{2}{R}{G}", "巨人", 5, 4, "M", [kw("トランプル"), etb(E.ramp(1)), manaEnter(E.dmgOpp(1))]), "hrt11")),
+  tagged("鼓動", ace(sor("hr53", "ドルガンの脈動の儀", "{R}{G}", "R", spell([E.ramp(1), E.dmg(3)], T.cre)), "hrt03")),
+  tagged("鼓動", ace(cr("hr54", "地脈の獣", "{1}{R}{G}", "ビースト", 3, 4, "U", [once(manaEnter(E.pumpSelf(1, 1)))]), "hrt19")),
 
   // ================================================================ マナ武装:赤単の烈火(単色・純色の種)
   tagged("マナ武装", ace(cr("hr55", "烈火の剣姫 カグラ", "{2}{R}{R}", "人間・戦士", 4, 3, "M", [kw("速攻"), selfIf(armed("R", 5), 0, 0, ["先制攻撃"]), attacks(E.dmgOpp(1), undefined, { if: "pureColor" })]), "arm15")),
@@ -140,7 +140,7 @@ export const HEROES = [
   tagged("紋章", ace(cr("hr72", "刻印獣", "{1}{G}{W}", "ビースト", 3, 3, "U", [crest(lord(F.creature, 0, 0, ["警戒"], false))]), "aw26")),
 
   // ================================================================ 紋章:顕現の潮(緑青)
-  tagged("紋章", ace(cr("hr73", "顕現の潮巫女 ミナモ", "{2}{G}{U}", "マーフォーク・ドルイド", 2, 4, "M", [etb(E.manifest(4))]), "aw37")),
+  tagged("紋章", ace(cr("hr73", "顕現の潮巫女 ミナモ", "{2}{G}{U}", "マーフォーク・ドルイド", 3, 4, "M", [etb(E.manifest(4))]), "aw37")),
   tagged("紋章", ace(ins("hr74", "ミナモの潮の招き", "{1}{G}{U}", "R", modal([["マナ総量2以下の呪文を打ち消す", E.counter(0), { t: "spell", maxMV: 2 }], ["顕現 3", E.manifest(3)]])), "aw10")),
   tagged("紋章", ace(cr("hr75", "潮の精", "{G}{U}", "エレメンタル", 2, 2, "U", [etb(E.lookTop()), crest(lord(F.creature, 1, 0, undefined, false))]), "aw08")),
 

@@ -18,7 +18,7 @@ const trp = (id, name, cost, rar, abilities, flavor) => PH(art(id, name, cost, r
 export const HELIOPOLIS = [
   GOD(cr("eg01", "アトゥム", "{W}{U}{R}", "神", 3, 3, "M", [etb(E.tutor({ names: ["シュウ", "テフヌト"] }))], { flavor: "原初の水ヌンから、自らを生んだ創造の神。" })),
   GOD(cr("eg02", "シュウ", "{1}{W}{U}", "神", 2, 3, "R", [kw("飛行"), lineage("アトゥム"), etb(E.bounce(), T.opp)], { flavor: "大気の神。天と地のあいだに立ち、両者を引き離す。" })),
-  GOD(cr("eg03", "テフヌト", "{1}{W}{R}", "神", 3, 2, "R", [kw("先制攻撃"), lineage("アトゥム"), etb(E.dmg(2), T.opp)], { flavor: "湿気の女神。怒れば雌獅子となり、砂漠を焼く。" })),
+  GOD(cr("eg03", "テフヌト", "{1}{W}{R}", "神", 2, 2, "R", [kw("先制攻撃"), lineage("アトゥム"), etb(E.dmg(2), T.opp)], { flavor: "湿気の女神。怒れば雌獅子となり、砂漠を焼く。" })),
   GOD(cr("eg04", "ゲブ", "{3}{W}", "神", 3, 6, "R", [kw("警戒"), lineage("シュウ", "テフヌト"), lord({ sub: "神" }, 0, 2)], { flavor: "大地の神。その笑い声が地震になる。" })),
   GOD(cr("eg05", "ヌト", "{3}{U}", "神", 2, 5, "R", [kw("飛行"), lineage("シュウ", "テフヌト"), etb(E.draw(1))], { flavor: "天空の女神。毎夕、太陽を呑み込み、毎朝それを産む。" })),
   GOD(cr("eg06", "オシリス", "{2}{W}{W}", "神", 4, 4, "R", [lineage("ゲブ", "ヌト"), dies(E13.selfToHand())], { flavor: "冥界の王。殺されても、何度でもよみがえる。" })),
