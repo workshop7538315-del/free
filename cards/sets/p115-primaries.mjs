@@ -43,7 +43,7 @@ export const PRIMARIES = [
   tagged(ins("pc07", "聖別の浄光", "{2}{W}", "U", spell([E.exile(), E.gain(2)], { t: "creature", tapped: true }))),
   tagged(cr("pc08", "巡礼の癒し手", "{W}", "人間・クレリック", 1, 2, "C", [kw("絆魂"), dye(E.gain(1))])),
   tagged(cr("pc09", "祈りの番兵", "{1}{W}", "人間・兵士", 1, 4, "C", [dye(E.gain(1))])),
-  tagged(cr("pc10", "白翼の見習い", "{1}{W}", "人間・クレリック", 2, 1, "C", [kw("飛行"), once(lifeGain(E.pumpSelf(1, 1)))])),
+  tagged(cr("pc10", "白翼の見習い", "{1}{W}", "人間・クレリック", 1, 2, "C", [kw("飛行"), once(lifeGain(E.pumpSelf(1, 1)))])),
   tagged(ins("pc11", "光の聖句", "{W}", "C", [spell(E.gain(3)), dye(E.gain(2))])),
   tagged(cr("pc12", "聖堂の衛兵", "{2}{W}", "人間・兵士", 2, 3, "C", [kw("警戒"), etb(E.gain(2))])),
   tagged(cr("pc13", "聖別の天使", "{3}{W}", "天使", 2, 3, "C", [kw("飛行"), once(lifeGain(E.countersSelf(1)))])),

@@ -21,7 +21,7 @@ export const REKINDLE = [
   tag("呪文", basedOn(cr("rk05", "嵐の大術士", "{1}{U}{R}", "人間・ウィザード", 3, 4, "R", [castSpell([E.dmgOpp(1), E.lookTop()])]), "m018", "強化版")),
   tag("部族", basedOn(cr("rk06", "エルフの大神秘家", "{G}", "エルフ・ドルイド", 1, 2, "U", [mana("any"), etb(E.lookTop())]), "trb09", "強化版")),
   tag("鉄機", basedOn(art("rk07", "鉄機の大司令塔", "{3}", "R", [lord(F.artifact, 1, 1, undefined, false), etb(construct(1))]), "tek04", "強化版")),
-  tag("生け贄", basedOn(ench("rk08", "魂の大焼却炉", "{1}{B}{R}", "R", [allyDies([E.dmgOpp(1), E.gain(1)]), act({ sac: {} }, E.dmg(1), T.any)]), "ari12", "強化版")),
+  tag("生け贄", basedOn(ench("rk08", "魂の大焼却炉", "{1}{B}{R}", "R", [etb(E.token(2, 1, 1, "B", "ゾンビ")), allyDies([E.dmgOpp(1), E.gain(1)]), act({ sac: {} }, E.dmg(1), T.any)]), "ari12", "強化版")),
   basedOn(cr("rk09", "狂乱の小鬼王", "{1}{R}{R}", "ゴブリン", 2, 2, "R", [lord(F.creature, 1, 1, ["速攻"])]), "r019", "強化版"),
   basedOn(cr("rk10", "赤熱の大巨人", "{3}{R}{R}", "巨人", 5, 5, "R", [kw("速攻", "トランプル")]), "r023", "強化版"),
   // ---------------------------------------------------------------- リメイク:元のカードの考え方を、別の形で作り直す

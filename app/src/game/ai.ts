@@ -953,7 +953,8 @@ function chooseNumber(g: Game, p: PlayerId, d: Extract<Decision, { kind: "number
   // 相手のライフを削り切れるなら全部、そうでなければマナを3枚は残す
   const dealsToPlayer = d.obj && spellAbility(d.obj.card)?.targets?.some((t) => t.t === "any" || t.t === "player");
   if (dealsToPlayer && them.life <= d.max) return d.max;
-  return Math.max(Math.min(1, d.max), Math.min(d.max, me.mana.length - 4));
+  // 燃焼はマナを失うので控えめに:マナが7枚以上あるときだけ、6枚を残す分まで
+  return Math.max(0, Math.min(d.max, me.mana.length - 6));
 }
 
 function chooseYesNo(g: Game, p: PlayerId, d: Extract<Decision, { kind: "yesno" }>): boolean {

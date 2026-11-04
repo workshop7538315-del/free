@@ -26,7 +26,7 @@ export const BEACON = [
   // ================================================================ 装備(赤白・欠色)
   tag("装備", basedOn(cr("cb01", "鍛冶場の徒弟長", "{1}{W}", "人間・職人", 2, 2, "U", [once(allyEnter(EQ)(E.draw(1)))]), "eqp09", "サポート")),
   tag("装備", basedOn(cr("cb02", "先陣の剣士", "{1}{R}", "人間・戦士", 2, 2, "C", [once(attacks(E.draw(1), undefined, { if: control(EQ, 1) }))]), "eqp13", "リメイク")),
-  tag("装備", basedOn(equipment("cb03", "継承の刃", "{1}", "C", "{2}", { p: 1, t: 1 }, [etb(E.draw(1))]), "eqp01", "強化版")),
+  tag("装備", basedOn(equipment("cb03", "継承の刃", "{1}", "C", "{1}", { p: 1, t: 1 }, [etb(E.draw(1))]), "eqp01", "強化版")),
   tag("装備", basedOn(equipment("cb04", "聖騎士の大盾", "{2}", "U", "{1}", { p: 0, t: 3, kw: ["警戒"] }, [etb(soldier(1))]), "eqp02", "強化版")),
   tag("装備", basedOn(equipment("cb05", "炎の籠手", "{2}", "U", "{2}", { p: 1, t: 0, kw: ["速攻", "先制攻撃"] }), "eqp05", "リメイク")),
   tag("装備", basedOn(cr("cb06", "武具の継承者", "{2}{W}", "人間・騎士", 3, 3, "R", [etb(E.tutor(EQ))]), "eqp14", "サポート")),
@@ -35,7 +35,7 @@ export const BEACON = [
   tag("装備", basedOn(ins("cb09", "鉄の祝福", "{W}", "C", modal([["あなたのクリーチャー1体は+2/+2", E.pump(2, 2), T.you], ["墓地の装備品を手札に戻す", E.ret("hand"), T.gyF(EQ)]])), "eqp11", "サポート")),
   tag("装備", basedOn(sor("cb10", "鋼の行進", "{3}{W}", "U", spell([{ ...E.pumpAll(1, 1, ["警戒"]), unless: control(EQ, 1) }, { ...E.pumpAll(2, 1, ["警戒"]), if: control(EQ, 1) }, E.draw(1)])), "eqp11", "サポート")),
   tag("装備", basedOn(acr("cb11", "武具庫の番人", "{3}", "構築物", 2, 4, "C", [etb(E.create(BLADE))]), "eqp15", "サポート")),
-  tag("装備", basedOn(equipment("cb12", "王者の継承", "{4}", "M", "{3}", { p: 3, t: 3, kw: ["トランプル"] }, [etb(E.draw(1))]), "eqp15", "強化版")),
+  tag("装備", basedOn(equipment("cb12", "王者の継承", "{4}", "M", "{2}", { p: 3, t: 3, kw: ["トランプル"] }, [etb(E.draw(1))]), "eqp15", "強化版")),
 
   // ================================================================ 呪文(青赤):連唱と「火の粉」の生成
   tag("呪文", basedOn(cr("cb13", "火の粉の術士", "{1}{R}", "人間・ウィザード", 1, 2, "C", [once(castSpell(E.create(SPARK)))]), "spl07", "リメイク")),
