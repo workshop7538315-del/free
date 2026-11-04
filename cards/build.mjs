@@ -326,8 +326,7 @@ const DECKS = [
   { id: "eg-medjay", name: "メジャイ:王墓の守り手(白黒緑)", colors: ["W", "B", "G"], theme: tag("メジャイ"), archetype: "メジャイ",
     core: { eg21: 2, eg22: 2, eg23: 2, eg24: 2, eg25: 1, eg26: 3, eg27: 3, eg28: 2, eg29: 3, eg30: 2, eg31: 2, eg32: 2, eg33: 2, eg34: 2, eg35: 2, eg36: 2, eg37: 1, eg38: 2, eg39: 1, eg40: 2 } },
   { id: "eg-pharaoh", name: "ファラオ:罠のピラミッド(青黒緑)", colors: ["U", "B", "G"], theme: tag("ファラオ"), archetype: "ファラオ",
-    core: { eg41: 3, eg42: 2, eg43: 3, eg44: 2, eg45: 2, eg46: 2, eg47: 2, eg48: 2, eg49: 2, eg50: 2, eg51: 2, eg52: 3, eg53: 2, eg54: 2, eg55: 2, eg56: 2, eg58: 1, eg59: 1, eg60: 3 },
-    extra: { eg57: 1 } },
+    core: { eg41: 3, eg42: 2, eg43: 3, eg44: 2, eg45: 1, eg46: 2, eg47: 2, eg48: 1, eg49: 2, eg50: 2, eg51: 2, eg52: 3, eg53: 1, eg54: 2, eg55: 2, eg56: 2, eg57: 1, eg61: 2, eg58: 1, eg59: 1, eg60: 3 } },
   // 第11.5弾:白単(回復)と青単(ドロー)
   { id: "t-mono-w", name: "原色:白単の癒しの聖堂", colors: ["W"], pure: true, theme: tag("原色"), archetype: "原色",
     core: { pc01: 2, pc02: 1, pc03: 2, pc04: 4, pc06: 2, pc07: 2, pc08: 4, pc09: 3, pc10: 3, pc11: 3, pc12: 2, pc13: 3, pc15: 2, hz65: 3, pc48: 2 } },

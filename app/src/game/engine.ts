@@ -2974,13 +2974,26 @@ export class Game {
         if (list.length) this.addLog(`墓地の${list.map((o) => o.card.name).join("、")}が戦場に戻った`, p);
         break;
       }
+      case "consume": {
+        if ((pl.applause[e.cat] ?? 0) < e.n) break;
+        if (!(await this.askYesNo(p, `${src.card.name}:${applauseName(e.cat)}を${e.n}消費しますか?`, "may", src))) break;
+        this.spendApplause(p, e.cat, e.n);
+        this.addLog(`${applauseName(e.cat)}を${e.n}消費した`, p);
+        await this.runEffects(e.then, ctx);
+        break;
+      }
       case "curseSplit": {
         const total = pl.applause["呪い"] ?? 0;
         const parts = [0, 0, 0];
         for (let i = 0; i < total; i++) parts[Math.floor(this.rng() * 3)]++;
         const [x, y, z] = parts;
         this.addLog(`ファラオの呪い${total}を分けた:強化${x}・吸収${y}・ダメージ${z}`, p);
-        if (x && src.zone === "battlefield") src.counters += x;
+        if (x) {
+          // このクリーチャーに。いなければ自分のクリーチャーからランダムに
+          const mine = this.creatures(p);
+          const to = src.zone === "battlefield" && isCreatureCard(src.card) ? src : mine.length ? mine[Math.floor(this.rng() * mine.length)] : null;
+          if (to) to.counters += x;
+        }
         if (y) {
           this.players[opp].life -= y;
           this.gainLife(p, y);

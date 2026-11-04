@@ -279,6 +279,8 @@ export type Effect = Common &
     /** 呪いの分配(シャドウバースの信仰値を参考):X+Y+Z がファラオの呪いの値になるようにランダムに分け、
      *  X:このクリーチャーに+1/+1カウンターX個、Y:相手はYライフ失いあなたはY得る、Z:相手のランダムなクリーチャー1体にZ点(いなければ相手に) */
     | { do: "curseSplit" }
+    /** 喝采(ファラオの呪い)を n 消費してもよい。そうしたなら then を行う */
+    | { do: "consume"; cat: Applause; n: number; then: Effect[] }
   );
 
 export type TriggerEvent =

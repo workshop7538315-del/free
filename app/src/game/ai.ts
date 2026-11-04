@@ -396,6 +396,13 @@ function scoreCast(g: Game, p: PlayerId, a: Extract<Action, { type: "cast" }>, m
       if (curse < 3 && g.players[p].mana.length < 7) return -1;
       v += curse * 0.5;
     }
+    // 呪いを消費して加護を得る(不死のファラオ):消費できるまで待つ
+    const consume = abilitiesOf(c).flatMap((x) => (x.a === "trigger" && x.on === "etb" ? x.effects : [])).find((e) => e.do === "consume");
+    if (consume && consume.do === "consume") {
+      const have = g.players[p].applause[consume.cat] ?? 0;
+      if (have < consume.n && g.players[p].mana.length < 8) return -1;
+      if (have >= consume.n) v += 4;
+    }
     return v;
   }
   if (isAura(c)) {
@@ -712,6 +719,8 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return 1;
     case "reanimateAll":
       return me.graveyard.filter((o) => isCreatureCard(o.card) && matchFilter(o.card, e.filter)).reduce((s, o) => s + cardCreatureValue(o.card) * 0.5, 0);
+    case "consume":
+      return (me.applause[e.cat] ?? 0) >= e.n ? e.then.reduce((s, x) => s + effectValue(g, p, x, targets, inCombat), 0) : 0;
     case "curseSplit":
       return (me.applause["呪い"] ?? 0) * 1.3;
     case "setFromGrave":
