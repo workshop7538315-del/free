@@ -6,7 +6,7 @@ import { activeRangeCount, emptyRange, filterParts, initialFilters, isFiltering,
 import { Accordion } from "./Accordion";
 import { packShort } from "../lib/packs";
 
-const TYPE_FILTERS = ["クリーチャー", "インスタント", "ソーサリー", "エンチャント", "アーティファクト"];
+const TYPE_FILTERS = ["クリーチャー", "インスタント", "ソーサリー", "エンチャント", "アーティファクト", "秘蔵庫"];
 
 type Props = {
   /** 選べるアーキタイプ(カードの多い順) */

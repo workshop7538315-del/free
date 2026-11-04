@@ -1,6 +1,7 @@
 import type { Card, DeckCards } from "../types";
 import { cardColors, colorCategory, manaValue, type Color } from "./mana";
 import { cardKeywords } from "./keywords";
+import { isExtra } from "./deck";
 
 export type Range = { min: number | null; max: number | null };
 
@@ -94,7 +95,10 @@ export function applyFilters(cards: Card[], f: FilterState, deck: DeckCards): Ca
   const q = f.query.trim().toLowerCase();
   return cards
     .filter((c) => matchColor(c, f))
-    .filter((c) => f.types.length === 0 || f.types.some((t) => c.type.includes(t)))
+    // 「秘蔵庫」はカードタイプではなく、秘蔵庫に入れるカード(リリース召喚・龍生九子など)。
+    // ほかのタイプとは「かつ」で組み合わせる(秘蔵庫+クリーチャー=秘蔵庫のクリーチャー)
+    .filter((c) => !f.types.includes("秘蔵庫") || isExtra(c))
+    .filter((c) => { const ts = f.types.filter((t) => t !== "秘蔵庫"); return ts.length === 0 || ts.some((t) => c.type.includes(t)); })
     .filter((c) => !f.keyword || cardKeywords(c).has(f.keyword))
     .filter((c) => !f.archetype || (c.tags ?? []).includes(f.archetype))
     .filter((c) => !f.pack || (c.packs ?? [c.pack]).includes(f.pack))
