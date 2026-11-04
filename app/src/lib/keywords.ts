@@ -27,7 +27,8 @@ export function keywordFor(match: string): Keyword | undefined {
     BY_NAME.get(match) ??
     KEYWORDS.find((k) => match.startsWith(k.name)) ??
     // 名前で始まらないもの(《生成されるカード》など)は、パターン全体で照合する
-    KEYWORDS.find((k) => new RegExp(`^(?:${k.pattern})$`).test(match))
+    // 先読み((?=…))は一致した文字列の外を見るので、照合のときは外す
+    KEYWORDS.find((k) => new RegExp(`^(?:${k.pattern.replace(/\(\?[=!][^)]*\)/g, "")})$`).test(match))
   );
 }
 
