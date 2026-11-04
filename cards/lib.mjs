@@ -348,6 +348,7 @@ export const E13 = {
   advance: (n) => ({ do: "advance", ...(n ? { n } : {}) }),
   reanimateAll: (filter) => ({ do: "reanimateAll", filter }),
   setFromGrave: (n) => ({ do: "setFromGrave", n }),
+  curseSplit: () => ({ do: "curseSplit" }),
 };
 export const iff = (cond, e) => ({ ...e, if: cond });
 export const unless = (cond, e) => ({ ...e, unless: cond });
@@ -705,6 +706,8 @@ function effectText(e, name, abil, notes) {
       return "この任務に任務カウンターを1つ置く。";
     case "reanimateAll":
       return `あなたの墓地にある${filterPhrase(e.filter, "card")}をすべて戦場に戻す。`;
+    case "curseSplit":
+      return `X+Y+Zがあなたのファラオの呪いの値に等しくなるように、X・Y・Zをランダムに決める(呪いは消費しない)。${name}の上に+1/+1カウンターをX個置く。対戦相手はY点のライフを失い、あなたはY点のライフを得る。対戦相手のクリーチャー1体をランダムに選び、Z点のダメージを与える(いなければ対戦相手に与える)。`;
     case "setFromGrave":
       return `あなたの戦場にある表向きの罠と、あなたの墓地にある罠・カードから、合わせて${e.n}つまで選び、裏向きで仕掛け直す。`;
     case "blessing":

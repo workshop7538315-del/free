@@ -390,6 +390,12 @@ function scoreCast(g: Game, p: PlayerId, a: Extract<Action, { type: "cast" }>, m
     // 「出たとき、任務を進める」は、任務を先に置いてから
     const advancesOnly = abilitiesOf(c).some((x) => x.a === "trigger" && x.on === "etb" && x.effects.every((e) => e.do === "advance"));
     if (advancesOnly && !g.players[p].battlefield.some((x) => questOf(x.card))) v -= 1.2;
+    // 呪いの値で強くなる(呪われたファラオ):呪いが溜まってから出す
+    if (abilitiesOf(c).some((x) => x.a === "trigger" && x.on === "etb" && x.effects.some((e) => e.do === "curseSplit"))) {
+      const curse = g.players[p].applause["呪い"] ?? 0;
+      if (curse < 3 && g.players[p].mana.length < 7) return -1;
+      v += curse * 0.5;
+    }
     return v;
   }
   if (isAura(c)) {
@@ -706,6 +712,8 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return 1;
     case "reanimateAll":
       return me.graveyard.filter((o) => isCreatureCard(o.card) && matchFilter(o.card, e.filter)).reduce((s, o) => s + cardCreatureValue(o.card) * 0.5, 0);
+    case "curseSplit":
+      return (me.applause["呪い"] ?? 0) * 1.3;
     case "setFromGrave":
       return Math.min(e.n, me.graveyard.filter((o) => isTrapCard(o.card)).length) * 2;
     case "dragonNow": {

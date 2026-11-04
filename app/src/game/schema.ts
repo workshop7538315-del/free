@@ -276,6 +276,9 @@ export type Effect = Common &
     | { do: "reanimateAll"; filter: Filter }
     /** 自分の墓地の罠を n 枚まで裏向きで仕掛ける */
     | { do: "setFromGrave"; n: number }
+    /** 呪いの分配(シャドウバースの信仰値を参考):X+Y+Z がファラオの呪いの値になるようにランダムに分け、
+     *  X:このクリーチャーに+1/+1カウンターX個、Y:相手はYライフ失いあなたはY得る、Z:相手のランダムなクリーチャー1体にZ点(いなければ相手に) */
+    | { do: "curseSplit" }
   );
 
 export type TriggerEvent =

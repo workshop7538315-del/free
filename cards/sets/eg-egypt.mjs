@@ -77,7 +77,7 @@ export const PHARAOH = [
   PH(cr("eg53", "盗掘者の亡骸", "{1}{B}", "ゾンビ・ミイラ", 2, 1, "C", [dies(E.ret("hand"), T.gyF({ sub: "罠" }))], { flavor: "罠にかかった盗人は、次の盗人への罠になる。" })),
   PH(cr("eg54", "墓の大蛇", "{3}{G}", "蛇", 2, 4, "C", [kw("接死")], { flavor: "王墓の闇で、千年とぐろを巻いている。" })),
   PH(cr("eg55", "ミイラの番兵", "{1}{B}{G}", "ゾンビ・ミイラ", 2, 5, "U", [onTrapUse(E.gain(2))], { flavor: "包帯の奥の目は、まだ王墓を見張っている。" })),
-  PH(cr("eg56", "呪われたファラオ", "{2}{U}{B}", "ゾンビ・ミイラ・ファラオ", 3, 4, "R", [etb(E.blessing("呪われた財宝")), once(onTrapUse(E.draw(1)))], { flavor: "財宝に触れた者の命は、すべて王のものになる。" })),
+  PH(cr("eg56", "呪われたファラオ", "{2}{U}{B}", "ゾンビ・ミイラ・ファラオ", 3, 4, "R", [etb([E.blessing("呪われた財宝"), E13.curseSplit()])], { flavor: "財宝に触れた者の命は、すべて王のものになる。" })),
   PH(cr("eg57", "不死のファラオ", "{3}{U}{B}{G}", "ゾンビ・ミイラ・ファラオ", 4, 5, "M", [entrata(6, "呪い"), etb([E.blessing("不死の王墓"), E13.setFromGrave(2)])], { flavor: "呪いが満ちたとき、王は石棺のふたを内側から押し開ける。" })),
   PH(ench("eg58", "大ピラミッド", "{1}{U}{B}{G}", "R", [once(onTrapUse(E.applause("呪い", 1))), act({ applause: { cat: "呪い", n: 3 } }, E.blessing("迷宮の回廊"))], { flavor: "王の墓は、王を守る巨大な罠そのもの。" })),
   PH(sor("eg59", "死者の書", "{2}{U}{B}", "U", spell([E.blessing("死者の書"), E.draw(1)]), { flavor: "冥界を旅する死者のための、呪文の書。" })),

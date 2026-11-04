@@ -2974,6 +2974,27 @@ export class Game {
         if (list.length) this.addLog(`墓地の${list.map((o) => o.card.name).join("、")}が戦場に戻った`, p);
         break;
       }
+      case "curseSplit": {
+        const total = pl.applause["呪い"] ?? 0;
+        const parts = [0, 0, 0];
+        for (let i = 0; i < total; i++) parts[Math.floor(this.rng() * 3)]++;
+        const [x, y, z] = parts;
+        this.addLog(`ファラオの呪い${total}を分けた:強化${x}・吸収${y}・ダメージ${z}`, p);
+        if (x && src.zone === "battlefield") src.counters += x;
+        if (y) {
+          this.players[opp].life -= y;
+          this.gainLife(p, y);
+        }
+        if (z) {
+          const cs = this.creatures(opp);
+          if (cs.length) {
+            const c = cs[Math.floor(this.rng() * cs.length)];
+            this.dealDamage(src, c, z);
+            this.addLog(`${src.card.name}が${c.card.name}に${z}点のダメージ`, p);
+          } else this.dealDamage(src, { kind: "player", id: opp }, z);
+        }
+        break;
+      }
       case "setFromGrave": {
         // 戦場の表向きの罠と、墓地の罠から選ぶ
         const opts = [...pl.battlefield.filter((o) => isTrapCard(o.card) && !o.faceDown), ...pl.graveyard.filter((o) => isTrapCard(o.card))];
