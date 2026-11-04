@@ -23,8 +23,9 @@ const ALL = new RegExp(
 /** 文中の一致からキーワード定義を引く(「燃焼 2」→ 燃焼) */
 export function keywordFor(match: string): Keyword | undefined {
   return (
-    KEYWORDS.find((k) => match === k.name || match.startsWith(k.name)) ??
+    // 名前がそのまま一致するもの(「加護《王の継承》」など)を先に
     BY_NAME.get(match) ??
+    KEYWORDS.find((k) => match.startsWith(k.name)) ??
     // 名前で始まらないもの(《生成されるカード》など)は、パターン全体で照合する
     KEYWORDS.find((k) => new RegExp(`^(?:${k.pattern})$`).test(match))
   );
