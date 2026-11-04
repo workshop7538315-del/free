@@ -24,7 +24,7 @@ const BLADE = gen("tk-kanibu", "簡易の剣", "{1}", "アーティファクト"
 
 export const BEACON = [
   // ================================================================ 装備(赤白・欠色)
-  tag("装備", basedOn(cr("cb01", "鍛冶場の徒弟長", "{1}{W}", "人間・職人", 2, 2, "U", [once(allyEnter(EQ)(E.draw(1)))]), "eqp09", "サポート")),
+  tag("装備", basedOn(cr("cb01", "鍛冶場の徒弟長", "{1}{W}", "人間・職人", 2, 3, "U", [once(allyEnter(EQ)(E.draw(1)))]), "eqp09", "サポート")),
   tag("装備", basedOn(cr("cb02", "先陣の剣士", "{1}{R}", "人間・戦士", 2, 2, "C", [once(attacks(E.draw(1), undefined, { if: control(EQ, 1) }))]), "eqp13", "リメイク")),
   tag("装備", basedOn(equipment("cb03", "継承の刃", "{1}", "C", "{1}", { p: 1, t: 1 }, [etb(E.draw(1))]), "eqp01", "強化版")),
   tag("装備", basedOn(equipment("cb04", "聖騎士の大盾", "{2}", "U", "{1}", { p: 0, t: 3, kw: ["警戒"] }, [etb(soldier(1))]), "eqp02", "強化版")),

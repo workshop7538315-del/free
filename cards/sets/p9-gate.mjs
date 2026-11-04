@@ -65,7 +65,7 @@ export const GATE = [
   g(ench("hz25", "祖霊の灯籠", "{W}", "C", [offering(1, SPIRIT), etb(E.lookTop())])),
   g(ench("hz26", "祖霊の墓碑", "{1}{B}", "C", [offering(1, SPIRIT), act({ sacSelf: true }, [E.draw(1), E.lose(1, "you")])])),
   g(ench("hz27", "魂の供物", "{B}", "C", [offering(1), etb([E.lose(1), E.gain(1)])])),
-  g(cr("hz28", "祖霊の巫女", "{1}{W}", "人間・クレリック", 1, 3, "C", [offering(1, SPIRIT), etb(E.lookTop())])),
+  g(cr("hz28", "祖霊の巫女", "{1}{W}", "人間・クレリック", 2, 3, "C", [offering(1, SPIRIT), etb(E.lookTop())])),
   g(cr("hz29", "墓所の語り部", "{2}{B}", "ゾンビ", 2, 2, "C", [offering(1, SPIRIT), dies(E.draw(1))])),
   g(cr("hz30", "祖霊の守人", "{2}{W}", "スピリット", 2, 2, "C", [offering(1, SPIRIT), kw("飛行")])),
   g(cr("hz31", "祖霊を呼ぶ者", "{1}{W}{B}", "人間・シャーマン", 2, 3, "U", [kw("絆魂"), once(onSacrifice()(E.create(LAMP)))])),
