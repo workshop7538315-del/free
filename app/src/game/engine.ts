@@ -82,6 +82,10 @@ export type Obj = {
   fleeting?: boolean;
   /** 武装進化で合体している発明品(付け替えられない。合体先が離れると一緒に秘蔵庫に戻る) */
   merged?: boolean;
+  /** 罠を裏向きで仕掛けた(裏向きに戻した)ターン番号。次のターンから発動できる(第13弾) */
+  setTurn?: number;
+  /** 任務カウンター(第13弾) */
+  quest?: number;
 };
 
 export type Player = {
@@ -138,6 +142,10 @@ export type Player = {
   turnCount: number;
   /** 睚眦の追加ターンをこのゲームで使った */
   yaziUsed: boolean;
+  /** このゲームで達成した任務の数(第13弾) */
+  questsDone: number;
+  /** このターンに仕掛けた罠の数(加護《迷宮の回廊》) */
+  trapsSetThisTurn: number;
 };
 
 export type TargetRef =
@@ -170,15 +178,17 @@ export type Action =
   | { type: "activate"; uid: number; index: number }
   | { type: "cycle"; uid: number }
   | { type: "equip"; uid: number }
+  /** 罠(第13弾):set=手札から仕掛ける、flip=裏向きの罠を発動する(コストなし)、use=表向きの罠の効果をコストを払って使う */
+  | { type: "trap"; uid: number; mode: "set" | "flip" | "use" }
   /** 秘蔵庫からリリース召喚する(via: "entrata" ならエントラータ) */
   | { type: "summon"; uid: number; via?: "entrata" | "pioneer" | "assemble" | "evolve" | "curtain" | "dragon"; base?: number };
 
 export type Decision =
   | { kind: "action"; options: Action[] }
   | { kind: "target"; prompt: string; spec: TargetSpec; options: TargetRef[]; source: Obj; effects: Effect[]; index: number }
-  | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "kicker" | "lookTop" | "mulligan" | "reclaim" | "blessing" | "learn" | "learnDiscard" | "altCost"; obj?: Obj }
+  | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "kicker" | "lookTop" | "mulligan" | "reclaim" | "blessing" | "learn" | "learnDiscard" | "altCost" | "trap"; obj?: Obj; subject?: Obj }
   | { kind: "number"; prompt: string; min: number; max: number; reason?: "x" | "burn"; obj?: Obj }
-  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" | "pioneerBase" | "heist" | "muster" | "dig" | "shatter" | "tuck" | "rotate" | "dragon" | "dragonBase" | "altTap" | "manaToGrave" | "underToVault" | "underToHand" }
+  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" | "pioneerBase" | "heist" | "muster" | "dig" | "shatter" | "tuck" | "rotate" | "dragon" | "dragonBase" | "altTap" | "manaToGrave" | "underToVault" | "underToHand" | "quest" | "setTrap" | "regrow" | "seek" }
   | { kind: "attackers"; options: number[] }
   /** モード呪文:選択肢から1つ選ぶ(答えは番号) */
   | { kind: "mode"; prompt: string; options: string[]; source: Obj; modes: SpellMode[] }
@@ -244,13 +254,41 @@ export function withPaid(cost: string, color: Color): string {
 }
 /** 加護《黄金郷への道》:開拓進化で、戦場とマナゾーンの代わりにライブラリーの上から墓地に置いてよい */
 export const BLESSING_ELDORADO = "黄金郷への道";
+const BLESSING_ELDORADO_NAME = BLESSING_ELDORADO;
 export const entrataOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "entrata") as Extract<Ability, { a: "entrata" }> | undefined;
 /** 喝采の枠は加護の枠(5つ)を使う */
 export const BLESSING_SLOTS = 5;
+/** 罠(第13弾) */
+export const trapOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "trap") as Extract<Ability, { a: "trap" }> | undefined;
+export const isTrapCard = (c: Card) => !!trapOf(c);
+export const questOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "quest") as Extract<Ability, { a: "quest" }> | undefined;
+/** ファラオの加護(第13弾) */
+export const BLESSING_HEIR = "王の継承";
+export const BLESSING_LABYRINTH = "迷宮の回廊";
+export const BLESSING_BOOK = "死者の書";
+export const BLESSING_TREASURE = "呪われた財宝";
+export const BLESSING_TOMB = "不死の王墓";
+/** 加護の説明(画面の表示用) */
+export const BLESSING_TEXT: Record<string, string> = {
+  [BLESSING_ELDORADO_NAME]: "開拓進化をするとき、マナゾーンのカードの代わりに、ライブラリーの上から墓地に置いてもよい。",
+  王の継承: "罠を仕掛けるコストは{1}少なくなる。",
+  迷宮の回廊: "罠を仕掛けたターンでも発動できる。各ターン最初に罠を仕掛けたとき、カードを1枚引く。",
+  死者の書: "あなたのターンの終了時、表向きの罠が2つ以上あるならカードを1枚引く。",
+  呪われた財宝: "あなたが罠を発動するたび、対戦相手は1点失い、あなたは1点のライフを得る。",
+  不死の王墓: "罠の効果を使ったあと、ファラオの呪いを2消費すれば、裏向きのままにしてよい(次のターンから、また発動できる)。",
+};
 /** 行動で溜まる喝采の、1ターンの上限 */
-export const APPLAUSE_CAP: Record<Applause, number> = { 狂気: 2, 悲劇: 3, 喜劇: 3 };
+export const APPLAUSE_CAP: Record<Applause, number> = { 狂気: 2, 悲劇: 3, 喜劇: 3, 呪い: 99 };
+/** 喝采の表示名(呪いは「ファラオの呪い」) */
+export const applauseName = (cat: string) => (cat === "呪い" ? "ファラオの呪い" : `喝采【${cat}】`);
 /** カードが関係する喝采のカテゴリー */
-export const applauseCatsOf = (c: Card): Applause[] => [...new Set([...JSON.stringify(c.abilities).matchAll(/"(?:cat|applause)":"(狂気|悲劇|喜劇)"/g)].map((m) => m[1] as Applause))];
+export const applauseCatsOf = (c: Card): Applause[] => [
+  ...new Set([
+    ...[...JSON.stringify(c.abilities).matchAll(/"(?:cat|applause)":"(狂気|悲劇|喜劇|呪い)"/g)].map((m) => m[1] as Applause),
+    // 罠があるデッキは、ファラオの呪いが溜まる
+    ...(abilitiesOf(c).some((a) => a.a === "trap") ? (["呪い"] as Applause[]) : []),
+  ]),
+];
 export const releaseOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "releaseSummon") as Extract<Ability, { a: "releaseSummon" }> | undefined;
 export const offeringOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "offering") as Extract<Ability, { a: "offering" }> | undefined;
 /** 紋章(マナゾーンで働く能力)か */
@@ -271,6 +309,7 @@ export function matchFilter(c: Card, f: Filter | undefined, colors?: Color[]): b
   if (f.spell && !(isInstantCard(c) || isSorceryCard(c))) return false;
   if (f.sub && !(c.subtype ?? "").split("・").includes(f.sub)) return false;
   if (f.name && !c.name.includes(f.name)) return false;
+  if (f.names && !f.names.includes(c.name)) return false;
   const mv = manaValue(c.cost);
   if (f.mv !== undefined && mv !== f.mv) return false;
   if (f.minMV !== undefined && mv < f.minMV) return false;
@@ -384,6 +423,8 @@ export class Game {
       extraTurns: 0,
       turnCount: 0,
       yaziUsed: false,
+      questsDone: 0,
+      trapsSetThisTurn: 0,
     });
     this.players = [mk(0), mk(1)];
     this.firstPlayer = opts.first ?? (this.rng() < 0.5 ? 0 : 1);
@@ -629,6 +670,7 @@ export class Game {
       if ("gather" in c) return pl.heroes.size >= c.gather;
       if ("anyName" in c) return pl.battlefield.some((o) => isCreatureCard(o.card) && c.anyName.some((n) => o.card.name.includes(n)));
       if ("oppHand" in c) return this.players[this.other(p)].hand.length >= c.oppHand;
+      if ("lineage" in c) return [...pl.battlefield, ...pl.graveyard].some((o) => !(o.zone === "battlefield" && o.faceDown) && c.lineage.includes(o.card.name));
       if ("manaMV" in c) return pl.mana.reduce((s, o) => s + (o.faceDown ? 0 : manaValue(o.card.cost)), 0) >= c.manaMV;
       return pl.battlefield.filter((o) => matchFilter(o.card, c.control, this.colorsOf(o))).length >= c.n;
     }
@@ -673,6 +715,8 @@ export class Game {
       }
       case "pioneeredGame":
         return pl.pioneeredGame;
+      case "questDone":
+        return pl.questsDone > 0;
       case "buriedInMana":
         return pl.mana.some((o) => !o.faceDown && abilitiesOf(o.card).some((a) => a.a === "buried"));
       case "pureColor": {
@@ -757,7 +801,8 @@ export class Game {
   /** その領域で働いている能力。紋章はマナゾーンでだけ、それ以外は戦場でだけ働く */
   activeAbilities(o: Obj): Ability[] {
     const inMana = o.zone === "mana";
-    if (inMana && o.faceDown) return [];
+    // 裏向き(マナゾーンの裏向きのカード、戦場の裏向きの罠)は能力を持たない
+    if (o.faceDown) return [];
     return abilitiesOf(o.card).filter((a) => isCrestAbility(a) === inMana);
   }
 
@@ -882,8 +927,8 @@ export class Game {
     return ans;
   }
 
-  private async askYesNo(p: PlayerId, prompt: string, reason: Extract<Decision, { kind: "yesno" }>["reason"], obj?: Obj) {
-    return this.ask<boolean>(p, { kind: "yesno", prompt, reason, obj });
+  private async askYesNo(p: PlayerId, prompt: string, reason: Extract<Decision, { kind: "yesno" }>["reason"], obj?: Obj, subject?: Obj) {
+    return this.ask<boolean>(p, { kind: "yesno", prompt, reason, obj, ...(subject ? { subject } : {}) });
   }
 
   private async askCards(p: PlayerId, prompt: string, options: Obj[], count: number, reason: Extract<Decision, { kind: "chooseCards" }>["reason"]) {
@@ -917,6 +962,8 @@ export class Game {
     if (spec.minPower !== undefined && this.power(o) < spec.minPower) return false;
     if (spec.maxPower !== undefined && this.power(o) > spec.maxPower) return false;
     if (spec.flying && !this.hasKw(o, "飛行")) return false;
+    if (spec.attacking && !this.combat?.attackers.includes(o.uid)) return false;
+    if (spec.inCombat && !(this.combat && (this.combat.attackers.includes(o.uid) || Object.values(this.combat.blocks).some((bs) => bs.includes(o.uid))))) return false;
     if (spec.filter && !matchFilter(o.card, spec.filter, this.colorsOf(o))) return false;
     return true;
   }
@@ -1140,6 +1187,8 @@ export class Game {
   /** 唱えられるか(コストと対象の有無とタイミング) */
   canCast(p: PlayerId, o: Obj, from: CastFrom): boolean {
     const c = o.card;
+    // 罠は唱えず、仕掛ける
+    if (isTrapCard(c)) return false;
     const instantSpeed = isInstantCard(c) || hasPrintedKw(c, "瞬速") || (from === "hand" && !!o.handFlash);
     if (!instantSpeed && !this.sorcerySpeed(p)) return false;
     const cost = this.effectiveCost(p, o, from);
@@ -1215,6 +1264,16 @@ export class Game {
       for (const o of pl.battlefield) if (this.canEvolve(p, o)) out.push({ type: "summon", uid: o.uid, via: "evolve" });
       for (const o of pl.extra) if (this.canCurtain(p, o)) out.push({ type: "summon", uid: o.uid, via: "curtain" });
     }
+    // 罠(第13弾)
+    if (this.sorcerySpeed(p)) for (const o of pl.hand) if (isTrapCard(o.card) && this.canPay(p, this.trapSetCost(p, o))) out.push({ type: "trap", uid: o.uid, mode: "set" });
+    for (const o of pl.battlefield) {
+      const tr = trapOf(o.card);
+      if (!tr || tr.on || o.controller !== p) continue;
+      if (!(tr.targets ?? []).every((t) => this.targetOptions(t, p).length > 0)) continue;
+      if (o.faceDown) {
+        if (this.trapReady(p, o)) out.push({ type: "trap", uid: o.uid, mode: "flip" });
+      } else if (this.canPay(p, tr.cost)) out.push({ type: "trap", uid: o.uid, mode: "use" });
+    }
     // 龍生:メインフェイズ(狴犴は相手の悪事に割り込める)。回数の制限はない
     for (const o of pl.extra) {
       const dr = dragonOf(o.card);
@@ -1273,7 +1332,149 @@ export class Game {
     } else if (a.type === "activate") {
       const o = this.players[p].battlefield.find((x) => x.uid === a.uid);
       if (o && this.canActivate(p, o, a.index)) await this.activate(p, o, a.index);
+    } else if (a.type === "trap") {
+      const pl = this.players[p];
+      if (a.mode === "set") {
+        const o = pl.hand.find((x) => x.uid === a.uid);
+        if (o && isTrapCard(o.card) && this.sorcerySpeed(p)) await this.setTrap(p, o);
+      } else {
+        const o = pl.battlefield.find((x) => x.uid === a.uid);
+        const tr = o && trapOf(o.card);
+        if (!o || !tr || tr.on) return;
+        if (a.mode === "flip" && o.faceDown && this.trapReady(p, o)) await this.useTrap(p, o, true);
+        if (a.mode === "use" && !o.faceDown && this.canPay(p, tr.cost)) await this.useTrap(p, o, false);
+      }
     }
+  }
+
+  // ------------------------------------------------------------ 罠・任務(第13弾)
+  /** 罠を仕掛けるコスト(加護《王の継承》で{1}少なくなる) */
+  trapSetCost(p: PlayerId, o: Obj): string {
+    return reduceGeneric(o.card.cost, this.players[p].blessings.includes(BLESSING_HEIR) ? 1 : 0);
+  }
+
+  /** 裏向きの罠を発動できるか(仕掛けた次のターンから。加護《迷宮の回廊》なら仕掛けたターンでも) */
+  trapReady(p: PlayerId, o: Obj): boolean {
+    return o.zone === "battlefield" && !!o.faceDown && isTrapCard(o.card) && ((o.setTurn ?? -1) < this.turn || this.players[p].blessings.includes(BLESSING_LABYRINTH));
+  }
+
+  /** 罠を裏向きで戦場に置く(コストは払い済み) */
+  private placeTrap(p: PlayerId, o: Obj) {
+    this.move(o, "battlefield", { controller: p });
+    o.faceDown = true;
+    o.setTurn = this.turn;
+  }
+
+  private async setTrap(p: PlayerId, o: Obj) {
+    if (!this.pay(p, this.trapSetCost(p, o), 0)) return;
+    this.usedCards.add(o.card.id);
+    this.placeTrap(p, o);
+    const pl = this.players[p];
+    pl.trapsSetThisTurn++;
+    this.addLog("罠を1枚、裏向きで仕掛けた", p);
+    // 加護《迷宮の回廊》:各ターン最初に罠を仕掛けたとき、カードを1枚引く
+    if (pl.trapsSetThisTurn === 1 && pl.blessings.includes(BLESSING_LABYRINTH)) {
+      this.addLog(`加護《${BLESSING_LABYRINTH}》:カードを1枚引いた`, p);
+      this.draw(p, 1);
+    }
+  }
+
+  /** 罠の効果を使う。flip なら裏向きから発動(コストなし)、そうでなければ起動コストを払う。preset は決まった対象(誘発のとき) */
+  private async useTrap(p: PlayerId, o: Obj, flip: boolean, preset?: TargetRef[]) {
+    const tr = trapOf(o.card)!;
+    const effects = tr.effects;
+    const targets = preset ?? (await this.chooseTargets(p, tr.targets ?? [], o, effects));
+    if (!targets) return;
+    if (!flip && !this.pay(p, tr.cost, 0)) return;
+    this.usedCards.add(o.card.id);
+    const pl = this.players[p];
+    const tgt = targets.length ? `(対象:${targets.map((t) => this.describeRef(t)).join("、")})` : "";
+    if (flip) {
+      o.faceDown = false;
+      this.addLog(`罠《${o.card.name}》を発動した${tgt}`, p);
+      this.gainApplause(p, "呪い", 1, false);
+      this.queueTriggers("trapUse", this.sources(p));
+      // 加護《呪われた財宝》
+      if (pl.blessings.includes(BLESSING_TREASURE)) {
+        this.players[this.other(p)].life -= 1;
+        this.gainLife(p, 1);
+        this.addLog(`加護《${BLESSING_TREASURE}》:${this.players[this.other(p)].name}は1点失い、1点のライフを得た`, p);
+      }
+    } else this.addLog(`${o.card.name}の罠の効果を使った${tgt}`, p);
+    // 加護《不死の王墓》:ファラオの呪いを2消費して、裏向きのままにする
+    if (pl.blessings.includes(BLESSING_TOMB) && (pl.applause["呪い"] ?? 0) >= 2) {
+      if (await this.askYesNo(p, `加護《${BLESSING_TOMB}》:ファラオの呪いを2消費して、《${o.card.name}》を裏向きのままにしますか?(次のターンから、また発動できる)`, "blessing", o)) {
+        this.spendApplause(p, "呪い", 2);
+        o.faceDown = true;
+        o.setTurn = this.turn;
+        this.addLog(`加護《${BLESSING_TOMB}》:罠を裏向きに戻した`, p);
+      }
+    }
+    const ability: Ability = { a: "activated", cost: {}, effects, ...(tr.targets ? { targets: tr.targets } : {}) };
+    this.stack.push({ id: this.stackId++, kind: "activated", obj: o, controller: p, ability, targets, burned: false, burnCount: 0, kicked: false, dashed: false, flashback: false, x: 0 });
+  }
+
+  /** 「〜とき」の罠の機会(相手のクリーチャーが出たとき・相手がカードを引いたとき) */
+  private trapEvents: { kind: "oppEnter" | "oppDraw"; owner: PlayerId; uid?: number }[] = [];
+
+  private pushTrapEvent(kind: "oppEnter" | "oppDraw", owner: PlayerId, uid?: number) {
+    if (this.turn < 1) return;
+    if (!this.players[owner].battlefield.some((o) => trapOf(o.card)?.on === kind)) return;
+    this.trapEvents.push({ kind, owner, uid });
+  }
+
+  private async processTrapEvents() {
+    while (this.trapEvents.length) {
+      const ev = this.trapEvents.shift()!;
+      const p = ev.owner;
+      for (const o of [...this.players[p].battlefield]) {
+        const tr = trapOf(o.card);
+        if (!tr || tr.on !== ev.kind || o.zone !== "battlefield") continue;
+        const flip = !!o.faceDown;
+        if (flip ? !this.trapReady(p, o) : !this.canPay(p, tr.cost)) continue;
+        let preset: TargetRef[] = [];
+        if (ev.kind === "oppEnter") {
+          const c = ev.uid !== undefined ? this.find(ev.uid) : undefined;
+          if (!c || c.zone !== "battlefield" || !this.targetable(c, p)) continue;
+          preset = [{ kind: "obj", uid: c.uid, zone: "battlefield" }];
+        }
+        const what = ev.kind === "oppEnter" ? `${this.find(ev.uid!)?.card.name}が出た` : "相手がカードを引いた";
+        const how = flip ? "発動しますか?(コストなし)" : `${tr.cost}を払って使いますか?`;
+        const subject = ev.uid !== undefined ? this.find(ev.uid) : undefined;
+        if (await this.askYesNo(p, `${what}。罠《${o.card.name}》を${how}`, "trap", o, subject)) await this.useTrap(p, o, flip, preset);
+      }
+    }
+  }
+
+  /** 任務を進める(自分の任務1つを選ぶ)。メジャイの長がいれば2回 */
+  private async advanceQuest(p: PlayerId, n = 1) {
+    const quests = this.players[p].battlefield.filter((o) => questOf(o.card) && !o.faceDown);
+    if (!quests.length) return;
+    const double = this.sources(p).some((s) => this.activeAbilities(s).some((a) => a.a === "static" && a.st.s === "questDouble"));
+    const times = n * (double ? 2 : 1);
+    for (let i = 0; i < times; i++) {
+      const live = quests.filter((o) => o.zone === "battlefield");
+      if (!live.length) return;
+      const [q] = await this.askCards(p, "進める任務を選んでください", live, 1, "quest");
+      if (q) await this.questTick(p, q);
+    }
+  }
+
+  /** 任務カウンターを1つ置き、規定の数になったら達成する */
+  private async questTick(p: PlayerId, o: Obj) {
+    const q = questOf(o.card);
+    if (!q || o.zone !== "battlefield") return;
+    o.quest = (o.quest ?? 0) + 1;
+    this.addLog(`任務《${o.card.name}》が進んだ(${o.quest}/${q.n})`, p);
+    if (o.quest < q.n) return;
+    this.addLog(`任務《${o.card.name}》を達成した`, p);
+    this.usedCards.add(o.card.id);
+    const pl = this.players[p];
+    pl.questsDone++;
+    const item: StackItem = { id: this.stackId++, kind: "trigger", obj: o, controller: p, ability: { a: "activated", cost: {}, effects: q.reward }, targets: [], burned: false, burnCount: 0, kicked: false, dashed: false, flashback: false, x: 0 };
+    this.move(o, "graveyard");
+    await this.runEffects(q.reward, { item, legal: [] });
+    for (const src of this.sources(p)) this.queueTriggers("questDone", [src]);
   }
 
   /** マナゾーンに置く(チャージや効果)。チャージ時能力が誘発する */
@@ -1422,7 +1623,10 @@ export class Game {
   }
 
   private async flushTriggers() {
-    while (this.pendingTriggers.length) {
+    await this.processTrapEvents();
+    while (this.pendingTriggers.length || this.trapEvents.length) {
+      await this.processTrapEvents();
+      if (!this.pendingTriggers.length) continue;
       // 手番のプレイヤーの誘発を先にスタックに置く(後に解決される)
       const list = this.pendingTriggers.splice(0);
       list.sort((a, b) => (a.controller === this.active ? 0 : 1) - (b.controller === this.active ? 0 : 1));
@@ -1510,6 +1714,7 @@ export class Game {
   /** 戦場に出たときの誘発(自身と、他のパーマネントの「〜が出るたび」) */
   private entered(o: Obj) {
     if (isHero(o.card)) this.players[o.controller].heroes.add(o.card.name);
+    if (isCreatureCard(o.card)) this.pushTrapEvent("oppEnter", this.other(o.controller), o.uid);
     this.queueTriggers("etb", [o]);
     for (const src of this.sources(o.controller)) {
       if (src === o) continue;
@@ -1705,7 +1910,7 @@ export class Game {
     }
     pl.applause[cat] = (pl.applause[cat] ?? 0) + add;
     pl.applauseTotal[cat] = (pl.applauseTotal[cat] ?? 0) + add;
-    this.addLog(`喝采【${cat}】+${add}(${pl.applause[cat]})`, p);
+    this.addLog(`${applauseName(cat)}+${add}(${pl.applause[cat]})`, p);
   }
 
   private spendApplause(p: PlayerId, cat: Applause, n: number) {
@@ -1753,7 +1958,7 @@ export class Game {
     const en = entrataOf(o.card)!;
     this.spendApplause(p, en.cat, en.n);
     pl.enteredThisTurn.add(o.uid);
-    this.addLog(`喝采【${en.cat}】を${en.n}消費し、${o.card.name}がエントラータ(登場)した`, p);
+    this.addLog(en.cat === "呪い" ? `ファラオの呪いを${en.n}消費し、${o.card.name}が王の目覚めで現れた` : `喝采【${en.cat}】を${en.n}消費し、${o.card.name}がエントラータ(登場)した`, p);
     this.usedCards.add(o.card.id);
     this.enterBattlefield(o, p);
   }
@@ -2129,6 +2334,7 @@ export class Game {
     if (wasCreature) {
       for (const ab of dyingAbilities) if (ab.a === "trigger" && ab.on === "dies") this.pendingTriggers.push({ obj: o, ability: ab, controller });
       this.queueTriggers("allyDies", this.sources(controller));
+      this.queueTriggers("oppDies", this.sources(this.other(controller)));
     }
     if (undying && (o.zone as Zone) === "graveyard") {
       this.enterBattlefield(o, o.owner);
@@ -2718,6 +2924,65 @@ export class Game {
       case "blessing":
         this.gainBlessing(p, e.id);
         break;
+      case "seek": {
+        const seen = pl.library.slice(0, e.n);
+        if (!seen.length) break;
+        const hits = seen.filter((o) => matchFilter(o.card, e.filter));
+        const [pick] = hits.length ? await this.askCards(p, "手札に加えるカードを1枚選んでください", hits, 1, "seek") : [];
+        if (pick) {
+          this.move(pick, "hand");
+          this.addLog(`ライブラリーの上から${seen.length}枚を見て、${pick.card.name}を手札に加えた`, p);
+        } else this.addLog(`ライブラリーの上から${seen.length}枚を見たが、手札に加えられるカードはなかった`, p);
+        for (const o of seen)
+          if (o !== pick) {
+            if (e.rest === "graveyard") this.move(o, "graveyard");
+            else {
+              pl.library.splice(pl.library.indexOf(o), 1);
+              pl.library.push(o);
+            }
+          }
+        break;
+      }
+      case "regrow": {
+        const opts = pl.graveyard.filter((o) => matchFilter(o.card, e.filter));
+        const picked = await this.askCards(p, `手札に戻すカードを${e.n}枚まで選んでください`, opts, e.n, "regrow");
+        for (const o of picked) {
+          this.move(o, "hand");
+          this.addLog(`${o.card.name}を墓地から手札に戻した`, p);
+        }
+        break;
+      }
+      case "selfToHand":
+        if (src.zone === "graveyard") {
+          this.move(src, "hand");
+          this.addLog(`${src.card.name}が手札に戻った`, src.owner);
+        }
+        break;
+      case "advance":
+        await this.advanceQuest(p, e.n ?? 1);
+        break;
+      case "questTick":
+        await this.questTick(p, src);
+        break;
+      case "reanimateAll": {
+        const list = pl.graveyard.filter((o) => isCreatureCard(o.card) && matchFilter(o.card, e.filter));
+        for (const o of list) this.enterBattlefield(o, p);
+        if (list.length) this.addLog(`墓地の${list.map((o) => o.card.name).join("、")}が戦場に戻った`, p);
+        break;
+      }
+      case "setFromGrave": {
+        // 戦場の表向きの罠と、墓地の罠から選ぶ
+        const opts = [...pl.battlefield.filter((o) => isTrapCard(o.card) && !o.faceDown), ...pl.graveyard.filter((o) => isTrapCard(o.card))];
+        const picked = await this.askCards(p, `裏向きで仕掛け直す罠を${e.n}つまで選んでください`, opts, e.n, "setTrap");
+        for (const o of picked) {
+          if (o.zone === "battlefield") {
+            o.faceDown = true;
+            o.setTurn = this.turn;
+          } else this.placeTrap(p, o);
+        }
+        if (picked.length) this.addLog(`罠を${picked.length}つ、裏向きで仕掛け直した`, p);
+        break;
+      }
       case "paidColorKw": {
         const o = ctx.item.obj;
         const kw = o.paidColor ? ({ W: "警戒", U: "飛行", B: "接死", R: "速攻", G: "トランプル" } as Record<string, string>)[o.paidColor] : undefined;
@@ -2873,6 +3138,7 @@ export class Game {
       this.move(o, "hand");
       pl.drawsThisTurn++;
       if (pl.drawsThisTurn === 2) this.queueTriggers("secondDraw", this.sources(p));
+      if (i === 0) this.pushTrapEvent("oppDraw", this.other(p));
     }
   }
 
@@ -2975,6 +3241,11 @@ export class Game {
     if (comic >= 2) this.gainApplause(p, "喜劇", comic >= 3 ? 2 : 1, true);
     this.addLog(`${attackers.map((o) => o.card.name).join("、")}で攻撃した`, p);
     this.queueTriggers("attacks", attackers);
+    // 自分のクリーチャーが攻撃するたび(任務など)
+    for (const a of attackers)
+      for (const src of this.sources(p))
+        for (const ab of this.activeAbilities(src))
+          if (ab.a === "trigger" && ab.on === "allyAttacks" && matchFilter(a.card, ab.filter, this.colorsOf(a))) this.pendingTriggers.push({ obj: src, ability: ab, controller: p });
     // 対戦相手のクリーチャーが攻撃するたび(攻撃された側の誘発。攻撃したクリーチャー1体ごと)
     for (let i = 0; i < attackers.length; i++) this.queueTriggers("oppAttack", this.sources(this.other(p)));
     await this.priorityStep();
@@ -2991,6 +3262,13 @@ export class Game {
         .map(([a, bs]) => `${this.find(Number(a))?.card.name}を${bs.map((b) => this.find(b)?.card.name).join("と")}`)
         .join("、");
       if (desc) this.addLog(`${desc}でブロックした`, d);
+      // ブロックするたび(任務など)
+      const blocked = [...new Set(Object.values(this.combat.blocks).flat())].map((u) => this.find(u)).filter((o): o is Obj => !!o);
+      this.queueTriggers("blocks", blocked);
+      for (const b of blocked)
+        for (const src of this.sources(d))
+          for (const ab of this.activeAbilities(src))
+            if (ab.a === "trigger" && ab.on === "allyBlocks" && matchFilter(b.card, ab.filter, this.colorsOf(b))) this.pendingTriggers.push({ obj: src, ability: ab, controller: d });
     }
     await this.priorityStep();
 
@@ -3145,6 +3423,7 @@ export class Game {
       q.drawsThisTurn = 0;
       q.assembledThisTurn = false;
       q.evolvedThisTurn = false;
+      q.trapsSetThisTurn = 0;
       for (const o of q.battlefield) o.attackedThisTurn = false;
     }
     this.onceUsed.clear();
@@ -3173,6 +3452,11 @@ export class Game {
       }
     }
     this.queueTriggers("endStep", this.sources(p));
+    // 加護《死者の書》:あなたのターンの終了時、表向きの罠が2つ以上あるならカードを1枚引く
+    if (pl.blessings.includes(BLESSING_BOOK) && pl.battlefield.filter((o) => isTrapCard(o.card) && !o.faceDown).length >= 2) {
+      this.addLog(`加護《${BLESSING_BOOK}》:カードを1枚引いた`, p);
+      this.draw(p, 1);
+    }
     await this.priorityStep();
     // クリンナップ
     this.step = "cleanup";

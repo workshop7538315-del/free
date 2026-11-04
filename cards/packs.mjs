@@ -39,6 +39,7 @@ import { PRIMARIES } from "./sets/p115-primaries.mjs";
 import { SANGOKU, SANGOKU12 } from "./sets/sg-sangoku.mjs";
 import { SUIKODEN } from "./sets/sh-suikoden.mjs";
 import { KYUSHI } from "./sets/ry-kyushi.mjs";
+import { EGYPT } from "./sets/eg-egypt.mjs";
 
 export const PACKS = [
   {
@@ -188,6 +189,15 @@ export const PACKS = [
     words: ["招集", "集結", "龍生"],
     theme: "守護者の争いで倒れた赤と黒の守護者の死骸から、九匹の龍(龍生九子)が生まれた。長兄の贔屓が背負っていた石碑が崩れ、封じられていた百八の魔星が地上に散って梁山泊に集まる。主役は水滸伝の梁山泊(白青緑)。デッキの外から仲間を呼ぶ天罡招集・地煞招集、呼んだ数で強くなる集結、劣勢で働く替天行道。108人すべてがカードになり、デッキに入るのは33人で、残りは招集でだけ出てくる。サブの龍生九子(黒赤)は、秘蔵庫の九子を贔屓の上に重ねていくシルバーバレット。三国志にも魏・呉・蜀のカードを足した。",
     sets: [SUIKODEN, KYUSHI, SANGOKU12],
+  },
+  {
+    id: "p13",
+    number: 13,
+    name: "砂に眠る王と九柱の神々",
+    kind: "新規展開",
+    words: ["系譜", "任務", "罠"],
+    theme: "砂漠の王国エジプト。ヘリオポリスの九柱神(白青赤)は、親の神がいれば子の神が軽くなる系譜でつないでいく。王墓を守るメジャイの兵士(白黒緑)は、人間で条件を満たして任務の報酬を集める。ピラミッドの主ファラオ(青黒緑)は、裏向きの罠で相手に答え続けるコントロール。罠を発動するたびにファラオの呪いが溜まり、加護を重ねて長期戦を有利にしていく。呪いが満ちると、秘蔵庫から不死のファラオが目覚める。",
+    sets: [EGYPT],
   },
 ];
 

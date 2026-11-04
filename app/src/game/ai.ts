@@ -23,6 +23,10 @@ import {
   BLESSING_ELDORADO,
   releaseAbility,
   spellAbility,
+  trapOf,
+  isTrapCard,
+  questOf,
+  BLESSING_SLOTS,
   type Action,
   type Agent,
   type BlockAnswer,
@@ -138,6 +142,10 @@ function keepValue(g: Game, p: PlayerId, c: Card): number {
   if (hasCrest(c)) v -= 1.6;
   // 装備品は自分のクリーチャーがいる・来るなら手札に残す
   if (abilityOf(c, "equip")) v += 1.2;
+  // 罠は手札から仕掛けて使う
+  if (isTrapCard(c)) v += 1.5;
+  // 任務は早めに置きたい(人間がいれば進む)
+  if (questOf(c)) v += 2;
   // 生け贄の起動型能力を持つものは、生け贄にするクリーチャーとの組み合わせで強い
   if (abilitiesOf(c).some((a) => a.a === "activated" && (a.cost.sac || a.cost.sacSelf))) v += 0.6;
   // 龍生九子のサポート(重なりを使う呪文)は、九子を使うデッキなら手札に残す
@@ -207,6 +215,9 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
   if (top && top.controller !== p) {
     const counter = options.find((a) => a.type === "cast" && isCounter(g, a) && worthCountering(g, p, top));
     if (counter) return counter;
+    // 封印の扉など、打ち消しの罠
+    const trapCounter = options.find((a) => a.type === "trap" && a.mode !== "set" && trapOf(g.find(a.uid)!.card)?.effects.some((e) => e.do === "counter") && worthCountering(g, p, top));
+    if (trapCounter) return trapCounter;
     // 狴犴:相手の悪事に割り込んで重ねる
     let ambush: { a: Action; s: number } | null = null;
     for (const a of options) if (a.type === "summon" && a.via === "dragon") {
@@ -258,6 +269,7 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
     else if (a.type === "activate") s = scoreActivate(g, p, a);
     else if (a.type === "equip") s = main && g.step === "main1" && g.find(a.uid)?.attachedTo == null ? 2.2 : -1;
     else if (a.type === "cycle") s = scoreCycle(g, p, a.uid);
+    else if (a.type === "trap") s = scoreTrap(g, p, a, main);
     else if (a.type === "summon")
       s =
         a.via === "entrata" ? scoreEntrata(g, p, a.uid)
@@ -270,6 +282,70 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
     if (s > 0 && (!best || s > best.s)) best = { a, s };
   }
   return best?.a ?? pass;
+}
+
+// ---------------------------------------------------------------- 罠(第13弾)
+/** 罠の効果の価値(実際に選べる対象で見る) */
+function trapValue(g: Game, p: PlayerId, o: Obj): number {
+  const tr = trapOf(o.card);
+  if (!tr) return 0;
+  const spec = tr.targets?.[0];
+  const opts = spec ? g.targetOptions(spec, p).map((r) => findObj(g, r)).filter((x): x is Obj => !!x && x.controller !== p && isCreatureCard(x.card)) : [];
+  const best = Math.max(0, ...opts.map((x) => creatureValue(g, x)));
+  const inCombat = !!g.combat && (g.step === "block" || g.step === "attack");
+  let v = 0;
+  for (const e of tr.effects) {
+    switch (e.do) {
+      case "destroy":
+        v += best >= 2 ? best + 1 : 0;
+        break;
+      case "tuck":
+        v += best >= 3 ? best * 0.9 : 0;
+        break;
+      case "damage": {
+        const dmg = typeof e.n === "number" ? e.n : 3;
+        v += Math.max(0, ...opts.filter((x) => g.toughness(x) - x.damage <= dmg && !g.hasKw(x, "破壊不能")).map((x) => creatureValue(g, x) + 0.5));
+        break;
+      }
+      case "tap": {
+        // 相手の終了ステップに止めれば、次の相手のターンに動けない。自分のメイン1ならブロッカーを止める
+        const oppEnd = g.step === "end" && g.active !== p;
+        const myMain1 = g.step === "main1" && g.active === p && g.creatures(p).some((x) => g.canAttack(x));
+        v += oppEnd || myMain1 ? best * 0.6 : 0;
+        break;
+      }
+      case "counter":
+        v += 0;
+        break;
+      default:
+        v += effectValue(g, p, e, tr.targets ?? [], inCombat);
+    }
+  }
+  return v;
+}
+
+function scoreTrap(g: Game, p: PlayerId, a: Extract<Action, { type: "trap" }>, main: boolean): number {
+  const o = g.find(a.uid);
+  const tr = o && trapOf(o.card);
+  if (!o || !tr) return -1;
+  if (a.mode === "set") {
+    // 仕掛けておけば次のターンから使える。クリーチャーより少し後に
+    if (!main) return -1;
+    return 2.6 + manaValue(o.card.cost) * 0.15;
+  }
+  if (tr.effects.some((e) => e.do === "counter")) return -1;
+  const myTurn = g.active === p;
+  const oppEnd = g.step === "end" && !myTurn;
+  const defending = !myTurn && !!g.combat && (g.step === "attack" || g.step === "block");
+  const v = trapValue(g, p, o);
+  // 対象を取らない罠(トークン・全体弱化)は、守るときか相手の終了ステップに
+  const noTarget = !tr.targets?.length;
+  if (noTarget && !(defending || oppEnd)) return -1;
+  if (a.mode === "flip") return v >= 2.5 ? v + 1 : -1;
+  // 起動コストを払うのは、相手のターン(余ったマナ)か自分のメイン2
+  const lateMain = g.step === "main2" && myTurn && g.stack.length === 0;
+  if (!(oppEnd || defending || lateMain)) return -1;
+  return v >= 3 ? v - 0.5 : -1;
 }
 
 function scoreCycle(g: Game, p: PlayerId, uid: number): number {
@@ -311,6 +387,9 @@ function scoreCast(g: Game, p: PlayerId, a: Extract<Action, { type: "cast" }>, m
     if (!main && !(oppEnd || (g.step === "attack" && g.active !== p))) return -1;
     let v = 3 + cardCreatureValue(c) * 0.6 + manaValue(c.cost) * 0.3;
     if (abilitiesOf(c).some((x) => x.a === "trigger" && x.on === "etb")) v += 1.5;
+    // 「出たとき、任務を進める」は、任務を先に置いてから
+    const advancesOnly = abilitiesOf(c).some((x) => x.a === "trigger" && x.on === "etb" && x.effects.every((e) => e.do === "advance"));
+    if (advancesOnly && !g.players[p].battlefield.some((x) => questOf(x.card))) v -= 1.2;
     return v;
   }
   if (isAura(c)) {
@@ -321,6 +400,8 @@ function scoreCast(g: Game, p: PlayerId, a: Extract<Action, { type: "cast" }>, m
     }
     return g.creatures(p).length ? 2.5 + manaValue(c.cost) * 0.3 : -1;
   }
+  // 任務は早く置くほど進む
+  if (questOf(c)) return main ? 4.2 - manaValue(c.cost) * 0.2 : -1;
   if (c.type === "エンチャント" || c.type === "アーティファクト") return main ? 2 + manaValue(c.cost) * 0.4 : -1;
   const sp = spellAbility(c);
   if (!sp) return -1;
@@ -611,6 +692,22 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
     case "underToHand":
       // 下のカードのコピーが1枚増える
       return g.creatures(p).some((o) => (o.under ?? []).some((u) => dragonOf(u.card))) ? 3 : 0;
+    case "blessing": {
+      const used = me.blessings.length + Object.keys(me.applause).length;
+      return me.blessings.includes(e.id) || used >= BLESSING_SLOTS ? 0 : 4;
+    }
+    case "advance":
+      return me.battlefield.some((o) => questOf(o.card)) ? 1.2 * (e.n ?? 1) : 0;
+    case "seek":
+      return 1.6;
+    case "regrow":
+      return Math.min(e.n, me.graveyard.filter((o) => matchFilter(o.card, e.filter)).length) * 1.8;
+    case "selfToHand":
+      return 1;
+    case "reanimateAll":
+      return me.graveyard.filter((o) => isCreatureCard(o.card) && matchFilter(o.card, e.filter)).reduce((s, o) => s + cardCreatureValue(o.card) * 0.5, 0);
+    case "setFromGrave":
+      return Math.min(e.n, me.graveyard.filter((o) => isTrapCard(o.card)).length) * 2;
     case "dragonNow": {
       const can = me.extra.some((o) => dragonOf(o.card) && g.dragonBases(p).some((b) => g.canDragon(p, o, b)));
       return can ? 3.5 : 0;
@@ -850,8 +947,19 @@ function chooseYesNo(g: Game, p: PlayerId, d: Extract<Decision, { kind: "yesno" 
     case "reclaim":
       return me.mana.length >= 5;
     case "blessing":
+      // 不死の王墓:罠を裏向きのまま使い回す
+      if (d.prompt.includes("不死の王墓")) return true;
       // ライブラリーに余裕があれば、マナと戦場を減らさずに済む方を選ぶ
       return me.library.length >= 12;
+    case "trap": {
+      const free = !!d.obj?.faceDown;
+      if (d.subject) {
+        const v = creatureValue(g, d.subject);
+        return free ? v >= 3.2 || manaValue(d.subject.card.cost) >= 3 : v >= 5;
+      }
+      // 相手がカードを引いたとき:発動はいつでも得。起動はマナが余っていれば
+      return free || me.mana.filter((x) => !x.tapped).length >= 5;
+    }
     case "kicker":
       return true;
     case "learn":
@@ -985,6 +1093,17 @@ function chooseCards(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseC
       break;
     case "underToVault":
       sorted = [...objs].sort((a, b) => dragonEtbValue(g, p, a, 1) - dragonEtbValue(g, p, b, 1));
+      break;
+    case "quest": {
+      // 達成に近い任務から
+      const ratio = (o: Obj) => (o.quest ?? 0) / (questOf(o.card)?.n ?? 9);
+      sorted = [...objs].sort((a, b) => ratio(b) - ratio(a));
+      break;
+    }
+    case "setTrap":
+    case "regrow":
+    case "seek":
+      sorted = [...objs].sort((a, b) => keepValue(g, p, b.card) + manaValue(b.card.cost) * 0.3 - keepValue(g, p, a.card) - manaValue(a.card.cost) * 0.3);
       break;
     case "underToHand":
       // コピーするのは体の大きい九子(土台がなければ贔屓)

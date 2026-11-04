@@ -199,7 +199,7 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
   };
   // 秘蔵庫のカードはメインには入れない
   // 第11弾の英雄と関連カード(hr)は、core で指定したデッキにだけ入れる(自動では足さない)
-  const pool = out.filter((c) => fits(c) && !c.id.startsWith("hr") && !c.id.startsWith("sg") && !c.id.startsWith("sh") && !c.id.startsWith("ry") && !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast", "lesson", "dragon"].includes(a.a)));
+  const pool = out.filter((c) => fits(c) && !c.id.startsWith("hr") && !c.id.startsWith("sg") && !c.id.startsWith("sh") && !c.id.startsWith("ry") && !c.id.startsWith("eg") && !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast", "lesson", "dragon"].includes(a.a)));
   const inSet = (c) => !!set && c.id.startsWith(set);
   const themed = (c) => inSet(c) || (!!theme && theme(c));
   const score = (c) => {
@@ -320,6 +320,14 @@ const DECKS = [
   { id: "ry-kyushi", name: "龍生九子:九つの背(黒赤)", colors: ["B", "R"], theme: tag("龍生九子"), archetype: "龍生九子",
     core: { ry01: 4, ry12: 3, ry11: 2, ry10: 2, ry13: 1, ry14: 2, ry15: 3, ry16: 2, ry17: 2 },
     extra: { ry02: 1, ry03: 1, ry04: 1, ry05: 1, ry06: 1, ry07: 1, ry08: 1, ry09: 1 } },
+  // 第13弾:エジプト
+  { id: "eg-gods", name: "ヘリオポリス:九柱の神々(白青赤)", colors: ["W", "U", "R"], theme: tag("ヘリオポリス"), archetype: "ヘリオポリス",
+    core: { eg01: 3, eg02: 3, eg03: 3, eg04: 2, eg05: 2, eg06: 2, eg07: 2, eg08: 1, eg09: 2, eg10: 2, eg11: 3, eg13: 3, eg14: 2, eg15: 1, eg16: 2, eg18: 2, eg19: 2, eg20: 1, eg17: 1, eg12: 1 } },
+  { id: "eg-medjay", name: "メジャイ:王墓の守り手(白黒緑)", colors: ["W", "B", "G"], theme: tag("メジャイ"), archetype: "メジャイ",
+    core: { eg21: 2, eg22: 2, eg23: 2, eg24: 2, eg25: 1, eg26: 3, eg27: 3, eg28: 2, eg29: 3, eg30: 2, eg31: 2, eg32: 2, eg33: 2, eg34: 2, eg35: 2, eg36: 2, eg37: 1, eg38: 2, eg39: 1, eg40: 2 } },
+  { id: "eg-pharaoh", name: "ファラオ:罠のピラミッド(青黒緑)", colors: ["U", "B", "G"], theme: tag("ファラオ"), archetype: "ファラオ",
+    core: { eg41: 3, eg42: 2, eg43: 3, eg44: 2, eg45: 2, eg46: 2, eg47: 2, eg48: 2, eg49: 2, eg50: 2, eg51: 2, eg52: 3, eg53: 2, eg54: 2, eg55: 2, eg56: 2, eg58: 1, eg59: 1, eg60: 3 },
+    extra: { eg57: 1 } },
   // 第11.5弾:白単(回復)と青単(ドロー)
   { id: "t-mono-w", name: "原色:白単の癒しの聖堂", colors: ["W"], pure: true, theme: tag("原色"), archetype: "原色",
     core: { pc01: 2, pc02: 1, pc03: 2, pc04: 4, pc06: 2, pc07: 2, pc08: 4, pc09: 3, pc10: 3, pc11: 3, pc12: 2, pc13: 3, pc15: 2, hz65: 3, pc48: 2 } },

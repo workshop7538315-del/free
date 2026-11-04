@@ -325,12 +325,37 @@ export const E = {
   /** このクリーチャー自身が決闘する。対象は [相手のクリーチャー] */
   duelSelf: (win) => ({ do: "duel", tg: [0], self: true, ...(win ? { win: [win].flat() } : {}) }),
 };
+// ---------------------------------------------------------------- 第13弾
+/** 系譜:親の神のどれかが自分の戦場か墓地にあるなら、コストが{2}少なくなる */
+export const lineage = (...names) => ({ a: "costDown", n: 2, if: { lineage: names }, lineage: names });
+/** 罠:マナコストで裏向きに仕掛け、次のターンからコストなしで発動。表向きのあとは cost で何度でも */
+export const trap = (cost, effects, targets, on) => ({ a: "trap", cost, effects: [effects].flat(), ...(targets ? { targets: [targets].flat() } : {}), ...(on ? { on } : {}) });
+/** 任務:on の条件(filter)を満たすたびに任務カウンター。n 個で reward */
+export const quest = (n, on, filter, reward) => [
+  { a: "trigger", on, ...(filter ? { filter } : {}), effects: [{ do: "questTick" }] },
+  { a: "quest", n, reward: [reward].flat() },
+];
+export const allyAttacks = (filter) => trig("allyAttacks", filter);
+export const allyBlocks = (filter) => trig("allyBlocks", filter);
+export const onBlocks = trig("blocks");
+export const oppDies = trig("oppDies");
+export const onQuestDone = trig("questDone");
+export const onTrapUse = trig("trapUse");
+export const E13 = {
+  seek: (n, filter, rest = "bottom") => ({ do: "seek", n, filter, rest }),
+  regrow: (n, filter) => ({ do: "regrow", n, filter }),
+  selfToHand: () => ({ do: "selfToHand" }),
+  advance: (n) => ({ do: "advance", ...(n ? { n } : {}) }),
+  reanimateAll: (filter) => ({ do: "reanimateAll", filter }),
+  setFromGrave: (n) => ({ do: "setFromGrave", n }),
+};
 export const iff = (cond, e) => ({ ...e, if: cond });
 export const unless = (cond, e) => ({ ...e, unless: cond });
 export const may = (e) => ({ ...e, may: true });
 
 // ---------------------------------------------------------------- 文章生成
 const COLOR_JA = { W: "白", U: "青", B: "黒", R: "赤", G: "緑", C: "無色" };
+const applauseName = (cat) => (cat === "呪い" ? "ファラオの呪い" : `喝采【${cat}】`);
 
 function signed(n) {
   return n >= 0 ? `+${n}` : `${n}`;
@@ -346,6 +371,7 @@ function kwList(kws) {
 export function filterPhrase(f = {}, ctx = "creature") {
   const adj = [];
   if (f.name) adj.push(`「${f.name}」と名のついた`);
+  if (f.names) return f.names.map((n) => `《${n}》`).join("か");
   if (f.color) adj.push(`${COLOR_JA[f.color]}の`);
   if (f.mv !== undefined) adj.push(`マナ総量が${f.mv}の`);
   if (f.minMV !== undefined) adj.push(`マナ総量が${f.minMV}以上の`);
@@ -387,13 +413,13 @@ const PER_TEXT = {
   graveyardCreatures: "あなたの墓地にあるクリーチャー・カード1枚につき",
 };
 function countText(n) {
-  if (n.count === "applause") return `あなたの喝采【${n.cat}】の数`;
+  if (n.count === "applause") return `あなたの${applauseName(n.cat)}の数`;
   if (n.count === "primary") return `原色(あなたのマナゾーンにある${COLOR_JA[n.color]}の単色カードの枚数)`;
   if (n.count === "perm") return `あなたがコントロールする${filterPhrase(n.filter, "permanent")}の数`;
   return COUNT_TEXT[n.count];
 }
 function perText(n) {
-  if (n.count === "applause") return `あなたの喝采【${n.cat}】1につき`;
+  if (n.count === "applause") return `あなたの${applauseName(n.cat)}1につき`;
   if (n.count === "primary") return `あなたのマナゾーンにある${COLOR_JA[n.color]}の単色カード1枚につき`;
   if (n.count === "perm") return `あなたがコントロールする${filterPhrase(n.filter, "permanent")}1${unitOf(n.filter)}につき`;
   return PER_TEXT[n.count];
@@ -411,7 +437,7 @@ function amountText(n, notes) {
 export function condLabel(c) {
   if (typeof c === "object") {
     if ("armed" in c) return `マナ武装 ${c.n}(${COLOR_JA[c.armed]})`;
-    if ("applause" in c) return `喝采【${c.applause}】${c.n}`;
+    if ("applause" in c) return `${applauseName(c.applause)} ${c.n}`;
     if ("primary" in c) return `原色 ${c.n}(${COLOR_JA[c.primary]})`;
     if ("navy" in c) return `水軍 ${c.navy}`;
     if ("gather" in c) return `集結 ${c.gather}`;
@@ -458,7 +484,8 @@ function condPrefix(c) {
   if (typeof c === "object" && "oppHand" in c) return `対戦相手の手札が${c.oppHand}枚以上なら、`;
   if (typeof c === "object" && "manaMV" in c) return `あなたのマナゾーンにあるカードのマナ総量の合計が${c.manaMV}以上なら、`;
   if (typeof c === "object") return `あなたが${filterPhrase(c.control, "permanent")}を${c.n}${unitOf(c.control)}以上コントロールしているなら、`;
-  return { pioneeredGame: "このゲームであなたが開拓進化をしたなら、", buriedInMana: "あなたのマナゾーンに埋蔵を持つカードがあるなら、", burned: "燃焼したなら、", kicked: "追加払いしたなら、", fewerMana: "あなたのマナゾーンのカードが対戦相手より少ないなら、", notMoreMana: "あなたのマナゾーンのカードが対戦相手の枚数以下なら、" }[c];
+  if (typeof c === "object" && "lineage" in c) return `${c.lineage.map((n) => `《${n}》`).join("か")}があなたの戦場か墓地にあるなら、`;
+  return { questDone: "このゲームであなたが任務を達成したなら、", pioneeredGame: "このゲームであなたが開拓進化をしたなら、", buriedInMana: "あなたのマナゾーンに埋蔵を持つカードがあるなら、", burned: "燃焼したなら、", kicked: "追加払いしたなら、", fewerMana: "あなたのマナゾーンのカードが対戦相手より少ないなら、", notMoreMana: "あなたのマナゾーンのカードが対戦相手の枚数以下なら、" }[c];
 }
 
 /** 条件の前置き(常在能力に付けるとき) */
@@ -466,14 +493,15 @@ function condWhile(c) {
   const label = condLabel(c);
   if (label) return `${label} ― `;
   if (typeof c === "object") return `あなたが${filterPhrase(c.control, "permanent")}を${c.n}${unitOf(c.control)}以上コントロールしているかぎり、`;
-  return { fewerMana: "あなたのマナゾーンのカードが対戦相手より少ないかぎり、", kicked: "追加払いしたなら、" }[c] ?? "";
+  return { questDone: "このゲームであなたが任務を達成しているかぎり、", fewerMana: "あなたのマナゾーンのカードが対戦相手より少ないかぎり、", kicked: "追加払いしたなら、" }[c] ?? "";
 }
 
 /** 零式の条件(〜なら) */
 function condPlain(c) {
   if (typeof c === "object") {
     if ("armed" in c) return `あなたのマナゾーンに${COLOR_JA[c.armed]}のカードが${c.n}枚以上ある`;
-    if ("applause" in c) return `あなたの喝采【${c.applause}】が${c.n}以上ある`;
+    if ("applause" in c) return `あなたの${applauseName(c.applause)}が${c.n}以上ある`;
+    if ("lineage" in c) return `${c.lineage.map((n) => `《${n}》`).join("か")}があなたの戦場か墓地にある`;
     if ("primary" in c) return `あなたのマナゾーンに${COLOR_JA[c.primary]}の単色カードが${c.n}枚以上ある`;
     if ("manaMV" in c) return `あなたのマナゾーンにあるカードのマナ総量の合計が${c.manaMV}以上である`;
     if ("navy" in c) return `あなたのマナゾーンに青のカードが${c.navy}枚以上ある`;
@@ -519,6 +547,8 @@ function targetText(spec) {
       if (spec.who === "opp") parts.push("対戦相手がコントロールする");
       if (spec.who === "you") parts.push("あなたがコントロールする");
       if (spec.tapped) parts.push("タップ状態の");
+      if (spec.attacking) parts.push("攻撃している");
+      if (spec.inCombat) parts.push("攻撃かブロックしている");
       if (spec.minPower !== undefined) parts.push(`パワーが${spec.minPower}以上の`);
       if (spec.maxPower !== undefined) parts.push(`パワーが${spec.maxPower}以下の`);
       if (spec.flying) parts.push("飛行を持つ");
@@ -662,7 +692,21 @@ function effectText(e, name, abil, notes) {
       if (e.all) return "対戦相手のマナゾーンにある表向きのカードをすべて裏向きにする。";
       return `対戦相手のマナゾーンにある${e.crest ? "紋章を持つ" : "表向きの"}カードを${e.n}枚選び、裏向きにする。`;
     case "applause":
-      return `あなたの喝采【${e.cat}】を${e.n}増やす。`;
+      return `あなたの${applauseName(e.cat)}を${e.n}増やす。`;
+    case "seek":
+      return `あなたのライブラリーの一番上から${e.n}枚を見る。その中から${filterPhrase(e.filter, "card")}を1枚まで公開して手札に加え、残りを${e.rest === "graveyard" ? "墓地に置く" : "好きな順番でライブラリーの一番下に置く"}。`;
+    case "regrow":
+      return `あなたの墓地から${filterPhrase(e.filter, "card")}を${e.n}枚まで選び、手札に戻す。`;
+    case "selfToHand":
+      return `${name}を墓地から手札に戻す。`;
+    case "advance":
+      return e.n ? `任務を${e.n}回進める。` : "任務を進める。";
+    case "questTick":
+      return "この任務に任務カウンターを1つ置く。";
+    case "reanimateAll":
+      return `あなたの墓地にある${filterPhrase(e.filter, "card")}をすべて戦場に戻す。`;
+    case "setFromGrave":
+      return `あなたの戦場にある表向きの罠と、あなたの墓地にある罠・カードから、合わせて${e.n}つまで選び、裏向きで仕掛け直す。`;
     case "blessing":
       return `あなたは加護《${e.id}》を得る。`;
     case "paidColorKw":
@@ -795,6 +839,12 @@ const TRIGGER_PREFIX = {
   uscita: () => "ウシータ ― ",
   secondDraw: () => "あなたが各ターンに2枚目のカードを引くたび、",
   oppAttack: () => "対戦相手がコントロールするクリーチャーが攻撃するたび、",
+  allyAttacks: (n, f) => `あなたの${filterPhrase(f, "creature")}が攻撃するたび、`,
+  allyBlocks: (n, f) => `あなたの${filterPhrase(f, "creature")}がブロックするたび、`,
+  blocks: (n) => `${n}がブロックするたび、`,
+  oppDies: () => "対戦相手のクリーチャーが死亡するたび、",
+  questDone: () => "あなたが任務を達成するたび、",
+  trapUse: () => "あなたが罠を発動するたび、",
 };
 
 function staticText(abil, name, card) {
@@ -833,6 +883,9 @@ function staticText(abil, name, card) {
     case "dragonDiscount":
       body = `あなたが行う龍生の進化コストは{${st.n}}少なくなる。`;
       break;
+    case "questDouble":
+      body = "あなたが任務を進めるとき、代わりに2回進める。";
+      break;
   }
   if (abil.if) return condWhile(abil.if) + body;
   return body;
@@ -845,7 +898,7 @@ function costSymbolsText(cost, name) {
   if (cost.life) parts.push(`${cost.life}点のライフを支払う`);
   if (cost.sac) parts.push(`${filterPhrase(cost.sac, "creature")}を1体生け贄に捧げる`);
   if (cost.sacSelf) parts.push(`${name}を生け贄に捧げる`);
-  if (cost.applause) parts.push(`喝采【${cost.applause.cat}】を${cost.applause.n}消費する`);
+  if (cost.applause) parts.push(`${applauseName(cost.applause.cat)}を${cost.applause.n}消費する`);
   if (cost.discard) parts.push(`手札を${cost.discard}枚捨てる`);
   return parts.join(", ");
 }
@@ -874,7 +927,15 @@ function abilityTextBody(abil, card) {
     case "equip":
       return `装備 ${abil.cost}`;
     case "entrata":
+      if (abil.cat === "呪い") return `王の目覚め ${abil.n}(ソーサリーのタイミングで、ファラオの呪いを${abil.n}消費して、秘蔵庫からこのクリーチャーを戦場に出す)`;
       return `エントラータ ${abil.n}【${abil.cat}】`;
+    case "trap": {
+      const when = abil.on === "oppEnter" ? "対戦相手のクリーチャーが戦場に出たとき、" : abil.on === "oppDraw" ? "対戦相手がカードを引いたとき、" : "";
+      const body = abil.on === "oppEnter" ? abil.effects.map((e) => effectText(e, name, { ...abil, targets: [{ t: "creature" }] }, [])).join("").replace(/それ/g, "そのクリーチャー") : bodyText(abil, name);
+      return `罠 ${abil.cost} ― ${when}${body}`;
+    }
+    case "quest":
+      return `任務 ${abil.n} ― 任務カウンターが${abil.n}個になったら達成する:${bodyText({ effects: abil.reward }, name)}そのあと、${name}を墓地に置く。`;
     case "curtainCall":
       return `カーテンコール ${abil.n}【${abil.cat}】(あなたの《${abil.baseName}》の上に重ねる。喝采【${abil.cat}】を${abil.n}消費して、秘蔵庫からこのクリーチャーを出す。《${abil.baseName}》は秘蔵庫に戻る)${abil.ovation ? `\n大喝采 ${abil.ovation}(このゲームで得た喝采【${abil.cat}】が累計${abil.ovation}以上なら、あなたは秘蔵庫からこのクリーチャーを、コストを{${abil.cut}}少なくして唱えてもよい)` : ""}`;
     case "pioneer":
@@ -925,6 +986,7 @@ function abilityTextBody(abil, card) {
     case "navyAlways":
       return "覇業【呉】 ― あなたのカードの「水軍」は、条件をつねに満たしているものとして扱う。";
     case "costDown": {
+      if (abil.lineage) return `系譜 ―${abil.lineage.map((n) => `《${n}》`).join("")}(${abil.lineage.map((n) => `《${n}》`).join("か")}があなたの戦場か墓地にあるなら、この呪文を唱えるためのコストは{${abil.n}}少なくなる)`;
       if (abil.en) return `縁 ―${abil.en.map((n) => `《${n}》`).join("")}(あなたが${abil.en.map((n) => `《${n}》`).join("か")}をコントロールしているなら、この呪文を唱えるためのコストは{${abil.n}}少なくなる)`;
       const amount = abil.per !== undefined ? `${perText(abil.per)}{${abil.mult ?? 1}}` : `{${abil.n}}`;
       const body = `この呪文を唱えるためのコストは${amount}少なくなる。`;

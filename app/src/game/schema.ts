@@ -23,10 +23,13 @@ export type Filter = {
   /** 元々のタフネスがこの値以上 */
   minToughness?: number;
   color?: Color;
+  /** 名前がこれらのどれかに当たる */
+  names?: string[];
 };
 
 /** 喝采のカテゴリー(第9.5弾) */
-export type Applause = "狂気" | "悲劇" | "喜劇";
+/** 「呪い」はファラオの呪い(第13弾。罠を発動するたびに溜まる) */
+export type Applause = "狂気" | "悲劇" | "喜劇" | "呪い";
 
 export type CondName =
   /** 替天行道:対戦相手のライフかクリーチャーの数があなたより多い(第12弾) */
@@ -80,7 +83,9 @@ export type CondName =
   /** 覇業【呉】:自分のマナゾーンのカードが対戦相手より多い */
   | "hegemonyWu"
   /** 覇業【蜀】:戦場でパワーが最も高いクリーチャーをコントロールしている(同じなら満たす) */
-  | "hegemonyShu";
+  | "hegemonyShu"
+  /** このゲームで、自分が任務を達成した(第13弾) */
+  | "questDone";
 
 export type Cond =
   | CondName
@@ -105,7 +110,9 @@ export type Cond =
   /** このカードの残量(水量)がN以上 */
   | { charges: number }
   /** 対戦相手の手札がn枚以上 */
-  | { oppHand: number };
+  | { oppHand: number }
+  /** 系譜:これらの名前の神が、自分の戦場か墓地にある(第13弾) */
+  | { lineage: string[] };
 
 export type CountKind = "mana" | "creatures" | "graveyard" | "graveyardCreatures" | "colorsInMana" | "hand" | "oppCreatures" | "burned" | "crests" | "colorlessMana";
 
@@ -122,6 +129,10 @@ export type TargetSpec =
       maxPower?: number;
       flying?: boolean;
       filter?: Filter;
+      /** 攻撃しているクリーチャー */
+      attacking?: boolean;
+      /** 攻撃かブロックしているクリーチャー */
+      inCombat?: boolean;
     }
   /** クリーチャーかプレイヤー */
   | { t: "any" }
@@ -251,6 +262,20 @@ export type Effect = Common &
     | { do: "yazi" }
     /** 登龍門:インスタントのタイミングで九子1体を重ねる */
     | { do: "dragonNow" }
+    /** ライブラリーの上から n 枚を見て、filter に合うカードを1枚まで手札に加え、残りを rest に置く(第13弾) */
+    | { do: "seek"; n: number; filter: Filter; rest: "graveyard" | "bottom" }
+    /** 自分の墓地から filter に合うカードを n 枚まで手札に戻す */
+    | { do: "regrow"; n: number; filter: Filter }
+    /** このカードを墓地から手札に戻す(死亡したときなど) */
+    | { do: "selfToHand" }
+    /** 任務を進める:自分の任務1つに任務カウンターを n 個置く(第13弾) */
+    | { do: "advance"; n?: number }
+    /** この任務に任務カウンターを1つ置く(任務の条件の誘発) */
+    | { do: "questTick" }
+    /** 自分の墓地の filter に合うカードをすべて戦場に戻す */
+    | { do: "reanimateAll"; filter: Filter }
+    /** 自分の墓地の罠を n 枚まで裏向きで仕掛ける */
+    | { do: "setFromGrave"; n: number }
   );
 
 export type TriggerEvent =
@@ -294,7 +319,19 @@ export type TriggerEvent =
   /** このカードがタップされたとき(紋章。マナを出すためにタップされたときなど) */
   | "tapped"
   /** このカードが生成されたとき(マナゾーンに生成されたものは紋章) */
-  | "created";
+  | "created"
+  /** filter に合う自分のクリーチャーが攻撃するたび(1体ごと。第13弾) */
+  | "allyAttacks"
+  /** filter に合う自分のクリーチャーがブロックするたび(1体ごと) */
+  | "allyBlocks"
+  /** このクリーチャーがブロックするたび */
+  | "blocks"
+  /** 対戦相手のクリーチャーが死亡するたび */
+  | "oppDies"
+  /** あなたがほかの任務を達成するたび */
+  | "questDone"
+  /** あなたが罠を発動するたび(裏向きから使うたび) */
+  | "trapUse";
 
 export type StaticSpec =
   /** 自分の(他の)クリーチャー全体の強化。filter で種族などを絞れる */
@@ -312,7 +349,9 @@ export type StaticSpec =
   /** filter に合うあなたの呪文のコストが{n}少なくなる */
   | { s: "discount"; filter: Filter; n: number }
   /** 龍生の進化コストが{n}少なくなる(第12弾) */
-  | { s: "dragonDiscount"; n: number };
+  | { s: "dragonDiscount"; n: number }
+  /** 任務を進めるとき、代わりに2回進める(第13弾) */
+  | { s: "questDouble" };
 
 /** 龍生の代わりの払い方(第12弾) */
 export type DragonAlt = {
@@ -422,6 +461,11 @@ export type Ability = { text?: string } & (
   | { a: "affinity"; filter: Filter }
   /** 零式:条件を満たしていれば、マナを払わずに唱えてもよい */
   | { a: "free"; if: Cond }
+  /** 罠(第13弾):手札からマナコストを払って裏向きで仕掛ける。仕掛けた次のターンから、コストなしで表向きにして(発動)効果を使える。
+   *  表向きのあとは cost を払えば同じ効果を何度でも使える。on があれば、そのことが起きたときにだけ使える */
+  | { a: "trap"; cost: string; on?: "oppEnter" | "oppDraw"; targets?: TargetSpec[]; effects: Effect[] }
+  /** 任務(第13弾):任務カウンターが n 個になったら達成。reward を行い、墓地に置く */
+  | { a: "quest"; n: number; reward: Effect[] }
 );
 
 /** モード呪文の選択肢 */

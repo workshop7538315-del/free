@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { Action, BlockAnswer, Decision, Game, Obj, Player, PlayerId, TargetRef } from "../../game/engine";
-import { STEP_NAMES, abilitiesOf, isCreatureCard, manaColors, releaseAbility } from "../../game/engine";
+import { STEP_NAMES, abilitiesOf, isCreatureCard, manaColors, releaseAbility, trapOf, questOf, applauseName, BLESSING_TEXT } from "../../game/engine";
 import type { HumanAgent } from "../../game/human";
 import { cardColors, manaValue } from "../../lib/mana";
 import { useIsMobile, useMotion } from "../../lib/motion";
@@ -573,13 +573,14 @@ function PlayerBar({ g, p, targetable, onClick, onOpen }: { g: Game; p: Player; 
         <span>墓地 {p.graveyard.length}</span>
         {p.extra.length > 0 && <span>秘蔵庫 {p.extra.length}</span>}
         {p.blessings.map((b) => (
-          <span key={b} className="applause" title="加護:加護の枠を1つ使う">
+          <span key={b} className="applause" title={`加護《${b}》:${BLESSING_TEXT[b] ?? ""}(加護の枠を1つ使う)`}>
             加護《{b}》
           </span>
         ))}
         {Object.entries(p.applause).map(([cat, n]) => (
-          <span key={cat} className="applause" title={`喝采【${cat}】:加護の枠を1つ使う。( )内はこのゲームで得た累計(大喝采の判定に使う)`}>
-            喝采【{cat}】{n}
+          <span key={cat} className="applause" title={cat === "呪い" ? "ファラオの呪い:罠を発動するたびに溜まる。加護の枠を1つ使う。( )内はこのゲームで得た累計" : `喝采【${cat}】:加護の枠を1つ使う。( )内はこのゲームで得た累計(大喝采の判定に使う)`}>
+            {applauseName(cat)}
+            {n}
             <small>(累計{p.applauseTotal[cat as keyof typeof p.applauseTotal] ?? 0})</small>
           </span>
         ))}
@@ -738,6 +739,10 @@ function MiniCard({
   const frame = cs.length === 0 ? one("C") : cs.length === 1 ? one(cs[0]) : `linear-gradient(135deg, ${cs.map((c) => `var(--mana-${c})`).join(",")})`;
   const creature = isCreatureCard(o.card);
   const onField = o.zone === "battlefield";
+  // 裏向きの罠:相手のものは中身を見せない
+  const faceDownTrap = onField && !!o.faceDown;
+  const secret = faceDownTrap && o.controller !== ME;
+  const q = onField ? questOf(o.card) : undefined;
   const pw = onField ? g.power(o) : o.card.power;
   const tg = onField ? g.toughness(o) : o.card.toughness;
   const attacking = !!g.combat?.attackers.includes(o.uid);
@@ -756,14 +761,24 @@ function MiniCard({
       onMouseLeave={hoverOff}
       tabIndex={dying ? -1 : undefined}
       aria-hidden={dying || undefined}
-      aria-label={`${o.card.name}${creature ? ` ${pw}/${onField && o.damage > 0 ? (tg ?? 0) - o.damage : tg}` : ""}${state ? `(${state})` : ""}`}
+      aria-label={secret ? "裏向きの罠" : `${o.card.name}${faceDownTrap ? "(裏向きの罠)" : ""}${creature ? ` ${pw}/${onField && o.damage > 0 ? (tg ?? 0) - o.damage : tg}` : ""}${state ? `(${state})` : ""}`}
       {...(dying ? {} : lp.handlers)}
     >
       <span className="mini-head">
-        <span className="mini-name">{o.card.name}</span>
-        {o.card.cost && <ManaCost cost={o.card.cost} size="sm" />}
+        <span className="mini-name">{secret ? "裏向きの罠" : o.card.name}</span>
+        {o.card.cost && !secret && <ManaCost cost={o.card.cost} size="sm" />}
       </span>
       <span className="mini-foot">
+        {faceDownTrap && (
+          <span className="mini-under" title={secret ? "裏向きの罠。相手は中身を見られない" : (o.setTurn ?? -1) < g.turn ? "裏向き:コストなしで発動できる" : "裏向き:次のターンから発動できる"}>
+            裏{!secret && (o.setTurn ?? -1) >= g.turn ? "(次から)" : ""}
+          </span>
+        )}
+        {q && (
+          <span className="mini-under" title={`任務カウンター ${o.quest ?? 0}/${q.n}`}>
+            任務{o.quest ?? 0}/{q.n}
+          </span>
+        )}
         {onField && (o.under?.length ?? 0) > 0 && (
           <span className="mini-under" title={`下に${o.under!.length}枚重なっている`}>
             重{o.under!.length}
@@ -774,7 +789,7 @@ function MiniCard({
             {pw}/{onField && o.damage > 0 ? `${(tg ?? 0) - o.damage}` : tg}
           </span>
         ) : (
-          <span className="mini-type">{o.card.type}</span>
+          <span className="mini-type">{secret ? "罠" : o.card.type}</span>
         )}
       </span>
     </button>
@@ -939,7 +954,7 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
       );
     case "chooseCards": {
       // 場にないカード(招集の候補、ライブラリーの上、重なりの下、秘蔵庫の九子)は、カードの形で見せる
-      const asCards = ["muster", "dig", "rotate", "dragon", "underToVault", "underToHand", "tutor"].includes(d.reason);
+      const asCards = ["muster", "dig", "rotate", "dragon", "underToVault", "underToHand", "tutor", "seek", "regrow", "setTrap"].includes(d.reason);
       const toggle = (u: number) => setChosen((s) => (s.includes(u) ? s.filter((x) => x !== u) : s.length < d.count ? [...s, u] : s));
       return (
         <>
@@ -973,7 +988,7 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
                   aria-pressed={on}
                   onClick={() => setChosen((s) => (s.includes(u) ? s.filter((x) => x !== u) : s.length < d.count ? [...s, u] : s))}
                 >
-                  {o.zone === "mana" && o.faceDown ? (o.controller === ME ? `裏:${o.card.name}` : `裏向きのカード${hiddenNo}`) : o.card.name}
+                  {o.zone === "battlefield" && o.faceDown && o.controller !== ME ? "裏向きの罠" : o.zone === "mana" && o.faceDown ? (o.controller === ME ? `裏:${o.card.name}` : `裏向きのカード${hiddenNo}`) : o.card.name}
                   {o.zone === "mana" && o.tapped ? "(タップ)" : ""}
                 </button>
               );
@@ -1141,7 +1156,15 @@ function actionLabel(g: Game, a: Action): string {
       if (a.via !== "entrata") return "リリース召喚する";
       const o = g.find(a.uid);
       const en = o ? abilitiesOf(o.card).find((ab) => ab.a === "entrata") : undefined;
+      if (en && en.a === "entrata" && en.cat === "呪い") return `王の目覚め(ファラオの呪いを${en.n}消費して登場)`;
       return en && en.a === "entrata" ? `エントラータ(喝采【${en.cat}】を${en.n}消費して登場)` : "エントラータ";
+    }
+    case "trap": {
+      const o = g.find(a.uid);
+      const tr = o ? trapOf(o.card) : undefined;
+      if (a.mode === "set") return o ? `罠を仕掛ける(${g.trapSetCost(ME, o) || "{0}"}・裏向き)` : "罠を仕掛ける";
+      if (a.mode === "flip") return "罠を発動する(コストなし)";
+      return `罠の効果を使う(${tr?.cost ?? ""})`;
     }
     case "equip":
       return "装備する";
@@ -1149,7 +1172,7 @@ function actionLabel(g: Game, a: Action): string {
       const o = g.find(a.uid);
       const ab = o ? abilitiesOf(o.card)[a.index] : undefined;
       if (ab && ab.a === "activated")
-        return `能力を起動(${[ab.cost.mana, ab.cost.tap ? "タップ" : "", ab.cost.sac ? "生け贄" : "", ab.cost.sacSelf ? "これを生け贄" : "", ab.cost.life ? `ライフ${ab.cost.life}` : "", ab.cost.applause ? `喝采【${ab.cost.applause.cat}】${ab.cost.applause.n}` : "", ab.cost.discard ? `手札${ab.cost.discard}枚を捨てる` : ""]
+        return `能力を起動(${[ab.cost.mana, ab.cost.tap ? "タップ" : "", ab.cost.sac ? "生け贄" : "", ab.cost.sacSelf ? "これを生け贄" : "", ab.cost.life ? `ライフ${ab.cost.life}` : "", ab.cost.applause ? `${applauseName(ab.cost.applause.cat)}${ab.cost.applause.n}` : "", ab.cost.discard ? `手札${ab.cost.discard}枚を捨てる` : ""]
           .filter(Boolean)
           .join("、")})`;
       return "能力を起動";
@@ -1166,6 +1189,7 @@ function refLabel(g: Game, r: TargetRef): string {
   if (!o) return "?";
   const owner = o.controller === ME ? "自分" : "相手";
   if (o.zone === "graveyard") return `墓地:${o.card.name}`;
+  if (o.zone === "battlefield" && o.faceDown && o.controller !== ME) return "相手の裏向きの罠";
   return `${owner}の${o.card.name}${isCreatureCard(o.card) ? `(${g.power(o)}/${g.toughness(o) - o.damage})` : ""}`;
 }
 
@@ -1174,6 +1198,30 @@ function CardDetail({ g, o }: { g: Game; o: Obj | null }) {
   if (!o) return <section className="detail detail-empty">カードを選ぶと、ここに詳しい内容が出ます。</section>;
   const c = o.card;
   const onField = o.zone === "battlefield";
+  if (o.zone === "battlefield" && o.faceDown) {
+    const mine = o.controller === ME;
+    return (
+      <section className="detail" aria-label="カードの詳細">
+        <header className="detail-head">
+          <h3 className="detail-name">裏向きの罠{mine ? `(${c.name})` : ""}</h3>
+        </header>
+        <p className="detail-text">
+          {mine
+            ? `${(o.setTurn ?? -1) < g.turn ? "いま" : "次のターンから"}、インスタントのタイミングでコストなしで表向きにして発動できる。`
+            : "裏向きで仕掛けられた罠です。相手は、インスタントのタイミングでコストなしで表向きにして発動できます。"}
+        </p>
+        {mine && (
+          <div className="detail-text">
+            {c.text.map((t, i) => (
+              <p key={i}>
+                <RulesText text={t} />
+              </p>
+            ))}
+          </div>
+        )}
+      </section>
+    );
+  }
   if (o.zone === "mana" && o.faceDown) {
     const mine = o.controller === 0;
     return (
