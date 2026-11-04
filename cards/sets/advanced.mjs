@@ -1,7 +1,7 @@
 // 派生キーワード:既存のキーワードの強化版・派生版を持つカード。
 //   天翔(飛行の強化) 大威迫(威迫の強化) 吸血(絆魂の派生) 疾駆(速攻の派生) 鉄壁(防衛の派生)
 //   輪廻(不屈の派生) 烈燃(燃焼の強化) 略奪(侵食の派生) 満開(開花の強化) 奈落(深淵の強化) 伏兵(瞬速の派生)
-import { cr, acr, ins, sor, ench, kw, spell, etb, upkeep, lord, selfIf, free, fierceBurn, dash, T, E, count, tagAll } from "../lib.mjs";
+import { cr, acr, ins, sor, ench, kw, spell, etb, upkeep, lord, selfIf, free, fierceBurn, dash, T, E, count, tagAll, iff } from "../lib.mjs";
 
 const burned = count("burned");
 const ambush = (effects, targets) => etb(effects, targets, { if: "oppTurn" });
@@ -36,7 +36,7 @@ export const ADVANCED = tagAll("派生キーワード", [
   cr("adv21", "巡る魂", "{2}{B}", "スピリット", 2, 1, "C", [kw("飛行", "輪廻")]),
   cr("adv22", "輪廻の大樹", "{2}{B}{G}", "ツリーフォーク", 3, 4, "R", [kw("到達"), lord({ type: "クリーチャー" }, 0, 0, ["輪廻"])]),
   // 烈燃 N:マナゾーンのカードを0〜N枚燃焼でき、燃焼した枚数だけ効果が大きくなる
-  ins("adv23", "烈火の奔流", "{R}", "U", [fierceBurn(5), spell(E.dmg(burned), T.any)]),
+  ins("adv23", "烈火の奔流", "{R}", "U", [fierceBurn(5), spell([E.dmg(2), iff("burned", E.dmg(burned))], T.any)]),
   sor("adv24", "灰燼の儀", "{1}{B}", "U", [fierceBurn(4), spell([E.draw(1), E.draw(burned)], undefined, "カードをX+1枚引く。Xは燃焼した枚数に等しい。")]),
   cr("adv25", "業火の化身", "{2}{R}", "エレメンタル", 2, 2, "R", [kw("速攻"), fierceBurn(4), etb(E.countersSelf(burned))]),
   sor("adv26", "燃え尽きる軍勢", "{2}{R}{R}", "R", [fierceBurn(5), spell(

@@ -199,7 +199,7 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
   };
   // 秘蔵庫のカードはメインには入れない
   // 第11弾の英雄と関連カード(hr)は、core で指定したデッキにだけ入れる(自動では足さない)
-  const pool = out.filter((c) => fits(c) && !c.id.startsWith("hr") && !c.id.startsWith("sg") && !c.id.startsWith("sh") && !c.id.startsWith("ry") && !c.id.startsWith("eg") && !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast", "lesson", "dragon"].includes(a.a)));
+  const pool = out.filter((c) => fits(c) && !/^hr\d/.test(c.id) && !c.id.startsWith("sg") && !c.id.startsWith("sh") && !c.id.startsWith("ry") && !c.id.startsWith("eg") && !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast", "lesson", "dragon"].includes(a.a)));
   const inSet = (c) => !!set && c.id.startsWith(set);
   const themed = (c) => inSet(c) || (!!theme && theme(c));
   const score = (c) => {
