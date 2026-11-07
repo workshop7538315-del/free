@@ -17,6 +17,8 @@ import { DeckPanel } from "./components/DeckPanel";
 import { Account } from "./components/Account";
 import { Filters } from "./components/Filters";
 import { Battle, type StarterDeck } from "./components/battle/Battle";
+import { BattleSettingsPanel } from "./components/BattleSettingsPanel";
+import { isBattlePlaying } from "./lib/battleSettings";
 
 const CARDS = rawCards as Card[];
 const BY_ID = new Map(CARDS.map((c) => [c.id, c]));
@@ -55,6 +57,12 @@ export default function App() {
   const [mode, setMode] = useState<"build" | "battle">(() => (new URLSearchParams(location.search).get("room") ? "battle" : "build"));
   // 演出のオン・オフ(画面右上)
   const [motion, setMotion] = usePersistent("ui.motion.v1", true);
+  // 画面上部のバナー(タイトル・切り替え・設定)をしまう
+  const [bannerOpen, setBannerOpen] = usePersistent("ui.banner.v1", true);
+  const goBuild = () => {
+    if (mode === "battle" && isBattlePlaying() && !window.confirm("対戦中です。デッキを組む画面に移ると、この対戦は終わります。移りますか?")) return;
+    setMode("build");
+  };
   // カード一覧の表示設定とページ
   const [prefs, setPrefs] = usePersistent<ListPrefs>("ui.list.v1", DEFAULT_PREFS);
   const [page, setPage] = usePersistent("ui.page.v1", 1);
@@ -181,7 +189,14 @@ export default function App() {
   return (
     <MotionContext.Provider value={motion}>
     <div className={`app ${motion ? "" : "no-motion"}`}>
-      <header className="topbar">
+      {!bannerOpen ? (
+        <div className="topbar-mini">
+          <button type="button" className="topbar-open" onClick={() => setBannerOpen(true)} aria-expanded={false} aria-controls="topbar">
+            ▾ メニュー({mode === "battle" ? "対戦" : "デッキを組む"})
+          </button>
+        </div>
+      ) : (
+      <header className="topbar" id="topbar">
         <h1 className="title">
           <span className="title-pips" aria-hidden="true">
             {COLORS.map((c) => (
@@ -191,7 +206,7 @@ export default function App() {
           デッキビルダー
         </h1>
         <nav className="tabs" aria-label="画面の切り替え">
-          <button type="button" className="tab" aria-current={mode === "build" ? "page" : undefined} onClick={() => setMode("build")}>
+          <button type="button" className="tab" aria-current={mode === "build" ? "page" : undefined} onClick={goBuild}>
             デッキを組む
           </button>
           <button type="button" className="tab" aria-current={mode === "battle" ? "page" : undefined} onClick={() => setMode("battle")}>
@@ -202,7 +217,12 @@ export default function App() {
           演出 {motion ? "オン" : "オフ"}
         </button>
         <Account session={session} />
+        <BattleSettingsPanel />
+        <button type="button" className="topbar-close" onClick={() => setBannerOpen(false)} aria-expanded={true} aria-controls="topbar" title="このバナーをしまう">
+          ▴ しまう
+        </button>
       </header>
+      )}
 
       {mode === "battle" ? (
         <main className="battle-wrap">

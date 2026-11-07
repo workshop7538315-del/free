@@ -5,6 +5,8 @@ import type { HumanAgent } from "../../game/human";
 import { cardColors, manaValue } from "../../lib/mana";
 import { useIsMobile, useMotion } from "../../lib/motion";
 import { ManaCost } from "../ManaCost";
+import { findPayment } from "../../game/payment";
+import { getBattleSettings, setBattlePlaying } from "../../lib/battleSettings";
 import { RulesText } from "../CardTile";
 import { copyText, deckText, logText, resultLine, type DeckInfo } from "../../lib/battleLog";
 
@@ -104,6 +106,11 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks, 
   const [curtain, setCurtain] = useState<"win" | "lose" | null>(null);
   const motion = useMotion();
   const mobile = useIsMobile();
+  // 対戦中かどうか(画面上部で「デッキを組む」に移るときの確認に使う)
+  useEffect(() => {
+    setBattlePlaying(result === undefined);
+    return () => setBattlePlaying(false);
+  }, [result]);
   useEffect(() => {
     if (result === undefined) {
       setCurtain(null);
@@ -1038,6 +1045,8 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
           </div>
         </>
       );
+    case "payMana":
+      return <PayManaPrompt key={`${d.cost}-${d.suggested.join(",")}-${g.log.length}`} d={d} answer={answer} />;
     case "chooseSum": {
       const sum = d.options.reduce((s, u, i) => s + (chosen.includes(u) ? d.values[i] : 0), 0);
       return (
@@ -1345,5 +1354,52 @@ function Log({ g, decks }: { g: Game; decks?: { mine: DeckInfo; cpu: DeckInfo } 
         ))}
       </ol>
     </section>
+  );
+}
+
+/** マナの支払い:使うマナ源を選ぶ(逐一オートかセルフチェック:おまかせを選んだ状態から、完全セルフ:何も選ばない状態から) */
+function PayManaPrompt({ d, answer }: { d: Extract<Decision, { kind: "payMana" }>; answer: (a: unknown) => void }) {
+  const self = getBattleSettings().payMode === "self";
+  const [sel, setSel] = useState<string[]>(() => (self ? [] : d.suggested));
+  const units = d.units.filter((u) => sel.includes(u.tapGroup));
+  const ok = !!findPayment(d.cost, d.x, units);
+  const used = ok ? new Set(sel) : null;
+  return (
+    <>
+      <p className="prompt-text">
+        <ManaCost cost={d.cost} size="sm" />
+        {d.x ? `(X=${d.x})` : ""}を払うマナを選んでください({ok ? "払えます" : "まだ足りません"})
+      </p>
+      <div className="prompt-actions pay-sources">
+        {d.sources.map((s) => {
+          const on = sel.includes(s.group);
+          return (
+            <button
+              key={s.group}
+              type="button"
+              className={`btn ${on ? "btn-on" : ""}`}
+              aria-pressed={on}
+              title={s.colors.length > 1 ? "どれか1色を出せる" : undefined}
+              onClick={() => setSel((x) => (x.includes(s.group) ? x.filter((y) => y !== s.group) : [...x, s.group]))}
+            >
+              <ManaCost cost={s.colors.map((c) => `{${c}}`).join("")} size="sm" /> {s.label}
+            </button>
+          );
+        })}
+      </div>
+      <div className="prompt-actions">
+        <button type="button" className="btn btn-primary" disabled={!ok} onClick={() => answer([...(used ?? [])])}>
+          このマナで払う
+        </button>
+        {!self && (
+          <button type="button" className="btn" onClick={() => answer(d.suggested)}>
+            おまかせで払う
+          </button>
+        )}
+        <button type="button" className="btn" onClick={() => setSel([])}>
+          選び直す
+        </button>
+      </div>
+    </>
   );
 }

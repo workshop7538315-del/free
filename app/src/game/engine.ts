@@ -200,7 +200,12 @@ export type Decision =
   | { kind: "color"; prompt: string; options: Color[]; source: Obj }
   /** リリースするカードを選ぶ:values の合計が min 以上になるように選ぶ */
   | { kind: "chooseSum"; prompt: string; options: number[]; values: number[]; min: number; target: Obj; minCount?: number; confirm?: string }
-  | { kind: "blockers"; attackers: number[]; blockers: number[] };
+  | { kind: "blockers"; attackers: number[]; blockers: number[] }
+  /** マナの支払い:どのマナ源を使うか選ぶ(答えは tapGroup の配列)。suggested はおまかせの払い方 */
+  | { kind: "payMana"; prompt: string; cost: string; x: number; units: ManaUnit[]; sources: ManaSource[]; suggested: string[] };
+
+/** 支払いに使えるマナ源(画面の表示用) */
+export type ManaSource = { group: string; label: string; colors: string[]; uid?: number };
 
 export type BlockAnswer = Record<number, number[]>;
 
@@ -1103,10 +1108,36 @@ export class Game {
     return (["W", "U", "B", "R", "G"] as Color[]).filter((c) => this.canPay(p, cost, x, exclude, c));
   }
 
-  private pay(p: PlayerId, cost: string, x: number, exclude?: Obj, only?: Color): boolean {
+  /** マナ源の表示名 */
+  private manaSourceOf(p: PlayerId, group: string, colors: string[]): ManaSource {
+    const pl = this.players[p];
+    if (group.startsWith("pool")) return { group, label: "浮いているマナ", colors };
+    const uid = Number(group.slice(1));
+    const o = group.startsWith("m") ? pl.mana.find((m) => m.uid === uid) : pl.battlefield.find((m) => m.uid === uid);
+    const name = o ? (o.faceDown && o.zone === "mana" ? `裏:${o.card.name}` : o.card.name) : "?";
+    return { group, label: group.startsWith("s") ? `${name}(生け贄に捧げる)` : group.startsWith("b") ? `${name}(タップ)` : name, colors, uid };
+  }
+
+  /** マナを払う。選べる余地があれば、どのマナ源を使うかプレイヤーに聞く(CPU・おまかせはいつもの払い方) */
+  private async pay(p: PlayerId, cost: string, x: number, exclude?: Obj, only?: Color): Promise<boolean> {
     const units = this.manaUnits(p, exclude, only);
-    const pay = findPayment(cost, x, units);
+    let pay = findPayment(cost, x, units);
     if (!pay) return false;
+    const groups = [...new Set(units.map((u) => u.tapGroup))];
+    if (groups.length > pay.usedGroups.size) {
+      const sources = groups.map((gr) => this.manaSourceOf(p, gr, [...new Set(units.filter((u) => u.tapGroup === gr).flatMap((u) => u.options))]));
+      const ans = await this.ask<string[]>(p, { kind: "payMana", prompt: `${cost}${x ? `(X=${x})` : ""}を払うマナを選んでください`, cost, x, units, sources, suggested: [...pay.usedGroups] });
+      const chosen = new Set(Array.isArray(ans) ? ans : []);
+      // 選んだマナ源だけで払えるなら、その払い方にする(払えなければおまかせ)
+      const idx = units.map((_, i) => i).filter((i) => chosen.has(units[i].tapGroup));
+      const sub = findPayment(cost, x, idx.map((i) => units[i]));
+      if (sub) pay = { usedGroups: sub.usedGroups, usedUnits: new Set([...sub.usedUnits].map((k) => idx[k])) };
+    }
+    this.applyPayment(p, units, pay);
+    return true;
+  }
+
+  private applyPayment(p: PlayerId, units: ManaUnit[], pay: { usedGroups: Set<string>; usedUnits: Set<number> }) {
     const pl = this.players[p];
     const leftovers: string[] = [];
     // 使った浮きマナを消す
@@ -1132,7 +1163,6 @@ export class Game {
       }
     }
     pl.pool.push(...leftovers);
-    return true;
   }
 
   private emptyPools() {
@@ -1323,7 +1353,7 @@ export class Game {
     } else if (a.type === "cycle") {
       const o = this.players[p].hand.find((x) => x.uid === a.uid);
       const cy = o && abilityOf(o.card, "cycling");
-      if (!o || !cy || !this.pay(p, cy.cost, 0)) return;
+      if (!o || !cy || !await this.pay(p, cy.cost, 0)) return;
       this.usedCards.add(o.card.id);
       this.move(o, "graveyard");
       this.addLog(`${o.card.name}を循環した`, p);
@@ -1340,7 +1370,7 @@ export class Game {
           ? opts[0]
           : await this.ask<TargetRef>(p, { kind: "target", prompt: `${o.card.name}を装備するクリーチャーを選んでください`, spec, options: opts, source: o, effects: [], index: 0 });
       const target = opts.find((r) => JSON.stringify(r) === JSON.stringify(pick)) ?? opts[0];
-      if (!this.pay(p, eq.cost, 0)) return;
+      if (!await this.pay(p, eq.cost, 0)) return;
       this.usedCards.add(o.card.id);
       o.attachedTo = (target as { uid: number }).uid;
       this.addLog(`${o.card.name}を${this.describeRef(target)}に装備した`, p);
@@ -1357,7 +1387,7 @@ export class Game {
         const tr = o && trapOf(o.card);
         if (!o || !tr) return;
         if (a.mode === "flip" && !tr.on && o.faceDown && this.trapReady(p, o)) await this.useTrap(p, o, true);
-        if (a.mode === "reset" && !o.faceDown && this.pay(p, tr.cost, 0)) {
+        if (a.mode === "reset" && !o.faceDown && await this.pay(p, tr.cost, 0)) {
           o.faceDown = true;
           o.setTurn = this.turn;
           o.rearmedTurn = this.turn;
@@ -1388,7 +1418,7 @@ export class Game {
   }
 
   private async setTrap(p: PlayerId, o: Obj) {
-    if (!this.pay(p, this.trapSetCost(p, o), 0)) return;
+    if (!await this.pay(p, this.trapSetCost(p, o), 0)) return;
     this.usedCards.add(o.card.id);
     this.placeTrap(p, o);
     const pl = this.players[p];
@@ -1407,7 +1437,7 @@ export class Game {
     const effects = tr.effects;
     const targets = preset ?? (await this.chooseTargets(p, tr.targets ?? [], o, effects));
     if (!targets) return;
-    if (!flip && !this.pay(p, tr.cost, 0)) return;
+    if (!flip && !await this.pay(p, tr.cost, 0)) return;
     this.usedCards.add(o.card.id);
     const pl = this.players[p];
     const tgt = targets.length ? `(対象:${targets.map((t) => this.describeRef(t)).join("、")})` : "";
@@ -1569,7 +1599,7 @@ export class Game {
       o.paidColor = only;
       this.addLog(`${c.name}を${COLOR_JA[only]}のマナだけで支払う`, p);
     }
-    if (!this.pay(p, cost, x, exclude, only)) return;
+    if (!await this.pay(p, cost, x, exclude, only)) return;
     if (burned) {
       const opts = this.players[p].mana.filter((m) => m !== o);
       const picked = await this.askCards(p, `燃焼:墓地に置くマナゾーンのカードを${burnCount}枚選んでください`, opts, burnCount, "burn");
@@ -1614,7 +1644,7 @@ export class Game {
     const a = abilitiesOf(o.card)[index] as Extract<Ability, { a: "activated" }>;
     const targets = await this.chooseTargets(p, a.targets ?? [], o, a.effects);
     if (!targets) return;
-    if (a.cost.mana && !this.pay(p, a.cost.mana, 0, a.cost.tap ? o : undefined)) return;
+    if (a.cost.mana && !await this.pay(p, a.cost.mana, 0, a.cost.tap ? o : undefined)) return;
     if (a.cost.tap) o.tapped = true;
     if (a.cost.life) {
       this.players[p].life -= a.cost.life;
@@ -2251,7 +2281,7 @@ export class Game {
     let useAlt = !canMana;
     if (canMana && canAlt) useAlt = await this.askYesNo(p, `${o.card.name}:進化コスト${cost || "{0}"}の代わりに「${this.altText(o)}」で重ねますか?`, "altCost", o);
     if (useAlt) await this.payAlt(p, o, base);
-    else if (!this.pay(p, cost, 0)) return;
+    else if (!await this.pay(p, cost, 0)) return;
     if (base.zone !== "battlefield" || o.zone !== "extra") return;
     const wasSick = base.sick;
     this.usedCards.add(o.card.id);
@@ -2303,7 +2333,7 @@ export class Game {
     const as = assembleOf(o.card)!;
     const makers = this.creatures(p).filter((c) => !c.tapped && this.colorsOf(c).includes(as.color));
     const [maker] = makers.length === 1 ? makers : await this.askCards(p, `${o.card.name}を組み立てるクリーチャー(タップして、それにつける)を選んでください`, makers, 1, "pioneerBase");
-    if (!maker || !this.pay(p, o.card.cost, 0)) return;
+    if (!maker || !await this.pay(p, o.card.cost, 0)) return;
     pl.assembledThisTurn = true;
     maker.tapped = true;
     this.addLog(`${maker.card.name}をタップし、${o.card.name}を組み立てた`, p);

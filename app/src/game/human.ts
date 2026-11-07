@@ -2,6 +2,7 @@
  * 人間のプレイヤー。エンジンからの質問を画面に出し、クリックで答える。
  */
 import type { Action, Agent, Decision, Game, PlayerId } from "./engine";
+import { getBattleSettings } from "../lib/battleSettings";
 
 export type Pending = { decision: Decision; answer: (a: unknown) => void };
 
@@ -22,6 +23,11 @@ export class HumanAgent implements Agent {
 
   decide(g: Game, p: PlayerId, d: Decision): Promise<unknown> {
     if (d.kind === "action" && autoPass(g, p, d.options)) return Promise.resolve({ type: "pass" } satisfies Action);
+    const set = getBattleSettings();
+    // 相手のターンのインスタント確認をオフにしていれば、相手のターンは止まらない
+    if (d.kind === "action" && !set.oppInstants && g.active !== p) return Promise.resolve({ type: "pass" } satisfies Action);
+    // マナの支払い:完全オートなら、おまかせの払い方で払う
+    if (d.kind === "payMana" && set.payMode === "auto") return Promise.resolve(d.suggested);
     return new Promise((resolve) => {
       this.pending = {
         decision: d,

@@ -2763,3 +2763,46 @@ button.applause:focus-visible { outline: 2px solid var(--accent); outline-offset
   font-size: var(--step--3);
   font-variant-numeric: tabular-nums;
 }
+
+/* 画面上部のバナー:しまう・開く、対戦の操作設定 */
+.topbar-mini {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.25rem clamp(1rem, 3vw, 2rem);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.topbar-open,
+.topbar-close {
+  padding: 0.2rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--step--1);
+  cursor: pointer;
+}
+.topbar-open:hover,
+.topbar-close:hover { color: inherit; }
+.battle-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  font-size: var(--step--1);
+}
+.bs-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.bs-field select {
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: inherit;
+  font: inherit;
+}
+.bs-check input { accent-color: var(--accent); }
+.pay-sources .btn { display: inline-flex; align-items: center; gap: 0.3rem; }
