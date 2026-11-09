@@ -66,7 +66,7 @@ export const HYAKKI = [
   HK(legend(cr("yk21", "百鬼の魁 金剛羅刹", `${IMPOSSIBLE}{W}{U}{B}{R}{G}`, "鬼・百鬼", 0, 12, "M", [
     kw("速攻", "トランプル"),
     crest(stat({ s: "drawSort" })),
-    hyakki(6, may(E14.awakenYakou())),
+    hyakki(6, E14.awakenYakou()),
     attacks(may(E14.rasetsuTurn())),
   ], { flavor: "百鬼の列の先頭を歩く。その後ろに、夜が続く。" }))),
   HK(legend(cr("yk22", "百鬼の幽姫 百々目", `${IMPOSSIBLE}{B}{B}{B}{R}{G}`, "鬼・百鬼", 0, 8, "M", [
@@ -91,7 +91,7 @@ export const HYAKKI = [
   HK(legend(cr("yk36", "百鬼の大酒呑み 酒呑", `${IMPOSSIBLE}{B}{B}{R}{R}{G}`, "鬼・百鬼", 0, 11, "M", [
     kw("トランプル"),
     hyakki(6),
-    { ...toGraveyard(E14.handToMana(may(E.dmgOpp(2)))), text: "百鬼の大酒呑み 酒呑がどこからでも墓地に置かれたとき、あなたは手札のクリーチャー1枚をマナゾーンに置いてもよい。あなたの手札がないなら、代わりに対戦相手に2点のダメージを与えてもよい。" },
+    { ...toGraveyard(E14.handToMana(may(E.dmgAll(2)))), text: "百鬼の大酒呑み 酒呑がどこからでも墓地に置かれたとき、あなたは手札のクリーチャー1枚をマナゾーンに置いてもよい。あなたの手札がないなら、代わりに各クリーチャーにそれぞれ2点のダメージを与えてもよい。" },
   ], { flavor: "大江山の酒宴は、夜明けまで終わらない。" }))),
   // 支え(黒緑・すべてクリーチャー)
   HK(cr("yk24", "百鬼の小鬼", "{B}", "鬼", 2, 1, "C", [etb(E14.handToMana())], { flavor: "持っているものは、何でも土に埋めたがる。" })),

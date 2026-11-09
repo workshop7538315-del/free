@@ -1049,6 +1049,13 @@ function chooseYesNo(g: Game, p: PlayerId, d: Extract<Decision, { kind: "yesno" 
     case "lookTop":
       return !!d.obj && manaValue(d.obj.card.cost) > me.mana.length + 3;
     case "may": {
+      // 全体ダメージ:相手が失うものが自分より大きいときだけ
+      const m = d.prompt.match(/各クリーチャーに(\d+)点のダメージ/);
+      if (m) {
+        const n = Number(m[1]);
+        const lost = (q: PlayerId) => g.creatures(q).filter((c) => g.toughness(c) - c.damage <= n && !g.hasKw(c, "破壊不能")).reduce((s, c) => s + creatureValue(g, c), 0);
+        return lost(g.other(p)) > lost(p);
+      }
       // 百々目:このターンにマナから墓地に落ちていて、金剛羅刹がいるなら、百鬼夜行で戻るので墓地に残す
       if (d.prompt.includes("墓地からマナゾーンに置く") && d.obj && d.obj.fromManaTurn === g.turn && g.creatures(p).some((c) => c.card.name.includes("金剛羅刹")))
         return false;

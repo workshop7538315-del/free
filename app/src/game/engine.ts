@@ -3160,7 +3160,7 @@ export class Game {
             this.putIntoMana(o, p);
             this.addLog(`引いた${o.card.name}をマナゾーンに置いた`, p);
           }
-        } else if (await this.askYesNo(p, `${src.card.name}の紋章:引いた${o.card.name}を捨てますか?`, "may", o)) {
+        } else {
           this.move(o, "graveyard");
           this.addLog(`引いた${o.card.name}を捨てた`, p);
         }
@@ -3947,6 +3947,8 @@ function effectSummary(e: Effect): string {
       return "ライブラリーの上からマナゾーンに置く";
     case "damage":
       return "ダメージを与える";
+    case "damageAll":
+      return `各クリーチャーに${typeof e.n === "number" ? e.n : ""}点のダメージを与える`;
     case "destroy":
       return "対象を破壊する";
     case "duel":
