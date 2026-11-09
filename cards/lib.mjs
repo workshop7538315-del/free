@@ -354,6 +354,33 @@ export const E13 = {
   curseGain: (id) => ({ do: "applauseGain", cat: "呪い", id }),
   consume: (n, then) => ({ do: "consume", cat: "呪い", n, then: [then].flat() }),
 };
+// 第14弾:狐火と百鬼
+const genDesc = (c) => c.short ? `《${c.short}》` : `《${c.name}》(${c.cost} ${c.type}${c.subtype ? `─${c.subtype}` : ""}:${(c.text ?? []).join(" ")}${c.back ? ` / 裏面《${c.back.name}》${c.back.power}/${c.back.toughness}:${(c.back.text ?? []).join(" ")}` : ""})`;
+export const E14 = {
+  genLib: (card, n = 1) => ({ do: "genLib", card, n }),
+  foxInari: (card) => ({ do: "foxInari", card }),
+  millExceptSub: (sub) => ({ do: "millExceptSub", sub }),
+  foxWipe: (card, base = 5) => ({ do: "foxWipe", card, base }),
+  minamoBlessing: (card, n = 5) => ({ do: "minamoBlessing", card, n }),
+  handToMana: (orElse) => ({ do: "handToMana", ...(orElse ? { orElse: [orElse].flat() } : {}) }),
+  selfToMana: () => ({ do: "selfToMana" }),
+  awakenYakou: () => ({ do: "awakenYakou" }),
+  rasetsuTurn: () => ({ do: "rasetsuTurn" }),
+  handAllToMana: () => ({ do: "handAllToMana" }),
+  topIfSub: (sub) => ({ do: "topIfSub", sub }),
+  look2: () => ({ do: "dig", n: 1, plus: 1, max: 1, grave: true }),
+  look3: () => ({ do: "dig", n: 1, plus: 2, max: 1, grave: true }),
+};
+/** 開顕:コストが0以下まで軽減されているなら、裏面で唱えてもよい */
+export const kaiken = () => ({ a: "kaiken" });
+/** 百鬼顕現 N */
+export const hyakki = (n, then) => ({ a: "hyakki", n, ...(then ? { then: [then].flat() } : {}) });
+/** 両面カード:表に裏面をつける(裏面の文章も作る) */
+export const withBack = (front, back) => ({ ...front, back: { ...back, text: cardText(back) } });
+/** 生成専用のカード(文章をつけておく) */
+export const genCard = (c) => ({ ...c, text: cardText(c), ...(c.back ? { back: { ...c.back, text: cardText(c.back) } } : {}) });
+export const legend = (c) => ({ ...c, type: `伝説の${c.type}` });
+
 export const iff = (cond, e) => ({ ...e, if: cond });
 export const unless = (cond, e) => ({ ...e, unless: cond });
 export const may = (e) => ({ ...e, may: true });
@@ -490,7 +517,7 @@ function condPrefix(c) {
   if (typeof c === "object" && "manaMV" in c) return `あなたのマナゾーンにあるカードのマナ総量の合計が${c.manaMV}以上なら、`;
   if (typeof c === "object") return `あなたが${filterPhrase(c.control, "permanent")}を${c.n}${unitOf(c.control)}以上コントロールしているなら、`;
   if (typeof c === "object" && "lineage" in c) return `${c.lineage.map((n) => `《${n}》`).join("か")}があなたの戦場か墓地にあるなら、`;
-  return { questDone: "このゲームであなたが任務を達成したなら、", pioneeredGame: "このゲームであなたが開拓進化をしたなら、", buriedInMana: "あなたのマナゾーンに埋蔵を持つカードがあるなら、", burned: "燃焼したなら、", kicked: "追加払いしたなら、", fewerMana: "あなたのマナゾーンのカードが対戦相手より少ないなら、", notMoreMana: "あなたのマナゾーンのカードが対戦相手の枚数以下なら、" }[c];
+  return { kaiken: "開顕で唱えられたなら、", questDone: "このゲームであなたが任務を達成したなら、", pioneeredGame: "このゲームであなたが開拓進化をしたなら、", buriedInMana: "あなたのマナゾーンに埋蔵を持つカードがあるなら、", burned: "燃焼したなら、", kicked: "追加払いしたなら、", fewerMana: "あなたのマナゾーンのカードが対戦相手より少ないなら、", notMoreMana: "あなたのマナゾーンのカードが対戦相手の枚数以下なら、" }[c];
 }
 
 /** 条件の前置き(常在能力に付けるとき) */
@@ -526,7 +553,8 @@ function condPlain(c) {
     raid: "このターン、あなたがクリーチャー2体以上で攻撃した",
     chain: "このターン、あなたがインスタントかソーサリーを2つ以上唱えた",
     vaultEmpty: "あなたの秘蔵庫にカードがない",
-    pureColor: "あなたのマナゾーンのカードがすべて同じ1色である",
+    pureColor: "あなたのマナゾーンのカードがすべて同じ1色である(すべて欠色でもよい)",
+    kaiken: "これが開顕で唱えられた",
     pioneeredGame: "このゲームであなたが開拓進化をした",
     hegemonyWei: "あなたの手札が対戦相手より多い",
     hegemonyWu: "あなたのマナゾーンのカードが対戦相手より多い",
@@ -720,6 +748,28 @@ function effectText(e, name, abil, notes) {
       return `あなたの戦場にある表向きの罠と、あなたの墓地にある罠・カードから、合わせて${e.n}つまで選び、裏向きで仕掛け直す。`;
     case "blessing":
       return `あなたは加護《${e.id}》を得る。`;
+    case "genLib":
+      return `${genDesc(e.card)}を${amountText(e.n, notes)}枚生成し、あなたのライブラリーに加えて切り直す。`;
+    case "foxInari":
+      return `稲荷の紋章を持つ${genDesc(e.card)}を1枚生成し、あなたのマナゾーンのカード1枚の上に重ねて置く。`;
+    case "millExceptSub":
+      return `あなたのライブラリーにある、${e.sub}以外のカードをすべて墓地に置く。`;
+    case "foxWipe":
+      return `クリーチャー・アーティファクト・エンチャントから1つを選ぶ。対戦相手がコントロールするそれをすべて破壊する。その後、${e.base}から破壊した数を引いた枚数の${genDesc(e.card)}を生成し、あなたのライブラリーに加えて切り直す。`;
+    case "minamoBlessing":
+      return `あなたは加護《ミナモの加護》を得る。(カウント${e.n}。あなたが狐火をインスタントとして使うたびに1減る。0になったら、この加護を破壊し、《${e.card.name}》を1枚生成して速攻を与えて戦場に出す)`;
+    case "handToMana":
+      return `あなたは手札のクリーチャー1枚をマナゾーンに置いてもよい。${e.orElse ? `あなたの手札がないなら、代わりに${e.orElse.map((x) => effectText(x, name, abil, notes)).join("")}` : ""}`;
+    case "selfToMana":
+      return `${name}を墓地からマナゾーンに置く。`;
+    case "awakenYakou":
+      return "あなたの墓地にある百鬼顕現を持つカードは、すべて百鬼夜行を得る。(ターン終了時に、このターンにマナゾーンから墓地に置かれていたなら、それを戦場に出す。その後、あなたのクリーチャーは+2/+1の修整を受ける)";
+    case "rasetsuTurn":
+      return "お互いのライブラリーの一番上のカードのマナ総量を比べる。あなたのほうが大きいなら、このターンのあとに追加のターンを得る。(この効果で追加のターンを得るのは1ゲームに1回)";
+    case "handAllToMana":
+      return "あなたの手札をすべてマナゾーンに置く。";
+    case "topIfSub":
+      return `あなたのライブラリーの一番上を見る。それが${e.sub}なら、手札に加える。`;
     case "paidColorKw":
       return `${name}は、純色払いで支払った色に応じて、白なら警戒、青なら飛行、黒なら接死、赤なら速攻、緑ならトランプルを得る。`;
     case "perApplause":
@@ -728,6 +778,7 @@ function effectText(e, name, abil, notes) {
       return e.star === "天罡星" ? "天罡招集を行う。" : "地煞招集を行う。";
     case "dig": {
       const n = amountText(e.n, notes);
+      if (e.grave) return `あなたのライブラリーの一番上から${typeof e.n === "number" ? e.n + e.plus : `${n}+${e.plus}`}枚を見て、そのうち${n}枚を手札に加え、残りを墓地に置く。`;
       return `あなたのライブラリーの一番上から${n}+${e.plus}枚を見て、そのうち${n}枚(最大${e.max}枚)を手札に加え、残りを好きな順番でライブラリーの一番下に置く。`;
     }
     case "volley":
@@ -897,6 +948,18 @@ function staticText(abil, name, card) {
     case "questDouble":
       body = "あなたが任務を進めるとき、代わりに2回進める。";
       break;
+    case "drawSort":
+      body = "あなたがカードを引くたび、それがクリーチャーならマナゾーンに置いてもよい。クリーチャーでないなら、それを捨てる。";
+      break;
+    case "manaWard":
+      body = "あなたのマナゾーンのカードは、対戦相手の効果を受けない。";
+      break;
+    case "foxBack":
+      body = "あなたが狐火をインスタントとして使うたび、その裏面がクリーチャーなら、それを1枚生成し、速攻を与えて戦場に出す。";
+      break;
+    case "hyakkiDiscount":
+      body = `あなたが行う百鬼顕現のコストは{${st.n}}少なくなる。`;
+      break;
   }
   if (abil.if) return condWhile(abil.if) + body;
   return body;
@@ -955,6 +1018,10 @@ function abilityTextBody(abil, card) {
       const cond = abil.cond === "attacked" ? "このターン、装備しているクリーチャーが攻撃したなら" : "装備しているクリーチャーに装備品が2つ以上ついているなら";
       return `組み立て【${COLOR_JA[abil.color]}】 / 武装進化 ― ${cond}、そのクリーチャーと${name}を《${abil.partnerName}》に武装進化してもよい。`;
     }
+    case "kaiken":
+      return `開顕(この呪文を唱えるためのコストが0以下まで軽減されているなら、裏面《${card.back?.name ?? "?"}》として唱えてもよい)`;
+    case "hyakki":
+      return `百鬼顕現 {${abil.n}}(あなたの手札にほかのカードがないなら、ソーサリーのタイミングで、マナゾーンか手札から{${abil.n}}を払ってこのクリーチャーを戦場に出す。その後、支払いでタップしたマナゾーンのカードをすべて墓地に置く)${abil.then?.length ? `そうしたとき、${bodyText({ effects: abil.then }, name)}` : ""}`;
     case "pureCost":
       return "純色払い(このカードのコストは、すべて同じ1色のマナで支払わなければならない)";
     case "gem":

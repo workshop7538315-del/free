@@ -32,6 +32,8 @@ export type Filter = {
 export type Applause = "狂気" | "悲劇" | "喜劇" | "呪い";
 
 export type CondName =
+  /** 開顕で出た(第14弾) */
+  | "kaiken"
   /** 替天行道:対戦相手のライフかクリーチャーの数があなたより多い(第12弾) */
   | "underdog"
   /** 燃焼した */
@@ -241,7 +243,7 @@ export type Effect = Common &
     /** 天罡招集・地煞招集:まだ自分の戦場に出ていないその宿星の好漢をランダムに3枚見せ、1枚を選んでデッキの外から戦場に出す(第12弾) */
     | { do: "muster"; star: "天罡星" | "地煞星" }
     /** ライブラリーの上から n+plus 枚を見て、min(n, max) 枚を手札に加え、残りを一番下に置く(螭吻) */
-    | { do: "dig"; n: Amount; plus: number; max: number }
+    | { do: "dig"; n: Amount; plus: number; max: number; grave?: boolean }
     /** 「ランダムな相手のクリーチャーに dmg 点、いなければ相手に1点」を n 回(狻猊) */
     | { do: "volley"; n: Amount; dmg: number }
     /** 対象のクリーチャーに -n/-n(ターン終了時まで) */
@@ -283,6 +285,31 @@ export type Effect = Common &
     | { do: "consume"; cat: Applause; n: number; then: Effect[] }
     /** 喝采(ファラオの呪い)そのものが能力を得る(加護の枠は使わない。シャドウバースの信仰を参考) */
     | { do: "applauseGain"; cat: Applause; id: string }
+    // ---------------------------------------------------------------- 第14弾:狐火・百鬼
+    /** card をライブラリーに n 枚生成して、ライブラリーを切り直す */
+    | { do: "genLib"; card: unknown; n: Amount }
+    /** 手札をすべてマナゾーンに置く(第14弾) */
+    | { do: "handAllToMana" }
+    /** ライブラリーの一番上を見て、sub を持つカードなら手札に加える */
+    | { do: "topIfSub"; sub: string }
+    /** 稲荷の紋章を持った card(狐火)を生成し、自分のマナゾーンのカード1枚の上に重ねる(重ねられたカードはマナを出せない) */
+    | { do: "foxInari"; card: unknown }
+    /** ライブラリーの、sub を持たないカードをすべて墓地に置く */
+    | { do: "millExceptSub"; sub: string }
+    /** アーティファクト・エンチャント・クリーチャーから1つ選び、相手の場のそれをすべて破壊。(base - 破壊した数)枚の card をライブラリーに生成 */
+    | { do: "foxWipe"; card: unknown; base: number }
+    /** ミナモの加護を得る(カウント n。狐火をインスタントとして使うたびに減り、0で card を生成して戦場に出す) */
+    | { do: "minamoBlessing"; card: unknown; n: number }
+    /** 手札のクリーチャー1枚をマナゾーンに置いてもよい。手札がないなら orElse */
+    | { do: "handToMana"; orElse?: Effect[] }
+    /** このカードを墓地からマナゾーンに置く */
+    | { do: "selfToMana" }
+    /** 墓地にある百鬼顕現を持つカードを、百鬼夜行に変える */
+    | { do: "awakenYakou" }
+    /** お互いのライブラリーの一番上のマナ総量を比べ、自分のほうが高ければ追加ターン(1ゲームに1回) */
+    | { do: "rasetsuTurn" }
+    /** 内部:金剛羅刹の紋章で引いたカードを仕分ける */
+    | { do: "drawSortCard"; uid: number }
   );
 
 export type TriggerEvent =
@@ -358,7 +385,15 @@ export type StaticSpec =
   /** 龍生の進化コストが{n}少なくなる(第12弾) */
   | { s: "dragonDiscount"; n: number }
   /** 任務を進めるとき、代わりに2回進める(第13弾) */
-  | { s: "questDouble" };
+  | { s: "questDouble" }
+  /** (紋章)カードを引いたとき、クリーチャーならマナゾーンに置いてもよい。そうでないなら捨てる(第14弾) */
+  | { s: "drawSort" }
+  /** (紋章)自分のマナゾーンのカードは、相手の効果を受けない */
+  | { s: "manaWard" }
+  /** 自分が狐火をインスタントとして使ったとき、その裏面がクリーチャーなら、速攻を与えて生成して戦場に出す(純白の妖狐 ミナモ) */
+  | { s: "foxBack" }
+  /** 百鬼顕現のコストが n 少なくなる */
+  | { s: "hyakkiDiscount"; n: number }
 
 /** 龍生の代わりの払い方(第12弾) */
 export type DragonAlt = {
@@ -473,6 +508,10 @@ export type Ability = { text?: string } & (
   | { a: "trap"; cost: string; on?: "oppEnter" | "oppDraw"; targets?: TargetSpec[]; effects: Effect[] }
   /** 任務(第13弾):任務カウンターが n 個になったら達成。reward を行い、墓地に置く */
   | { a: "quest"; n: number; reward: Effect[] }
+  /** 開顕(第14弾):唱えるとき、コストが0以下まで軽減されているなら、裏面で唱えてもよい */
+  | { a: "kaiken" }
+  /** 百鬼顕現 N(第14弾):手札にほかのカードがないなら、{N}を払ってマナゾーンか手札からこれを戦場に出す。その後、支払いでタップしたマナゾーンのカードを墓地に置く */
+  | { a: "hyakki"; n: number; then?: Effect[] }
 );
 
 /** モード呪文の選択肢 */

@@ -581,7 +581,7 @@ function PlayerBar({ g, p, targetable, onClick, onOpen }: { g: Game; p: Player; 
         {p.extra.length > 0 && <span>秘蔵庫 {p.extra.length}</span>}
         {p.blessings.map((b) => (
           <button key={b} type="button" className="applause" title={`加護《${b}》:${BLESSING_TEXT[b] ?? ""}(加護の枠を1つ使う)`} onClick={() => onOpen({ kind: "info", text: `加護《${b}》\n${BLESSING_TEXT[b] ?? ""}\n(加護の枠を1つ使う。カードが場を離れても残る)` })}>
-            加護《{b}》
+            加護《{b}》{b === "ミナモの加護" && p.minamoCount !== undefined ? ` 残り${p.minamoCount}` : ""}
           </button>
         ))}
         {Object.entries(p.applause).map(([cat, n]) => {
@@ -651,13 +651,17 @@ function ManaRow({ p, markOf, onCard, onLong, hidden = false }: { p: Player; mar
           // 裏向きのカード:相手のものは名前を見せない
           const secret = o.faceDown && hidden;
           const secretNo = secret ? p.mana.filter((q) => q.faceDown).indexOf(o) + 1 : 0;
-          const label = o.faceDown ? (secret ? `裏向き${secretNo}` : `裏:${o.card.name}`) : `${o.card.name}${o.charges !== undefined ? `(水量${o.charges})` : ""}`;
+          const under = o.covers !== undefined ? p.mana.find((q) => q.uid === o.covers) : undefined;
+          const label = o.faceDown
+            ? secret ? `裏向き${secretNo}` : `裏:${o.card.name}`
+            : o.inari ? `稲荷の狐火${under ? `(${under.card.name}の上)` : ""}`
+            : `${o.coveredBy !== undefined ? "[狐火の下]" : ""}${o.card.name}${o.charges !== undefined ? `(水量${o.charges})` : ""}`;
           return (
             <ManaChip
               key={o.uid}
               className={`mana-chip ${o.tapped ? "is-tapped" : ""} ${o.faceDown ? "is-facedown" : ""} ${markOf(o)} ${!o.faceDown && releaseAbility(o.card) ? "has-release" : ""}`}
               onClick={() => onCard(o)}
-              title={o.faceDown ? `${secret ? "裏向きのカード" : o.card.name}(裏向き:欠色のマナを出す。能力は働かない)` : o.card.name}
+              title={o.faceDown ? `${secret ? "裏向きのカード" : o.card.name}(裏向き:欠色のマナを出す。能力は働かない)` : o.inari ? "稲荷の紋章を持つ狐火:マナ総量5以上のインスタントのコストが{2}少なくなる。マナは出せない。下のカードの紋章を得る" : o.coveredBy !== undefined ? `${o.card.name}(狐火が重なっている:マナを出せず、能力も働かない)` : o.card.name}
               bg={bg}
               label={label}
             />
@@ -1183,6 +1187,10 @@ function actionLabel(g: Game, a: Action): string {
       if (a.mode === "set") return o ? `罠を仕掛ける(${g.trapSetCost(ME, o) || "{0}"}・裏向き)` : "罠を仕掛ける";
       if (a.mode === "flip") return "罠を発動する(コストなし)";
       return `裏向きに仕掛け直す(${tr?.cost ?? ""})`;
+    }
+    case "hyakki": {
+      const o = g.find(a.uid);
+      return o ? `百鬼顕現(${g.hyakkiCost(ME, o)}・払ったマナゾーンのカードは墓地へ)` : "百鬼顕現";
     }
     case "equip":
       return "装備する";

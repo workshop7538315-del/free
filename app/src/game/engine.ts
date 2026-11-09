@@ -82,6 +82,20 @@ export type Obj = {
   fleeting?: boolean;
   /** 武装進化で合体している発明品(付け替えられない。合体先が離れると一緒に秘蔵庫に戻る) */
   merged?: boolean;
+  /** 両面カード:裏面で出ているとき、元の(表面の)カード(第14弾) */
+  front?: Card;
+  /** 開顕で出た */
+  viaKaiken?: boolean;
+  /** マナゾーン:このカードの上に重なった狐火の uid(マナを出せず、能力も働かない) */
+  coveredBy?: number;
+  /** マナゾーン:この狐火が重なっているカードの uid(その紋章を得る) */
+  covers?: number;
+  /** 稲荷の紋章を持つ狐火 */
+  inari?: boolean;
+  /** マナゾーンから墓地に置かれたターン番号(百鬼夜行) */
+  fromManaTurn?: number;
+  /** 百鬼夜行を持つ(墓地にあるあいだ) */
+  yakou?: boolean;
   /** 罠を裏向きで仕掛けた(裏向きに戻した)ターン番号。次のターンから発動できる(第13弾) */
   setTurn?: number;
   /** 任務カウンター(第13弾) */
@@ -150,6 +164,11 @@ export type Player = {
   questsDone: number;
   /** このターンに仕掛けた罠の数(加護《迷宮の回廊》) */
   trapsSetThisTurn: number;
+  /** 金剛羅刹の追加ターンを使った(第14弾) */
+  rasetsuUsed?: boolean;
+  /** ミナモの加護の残りカウントと、出す《銀白の巫女 ミナモ》 */
+  minamoCount?: number;
+  minamoCard?: Card;
 };
 
 export type TargetRef =
@@ -182,6 +201,8 @@ export type Action =
   | { type: "activate"; uid: number; index: number }
   | { type: "cycle"; uid: number }
   | { type: "equip"; uid: number }
+  /** 百鬼顕現(第14弾) */
+  | { type: "hyakki"; uid: number }
   /** 罠(第13弾):set=手札から仕掛ける、flip=裏向きの罠を発動する(コストなし)、reset=表向きの罠をコストを払って裏向きに仕掛け直す */
   | { type: "trap"; uid: number; mode: "set" | "flip" | "reset" }
   /** 秘蔵庫からリリース召喚する(via: "entrata" ならエントラータ) */
@@ -192,7 +213,7 @@ export type Decision =
   | { kind: "target"; prompt: string; spec: TargetSpec; options: TargetRef[]; source: Obj; effects: Effect[]; index: number }
   | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "kicker" | "lookTop" | "mulligan" | "reclaim" | "blessing" | "learn" | "learnDiscard" | "altCost" | "trap"; obj?: Obj; subject?: Obj }
   | { kind: "number"; prompt: string; min: number; max: number; reason?: "x" | "burn"; obj?: Obj }
-  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" | "pioneerBase" | "heist" | "muster" | "dig" | "shatter" | "tuck" | "rotate" | "dragon" | "dragonBase" | "altTap" | "manaToGrave" | "underToVault" | "underToHand" | "quest" | "setTrap" | "regrow" | "seek" }
+  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" | "pioneerBase" | "heist" | "muster" | "dig" | "shatter" | "tuck" | "rotate" | "dragon" | "dragonBase" | "altTap" | "manaToGrave" | "underToVault" | "underToHand" | "quest" | "setTrap" | "regrow" | "seek" | "foxCover" }
   | { kind: "attackers"; options: number[] }
   /** モード呪文:選択肢から1つ選ぶ(答えは番号) */
   | { kind: "mode"; prompt: string; options: string[]; source: Obj; modes: SpellMode[] }
@@ -267,6 +288,12 @@ const BLESSING_ELDORADO_NAME = BLESSING_ELDORADO;
 export const entrataOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "entrata") as Extract<Ability, { a: "entrata" }> | undefined;
 /** 喝采の枠は加護の枠(5つ)を使う */
 export const BLESSING_SLOTS = 5;
+/** 第14弾 */
+export const BLESSING_MINAMO = "ミナモの加護";
+export const hyakkiOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "hyakki") as Extract<Ability, { a: "hyakki" }> | undefined;
+export const isLegendary = (c: Card) => c.type.includes("伝説");
+/** 稲荷の紋章:マナ総量5以上のインスタントのコストが{2}少なくなる */
+const INARI: Ability = { a: "static", from: "mana", st: { s: "discount", filter: { type: "インスタント", minMV: 5 }, n: 2 } } as Ability;
 /** 罠(第13弾) */
 export const trapOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "trap") as Extract<Ability, { a: "trap" }> | undefined;
 export const isTrapCard = (c: Card) => !!trapOf(c);
@@ -284,6 +311,7 @@ export const BLESSING_TEXT: Record<string, string> = {
   迷宮の回廊: "罠を仕掛けたターンでも発動できる。各ターン最初に罠を仕掛けたとき、カードを1枚引く。",
   死者の書: "あなたのターンの終了時、表向きの罠が3つ以上あるならカードを1枚引く。",
   呪われた財宝: "あなたが罠を発動するたび、対戦相手は1点失い、あなたは1点のライフを得る。",
+  ミナモの加護: "あなたが狐火をインスタントとして使うたびにカウントが1減る。0になったら、この加護を破壊し、《銀白の巫女 ミナモ》を1枚生成して速攻を与えて戦場に出す。",
   不死の王墓: "(ファラオの呪いが得る能力)罠を発動したあと、ファラオの呪いを2消費すれば、裏向きのままにしてよい(次のターンから、また発動できる)。",
 };
 /** 行動で溜まる喝采の、1ターンの上限 */
@@ -546,6 +574,27 @@ export class Game {
       this.addLog(`${o.card.name}は戦場を離れなかった`, o.controller);
       return;
     }
+    const fromZone = o.zone;
+    // 第14弾:マナゾーンから墓地へ(百鬼夜行)、重なりの解消、両面カードは表に戻る、墓地を離れると百鬼夜行を失う
+    if (fromZone === "mana" && to === "graveyard") o.fromManaTurn = this.turn;
+    if (fromZone === "mana" && to !== "mana") {
+      if (o.covers !== undefined) {
+        const u = this.players[o.owner].mana.find((m) => m.uid === o.covers);
+        if (u) u.coveredBy = undefined;
+        o.covers = undefined;
+      }
+      if (o.coveredBy !== undefined) {
+        const f = this.players[o.owner].mana.find((m) => m.uid === o.coveredBy);
+        if (f) f.covers = undefined;
+        o.coveredBy = undefined;
+      }
+    }
+    if (fromZone === "graveyard" && to !== "graveyard") o.yakou = false;
+    if (o.front && to !== "battlefield" && to !== "stack") {
+      o.card = o.front;
+      o.front = undefined;
+      o.viaKaiken = false;
+    }
     // 下に重なっているカードは、上のカードと一緒に戦場を離れる
     const carried = o.zone === "battlefield" && to !== "battlefield" && o.under?.length ? o.under : [];
     if (carried.length) o.under = [];
@@ -734,11 +783,15 @@ export class Game {
         return pl.pioneeredGame;
       case "questDone":
         return pl.questsDone > 0;
+      case "kaiken":
+        return !!obj?.viaKaiken;
       case "buriedInMana":
         return pl.mana.some((o) => !o.faceDown && abilitiesOf(o.card).some((a) => a.a === "buried"));
       case "pureColor": {
         if (!pl.mana.length) return false;
         const first = manaColors(pl.mana[0]);
+        // 欠色だけのマナゾーンも純色(第14弾)
+        if (first.length === 0) return pl.mana.every((m) => manaColors(m).length === 0);
         return first.length === 1 && pl.mana.every((m) => { const cs = manaColors(m); return cs.length === 1 && cs[0] === first[0]; });
       }
       case "intrigue":
@@ -820,7 +873,14 @@ export class Game {
     const inMana = o.zone === "mana";
     // 裏向き(マナゾーンの裏向きのカード、戦場の裏向きの罠)は能力を持たない
     if (o.faceDown) return [];
-    return abilitiesOf(o.card).filter((a) => isCrestAbility(a) === inMana);
+    if (inMana) {
+      // 狐火が重なったカードは働かない。重なった狐火が、その紋章を得る(第14弾)
+      if (o.coveredBy !== undefined) return [];
+      const own = abilitiesOf(o.card).filter(isCrestAbility);
+      const under = o.covers !== undefined ? this.players[o.owner].mana.find((m) => m.uid === o.covers) : undefined;
+      return [...own, ...(o.inari ? [INARI] : []), ...(under ? abilitiesOf(under.card).filter(isCrestAbility) : [])];
+    }
+    return abilitiesOf(o.card).filter((a) => !isCrestAbility(a));
   }
 
   /** 能力を持ちうるパーマネントとマナゾーンのカード */
@@ -1064,6 +1124,8 @@ export class Game {
     pl.pool.forEach((m, i) => units.push({ tapGroup: `pool${i}`, options: [m], priority: 0 }));
     for (const o of pl.mana) {
       if (o.tapped || o === exclude) continue;
+      // 狐火が重なったカードと、稲荷の紋章を持つ狐火は、マナを出せない
+      if (o.coveredBy !== undefined || o.inari) continue;
       const cs = manaColors(o);
       units.push({ tapGroup: `m${o.uid}`, options: cs.length ? cs : ["C"], priority: 1 });
     }
@@ -1147,6 +1209,7 @@ export class Game {
       if (g.startsWith("m")) {
         const o = pl.mana.find((m) => m.uid === Number(g.slice(1)));
         if (o) {
+          this.lastPaidMana.push(o);
           o.tapped = true;
           this.queueTriggers("tapped", [o]);
         }
@@ -1319,6 +1382,8 @@ export class Game {
       if (tr.on || !(tr.targets ?? []).every((t) => this.targetOptions(t, p).length > 0)) continue;
       if (this.trapReady(p, o)) out.push({ type: "trap", uid: o.uid, mode: "flip" });
     }
+    // 百鬼顕現:手札にほかのカードがないなら、マナゾーンか手札から(第14弾)
+    if (this.sorcerySpeed(p)) for (const o of [...pl.mana, ...pl.hand]) if (this.canHyakki(p, o)) out.push({ type: "hyakki", uid: o.uid });
     // 龍生:メインフェイズ(狴犴は相手の悪事に割り込める)。回数の制限はない
     for (const o of pl.extra) {
       const dr = dragonOf(o.card);
@@ -1377,6 +1442,9 @@ export class Game {
     } else if (a.type === "activate") {
       const o = this.players[p].battlefield.find((x) => x.uid === a.uid);
       if (o && this.canActivate(p, o, a.index)) await this.activate(p, o, a.index);
+    } else if (a.type === "hyakki") {
+      const o = this.find(a.uid);
+      if (o && o.controller === p && this.canHyakki(p, o) && this.sorcerySpeed(p)) await this.hyakki(p, o);
     } else if (a.type === "trap") {
       const pl = this.players[p];
       if (a.mode === "set") {
@@ -1397,6 +1465,75 @@ export class Game {
       }
     }
   }
+
+  // ------------------------------------------------------------ 第14弾:百鬼顕現・開顕・狐火
+  /** 百鬼の一番槍の紋章:自分のマナゾーンは対戦相手の効果を受けない */
+  manaWarded(p: PlayerId): boolean {
+    return this.players[p].mana.some((m) => this.activeAbilities(m).some((a) => a.a === "static" && a.st.s === "manaWard"));
+  }
+
+  hyakkiCost(p: PlayerId, o: Obj): string {
+    const h = hyakkiOf(o.card)!;
+    let d = 0;
+    for (const src of this.sources(p)) for (const a of this.activeAbilities(src)) if (a.a === "static" && a.st.s === "hyakkiDiscount") d += a.st.n;
+    return `{${Math.max(0, h.n - d)}}`;
+  }
+
+  canHyakki(p: PlayerId, o: Obj): boolean {
+    if (!hyakkiOf(o.card) || o.faceDown) return false;
+    if (o.zone !== "mana" && o.zone !== "hand") return false;
+    const pl = this.players[p];
+    if (pl.hand.some((x) => x !== o)) return false;
+    return this.canPay(p, this.hyakkiCost(p, o), 0, o.zone === "mana" ? o : undefined);
+  }
+
+  private async hyakki(p: PlayerId, o: Obj) {
+    const cost = this.hyakkiCost(p, o);
+    this.lastPaidMana = [];
+    if (!(await this.pay(p, cost, 0, o.zone === "mana" ? o : undefined))) return;
+    const paid = this.lastPaidMana.filter((m) => m.zone === "mana");
+    this.usedCards.add(o.card.id);
+    this.addLog(`百鬼顕現:${cost}を払って${o.card.name}を呼び出した`, p);
+    this.enterBattlefield(o, p);
+    // その後、支払いでタップしたマナゾーンのカードを墓地に置く
+    for (const m of paid) this.move(m, "graveyard");
+    if (paid.length) this.addLog(`支払いに使ったマナゾーンのカード${paid.length}枚(${paid.map((m) => m.card.name).join("、")})が墓地に置かれた`, p);
+    const h = hyakkiOf(o.card)!;
+    if (h.then?.length) this.pendingTriggers.push({ obj: o, ability: { a: "trigger", on: "etb", effects: h.then }, controller: p });
+  }
+
+  /** 生成したカードを戦場に出す(速攻) */
+  private genToBattlefield(card: Card, p: PlayerId, haste: boolean) {
+    const o = this.newObj(card, p, "exile");
+    o.generated = true;
+    this.enterBattlefield(o, p);
+    if (haste) o.perm.push({ p: 0, t: 0, kw: ["速攻"] });
+    return o;
+  }
+
+  /** 狐火をインスタントとして使ったとき:純白の妖狐 ミナモ(裏面を出す)と、ミナモの加護のカウント */
+  private async onFoxInstant(p: PlayerId, c: Card) {
+    const pl = this.players[p];
+    if (c.back && isCreatureCard(c.back) && this.sources(p).some((s) => this.activeAbilities(s).some((a) => a.a === "static" && a.st.s === "foxBack"))) {
+      this.genToBattlefield(c.back, p, true);
+      this.addLog(`${c.name}の裏面《${c.back.name}》が速攻を得て戦場に出た`, p);
+    }
+    if (pl.minamoCount !== undefined && pl.blessings.includes(BLESSING_MINAMO)) {
+      pl.minamoCount--;
+      if (pl.minamoCount > 0) this.addLog(`ミナモの加護:残り${pl.minamoCount}`, p);
+      else {
+        pl.blessings = pl.blessings.filter((b) => b !== BLESSING_MINAMO);
+        pl.minamoCount = undefined;
+        if (pl.minamoCard) {
+          this.addLog(`ミナモの加護が破壊され、《${pl.minamoCard.name}》が速攻を得て戦場に出た`, p);
+          this.genToBattlefield(pl.minamoCard, p, true);
+        }
+      }
+    }
+  }
+
+  /** 支払いでタップしたマナゾーンのカード(百鬼顕現が使う) */
+  private lastPaidMana: Obj[] = [];
 
   // ------------------------------------------------------------ 罠・任務(第13弾)
   /** 罠を仕掛けるコスト(加護《王の継承》で{1}少なくなる) */
@@ -1543,8 +1680,17 @@ export class Game {
   }
 
   private async cast(p: PlayerId, o: Obj, from: CastFrom) {
+    // 開顕:コストが0以下まで軽減されているなら、裏面で唱えてもよい(第14弾)
+    if (o.card.back && abilityOf(o.card, "kaiken") && from === "hand" && manaValue(this.effectiveCost(p, o, from) ?? o.card.cost) === 0) {
+      if (await this.askYesNo(p, `開顕:${o.card.name}を裏面《${o.card.back.name}》で唱えますか?`, "may", o)) {
+        o.front = o.card;
+        o.card = o.card.back;
+        o.viaKaiken = true;
+        this.addLog(`開顕:${o.front.name}を裏面《${o.card.name}》で唱える`, p);
+      }
+    }
     const c = o.card;
-    let cost = this.effectiveCost(p, o, from) ?? c.cost;
+    let cost = (o.viaKaiken ? "" : this.effectiveCost(p, o, from)) ?? c.cost;
     const exclude = from === "mana" ? o : undefined;
     let x = 0;
     if (cost.includes("{X}")) {
@@ -1612,6 +1758,8 @@ export class Game {
       // 狂気:青か赤のインスタントかソーサリー
       if (cardColors(c.cost).some((x) => x === "U" || x === "R")) this.gainApplause(p, "狂気", 1, true);
     }
+    // 狐火をインスタントとして使った(第14弾)
+    if (isInstantCard(c) && (c.subtype ?? "").split("・").includes("狐火")) await this.onFoxInstant(p, c);
     // 「唱えたとき」(呪文より先に解決する。打ち消されても失われない)
     for (const ab of abilitiesOf(c)) if (ab.a === "trigger" && ab.on === "castSelf") this.pendingTriggers.push({ obj: o, ability: ab, controller: p });
     const item: StackItem = {
@@ -2026,9 +2174,10 @@ export class Game {
 
   gainBlessing(p: PlayerId, id: string) {
     const pl = this.players[p];
-    if (pl.blessings.includes(id) || this.blessingSlotsUsed(p) >= BLESSING_SLOTS) return;
+    if (pl.blessings.includes(id) || this.blessingSlotsUsed(p) >= BLESSING_SLOTS) return false;
     pl.blessings.push(id);
     this.addLog(`加護《${id}》を得た`, p);
+    return true;
   }
 
   /** 開拓進化の素材にできるクリーチャー */
@@ -2436,6 +2585,10 @@ export class Game {
         const picked = take > 0 ? await this.askCards(p, `手札に加えるカードを${take}枚選んでください(残りはライブラリーの一番下へ)`, seen, take, "dig") : [];
         for (const o of picked) this.move(o, "hand");
         for (const o of seen) if (!picked.includes(o)) {
+          if (e.grave) {
+            this.move(o, "graveyard");
+            continue;
+          }
           pl.library.splice(pl.library.indexOf(o), 1);
           pl.library.push(o);
         }
@@ -2840,6 +2993,7 @@ export class Game {
         break;
       }
       case "erode": {
+        if (this.manaWarded(opp)) { this.addLog(`${this.players[opp].name}のマナゾーンは対戦相手の効果を受けない`, p); break; }
         const zone = this.players[opp].mana;
         const picked = await this.askCards(p, `侵食:相手のマナゾーンから墓地に置くカードを${e.n}枚選んでください`, zone, Math.min(e.n, zone.length), "erode");
         for (const o of picked) {
@@ -2946,6 +3100,7 @@ export class Game {
         break;
       }
       case "plunder": {
+        if (this.manaWarded(opp)) { this.addLog(`${this.players[opp].name}のマナゾーンは対戦相手の効果を受けない`, p); break; }
         const zone = this.players[opp].mana;
         const picked = await this.askCards(p, `略奪:相手のマナゾーンから奪うカードを${e.n}枚選んでください`, zone, Math.min(e.n, zone.length), "erode");
         const names: string[] = [];
@@ -2978,6 +3133,133 @@ export class Game {
       case "blessing":
         this.gainBlessing(p, e.id);
         break;
+      case "drawSortCard": {
+        const o = pl.hand.find((x) => x.uid === e.uid);
+        if (!o) break;
+        if (isCreatureCard(o.card)) {
+          if (await this.askYesNo(p, `${src.card.name}の紋章:引いた${o.card.name}をマナゾーンに置きますか?`, "may", o)) {
+            this.putIntoMana(o, p);
+            this.addLog(`引いた${o.card.name}をマナゾーンに置いた`, p);
+          }
+        } else {
+          this.move(o, "graveyard");
+          this.addLog(`引いた${o.card.name}を捨てた`, p);
+        }
+        break;
+      }
+      case "handAllToMana": {
+        const hand = [...pl.hand];
+        for (const o of hand) this.putIntoMana(o, p);
+        if (hand.length) this.addLog(`手札${hand.length}枚をすべてマナゾーンに置いた`, p);
+        break;
+      }
+      case "topIfSub": {
+        const o = pl.library[0];
+        if (!o) break;
+        if ((o.card.subtype ?? "").split("・").includes(e.sub)) {
+          this.move(o, "hand");
+          this.addLog(`ライブラリーの一番上の${o.card.name}を手札に加えた`, p);
+        } else this.addLog(`ライブラリーの一番上は${o.card.name}だった`, p);
+        break;
+      }
+      case "genLib": {
+        const n = this.amount(e.n, ctx);
+        for (let i = 0; i < n; i++) {
+          const g = this.newObj(e.card as Card, p, "library");
+          g.generated = true;
+          pl.library.push(g);
+        }
+        this.shuffle(pl.library);
+        if (n > 0) this.addLog(`《${(e.card as Card).name}》を${n}枚ライブラリーに生成して、切り直した`, p);
+        break;
+      }
+      case "foxInari": {
+        const targets = pl.mana.filter((m) => m.coveredBy === undefined && !m.inari && m.covers === undefined);
+        const fox = this.newObj(e.card as Card, p, "mana");
+        fox.generated = true;
+        fox.inari = true;
+        if (targets.length) {
+          const [under] = await this.askCards(p, "狐火を重ねるマナゾーンのカードを選んでください(そのカードはマナを出せなくなる)", targets, 1, "foxCover");
+          if (under) {
+            under.coveredBy = fox.uid;
+            fox.covers = under.uid;
+          }
+        }
+        pl.mana.push(fox);
+        this.addLog(`稲荷の紋章を持つ狐火を生成し、マナゾーンに置いた${fox.covers !== undefined ? `(${this.find(fox.covers)?.card.name}の上に重ねた)` : ""}`, p);
+        this.queueTriggers("manaEnter", this.sources(p));
+        break;
+      }
+      case "millExceptSub": {
+        const out = pl.library.filter((o) => !(o.card.subtype ?? "").split("・").includes(e.sub));
+        for (const o of out) this.move(o, "graveyard");
+        this.addLog(`ライブラリーの${e.sub}以外のカード${out.length}枚を墓地に置いた(残り${pl.library.length}枚)`, p);
+        break;
+      }
+      case "foxWipe": {
+        const kinds = ["クリーチャー", "アーティファクト", "エンチャント"];
+        const count = (k: string) => this.players[opp].battlefield.filter((o) => o.card.type.includes(k)).length;
+        const idx = await this.ask<number>(p, { kind: "mode", prompt: `${src.card.name}:相手の場のどれをすべて破壊しますか?`, options: kinds.map((k) => `${k}(${count(k)})`), source: src, modes: [] });
+        const k = kinds[Math.max(0, Math.min(2, Math.floor(idx ?? 0)))];
+        const victims = this.players[opp].battlefield.filter((o) => o.card.type.includes(k));
+        for (const o of victims) this.destroy(o);
+        this.addLog(`${src.card.name}:相手の${k}を${victims.length}つ破壊した`, p);
+        const n = Math.max(0, e.base - victims.length);
+        for (let i = 0; i < n; i++) {
+          const g = this.newObj(e.card as Card, p, "library");
+          g.generated = true;
+          pl.library.push(g);
+        }
+        this.shuffle(pl.library);
+        if (n > 0) this.addLog(`《${(e.card as Card).name}》を${n}枚ライブラリーに生成した`, p);
+        break;
+      }
+      case "minamoBlessing": {
+        if (!pl.blessings.includes(BLESSING_MINAMO) && this.gainBlessing(p, BLESSING_MINAMO)) {
+          pl.minamoCount = e.n;
+          pl.minamoCard = e.card as Card;
+        }
+        break;
+      }
+      case "handToMana": {
+        const cs = pl.hand.filter((o) => isCreatureCard(o.card));
+        if (!pl.hand.length) {
+          if (e.orElse) await this.runEffects(e.orElse, ctx);
+          break;
+        }
+        if (!cs.length) break;
+        if (!(await this.askYesNo(p, `${src.card.name}:手札のクリーチャーをマナゾーンに置きますか?`, "may", src))) break;
+        const [o] = await this.askCards(p, "マナゾーンに置くクリーチャーを選んでください", cs, 1, "tutor");
+        if (o) {
+          this.putIntoMana(o, p);
+          this.addLog(`手札の${o.card.name}をマナゾーンに置いた`, p);
+        }
+        break;
+      }
+      case "selfToMana":
+        if (src.zone === "graveyard") {
+          this.putIntoMana(src, p);
+          this.addLog(`${src.card.name}が墓地からマナゾーンに置かれた`, p);
+        }
+        break;
+      case "awakenYakou": {
+        const list = pl.graveyard.filter((o) => hyakkiOf(o.card));
+        for (const o of list) o.yakou = true;
+        if (list.length) this.addLog(`墓地の${list.map((o) => o.card.name).join("、")}が百鬼夜行を得た`, p);
+        break;
+      }
+      case "rasetsuTurn": {
+        if (pl.rasetsuUsed) break;
+        const mine = pl.library[0], theirs = this.players[opp].library[0];
+        const a = mine ? manaValue(mine.card.cost) : -1, b = theirs ? manaValue(theirs.card.cost) : -1;
+        this.addLog(`${src.card.name}:ライブラリーの一番上を比べた(自分${mine ? `${mine.card.name}・${a}` : "なし"} / 相手${theirs ? `${theirs.card.name}・${b}` : "なし"})`, p);
+        if (a > b) {
+          pl.rasetsuUsed = true;
+          pl.extraTurns++;
+          this.addLog(`${src.card.name}:追加のターンを得た`, p);
+        }
+        break;
+      }
       case "seek": {
         const seen = pl.library.slice(0, e.n);
         if (!seen.length) break;
@@ -3183,6 +3465,7 @@ export class Game {
         break;
       }
       case "veilOpp": {
+        if (this.manaWarded(opp)) { this.addLog(`${this.players[opp].name}のマナゾーンは対戦相手の効果を受けない`, p); break; }
         let cands = this.players[opp].mana.filter((o) => !o.faceDown);
         if (e.crest) cands = cands.filter(crestActive);
         const picked = e.all ? cands : await this.askCards(p, `裏向きにする相手のマナゾーンのカードを${e.n}枚選んでください`, cands, Math.min(e.n, cands.length), "erode");
@@ -3230,6 +3513,13 @@ export class Game {
         return;
       }
       this.move(o, "hand");
+      // 金剛羅刹の紋章:引いたカードを、クリーチャーならマナゾーンに置いてもよい。そうでないなら捨てる(第14弾)
+      if (this.turn >= 1)
+        for (const src of pl.mana)
+          if (this.activeAbilities(src).some((a) => a.a === "static" && a.st.s === "drawSort")) {
+            this.pendingTriggers.push({ obj: src, ability: { a: "trigger", on: "endStep", effects: [{ do: "drawSortCard", uid: o.uid }] }, controller: p });
+            break;
+          }
       pl.drawsThisTurn++;
       if (pl.drawsThisTurn === 2) this.queueTriggers("secondDraw", this.sources(p));
       if (i === 0) this.pushTrapEvent("oppDraw", this.other(p));
@@ -3248,6 +3538,18 @@ export class Game {
             this.die(o);
             changed = true;
           }
+        }
+      }
+      // 伝説:同じ名前の伝説が2つ以上あれば、新しいものを残して墓地へ(第14弾)
+      for (const p of this.players) {
+        const seen = new Map<string, Obj>();
+        for (const o of [...p.battlefield].reverse()) {
+          if (!isLegendary(o.card)) continue;
+          if (seen.has(o.card.name)) {
+            this.addLog(`伝説:${o.card.name}は2つ並べられないので、古いほうが墓地に置かれた`, o.controller);
+            this.move(o, "graveyard");
+            changed = true;
+          } else seen.set(o.card.name, o);
         }
       }
       for (const p of this.players) {
@@ -3546,6 +3848,16 @@ export class Game {
       }
     }
     this.queueTriggers("endStep", this.sources(p));
+    // 百鬼夜行:このターンにマナゾーンから墓地に置かれた百鬼夜行を持つカードを戦場に出し、場のクリーチャーを+2/+1(第14弾)
+    for (const q of [this.active, this.other(this.active)] as PlayerId[]) {
+      for (const o of [...this.players[q].graveyard]) {
+        if (!o.yakou || o.fromManaTurn !== this.turn || !isCreatureCard(o.card)) continue;
+        this.addLog(`百鬼夜行:${o.card.name}が墓地から戦場に出た`, q);
+        this.enterBattlefield(o, q);
+        for (const c of this.creatures(q)) c.perm.push({ p: 2, t: 1, kw: [] });
+        this.addLog(`百鬼夜行:${this.players[q].name}のクリーチャーは+2/+1`, q);
+      }
+    }
     // 加護《死者の書》:あなたのターンの終了時、表向きの罠が3つ以上あるならカードを1枚引く
     if (pl.blessings.includes(BLESSING_BOOK) && pl.battlefield.filter((o) => isTrapCard(o.card) && !o.faceDown).length >= 3) {
       this.addLog(`加護《${BLESSING_BOOK}》:カードを1枚引いた`, p);

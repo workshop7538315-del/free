@@ -5,6 +5,7 @@ import type { Card } from "../types";
 import type { Amount, Applause, Effect, TargetSpec } from "./schema";
 import { cardColors, colorPips, manaValue, parseCost, COLORS, type Color } from "../lib/mana";
 import {
+  hyakkiOf,
   matchFilter,
   abilitiesOf,
   burnAbility,
@@ -233,6 +234,19 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
 
   // チャージ
   const charges = options.filter((a): a is Extract<Action, { type: "charge" }> => a.type === "charge");
+  // 百鬼顕現を狙う:手札を空けるため、百鬼でないカードをチャージする
+  if (main && charges.length > 0) {
+    const hk = [...me.mana, ...me.hand].find((o) => hyakkiOf(o.card));
+    if (hk) {
+      const others = me.hand.filter((o) => o !== hk);
+      const n = manaValue(g.hyakkiCost(p, hk));
+      const untapped = me.mana.filter((o) => !o.tapped && o.coveredBy === undefined && !o.inari && o !== hk).length;
+      if (others.length === 1 && untapped + 1 >= n) {
+        const c = charges.find((a) => a.uid === others[0].uid);
+        if (c) return c;
+      }
+    }
+  }
   if (main && charges.length > 0 && (me.mana.length < 7 || me.hand.length >= 4)) {
     const need = colorNeed(g, p);
     let best: { a: Action; s: number } | null = null;
@@ -242,6 +256,8 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
       for (const c of cardColors(o.card.cost)) if (need[c] > 0) s -= 1.2;
       if (cardColors(o.card.cost).length === 0 && need.C > 0) s -= 1.2;
       if (cardColors(o.card.cost).length >= 2) s += 0.6; // タップ状態で置かれる
+      // 狐火のインスタントは、稲荷の紋章で軽くなるので手札に残す(第14弾)
+      if (o.card.type === "インスタント" && (o.card.subtype ?? "").split("・").includes("狐火")) s += 2.5;
       // 今すぐ唱えたいカードは残す(原色などのコスト軽減を反映した実際のコストで見る)
       const eff = manaValue(g.effectiveCost(p, o, "hand") ?? o.card.cost);
       if (eff <= me.mana.length + 1 && manaValue(o.card.cost) >= 1) s += 0.8;
@@ -272,6 +288,8 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
     else if (a.type === "equip") s = main && g.step === "main1" && g.find(a.uid)?.attachedTo == null ? 2.2 : -1;
     else if (a.type === "cycle") s = scoreCycle(g, p, a.uid);
     else if (a.type === "trap") s = scoreTrap(g, p, a, main);
+    // 百鬼顕現:呼べるなら呼ぶ(マナ総量100の大型)
+    else if (a.type === "hyakki") s = main ? 9 : -1;
     else if (a.type === "summon")
       s =
         a.via === "entrata" ? scoreEntrata(g, p, a.uid)
@@ -731,6 +749,29 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return (me.applause["呪い"] ?? 0) * 1.3;
     case "setFromGrave":
       return Math.min(e.n, me.graveyard.filter((o) => isTrapCard(o.card)).length) * 2;
+    // 第14弾
+    case "genLib":
+      return n(e.n) * 0.9;
+    case "foxInari":
+      return 2.2;
+    case "foxWipe": {
+      const kinds = ["クリーチャー", "アーティファクト", "エンチャント"];
+      return Math.max(...kinds.map((k) => them.battlefield.filter((o) => o.card.type.includes(k)).reduce((s, o) => s + (isCreatureCard(o.card) ? creatureValue(g, o) : 2), 0)));
+    }
+    case "minamoBlessing":
+      return 3;
+    case "handToMana":
+      return me.hand.length ? 0.8 : 1;
+    case "handAllToMana":
+      return me.hand.length * 0.7;
+    case "topIfSub":
+      return 0.6;
+    case "awakenYakou":
+      return 2;
+    case "rasetsuTurn":
+      return me.rasetsuUsed ? 0 : 3;
+    case "selfToMana":
+      return 1;
     case "dragonNow": {
       const can = me.extra.some((o) => dragonOf(o.card) && g.dragonBases(p).some((b) => g.canDragon(p, o, b)));
       return can ? 3.5 : 0;
@@ -993,6 +1034,15 @@ function chooseYesNo(g: Game, p: PlayerId, d: Extract<Decision, { kind: "yesno" 
     case "lookTop":
       return !!d.obj && manaValue(d.obj.card.cost) > me.mana.length + 3;
     case "may": {
+      // 開顕:純白の妖狐 ミナモ(ライブラリーを狐火だけにする)は、狐火の連鎖で勝ちきれそうなときだけ
+      if (d.prompt.startsWith("開顕") && d.obj?.card.back) {
+        const back = d.obj.card.back;
+        if (abilitiesOf(back).some((a) => a.a === "trigger" && a.effects.some((e) => e.do === "millExceptSub"))) {
+          const foxes = me.library.filter((o) => (o.card.subtype ?? "").split("・").includes("狐火")).length;
+          return foxes * 3 + 3 >= g.players[g.other(p)].life || me.library.length <= foxes + 3;
+        }
+        return true;
+      }
       // 格闘:勝てて、自分が生き残る相手がいるときだけ
       if (d.prompt.includes("格闘") && d.obj) {
         const src = d.obj;
@@ -1296,6 +1346,11 @@ export function chooseBlocks(g: Game, p: PlayerId, attackerIds: number[], blocke
 
 // ---------------------------------------------------------------- モード呪文・リリース召喚
 function chooseMode(g: Game, p: PlayerId, d: Extract<Decision, { kind: "mode" }>): number {
+  // 煌めく狐火:数の多いもの(選択肢の「(n)」)を選ぶ
+  if (!d.modes.length && d.options?.length) {
+    const nums = d.options.map((o) => Number((o.match(/\((\d+)\)/) ?? [0, 0])[1]));
+    return nums.indexOf(Math.max(...nums));
+  }
   let best = 0;
   let bestV = -Infinity;
   d.modes.forEach((m, i) => {

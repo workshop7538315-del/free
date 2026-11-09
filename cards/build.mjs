@@ -123,7 +123,7 @@ const out = CARDS.map((c0) => {
   const allTags = autoTags(c);
   return {
     ...rest,
-    text: cardText(c),
+    text: c.back ? [...cardText(c), `【裏面】${c.back.name}(${c.back.type}─${c.back.subtype} ${c.back.power}/${c.back.toughness})`, ...cardText(c.back)] : cardText(c),
     ...(allTags.length ? { tags: allTags } : {}),
     pack,
     packs: packsOf.get(c.id),
@@ -199,7 +199,7 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
   };
   // 秘蔵庫のカードはメインには入れない
   // 第11弾の英雄と関連カード(hr)は、core で指定したデッキにだけ入れる(自動では足さない)
-  const pool = out.filter((c) => fits(c) && !/^hr\d/.test(c.id) && !c.id.startsWith("sg") && !c.id.startsWith("sh") && !c.id.startsWith("ry") && !c.id.startsWith("eg") && !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast", "lesson", "dragon"].includes(a.a)));
+  const pool = out.filter((c) => fits(c) && !/^hr\d/.test(c.id) && !c.id.startsWith("sg") && !c.id.startsWith("sh") && !c.id.startsWith("ry") && !c.id.startsWith("eg") && !c.id.startsWith("yk") && !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast", "lesson", "dragon"].includes(a.a)));
   const inSet = (c) => !!set && c.id.startsWith(set);
   const themed = (c) => inSet(c) || (!!theme && theme(c));
   const score = (c) => {
@@ -327,6 +327,11 @@ const DECKS = [
     core: { eg21: 2, eg22: 2, eg23: 2, eg24: 2, eg25: 1, eg26: 3, eg27: 3, eg28: 2, eg29: 3, eg30: 2, eg31: 2, eg32: 2, eg33: 2, eg34: 2, eg35: 2, eg36: 2, eg37: 1, eg38: 2, eg39: 1, eg40: 2 } },
   { id: "eg-pharaoh", name: "ファラオ:罠のピラミッド(青黒緑)", colors: ["U", "B", "G"], theme: tag("ファラオ"), archetype: "ファラオ",
     core: { eg41: 3, eg42: 2, eg43: 3, eg44: 2, eg45: 1, eg46: 2, eg47: 2, eg48: 1, eg49: 2, eg50: 2, eg51: 2, eg52: 3, eg53: 1, eg54: 2, eg55: 2, eg56: 2, eg57: 1, eg61: 2, eg58: 1, eg59: 1, eg60: 3 } },
+  // 第14弾
+  { id: "yk-kitsune", name: "狐火:稲荷の社(欠色)", colors: [], theme: tag("狐火"), archetype: "狐火",
+    core: { yk01: 3, yk02: 2, yk03: 3, yk04: 3, yk05: 3, yk06: 2, yk07: 4, yk08: 4, yk09: 3, yk10: 2, yk11: 3, yk12: 4, yk13: 2, yk14: 2 } },
+  { id: "yk-hyakki", name: "百鬼:百鬼夜行(黒緑)", colors: ["B", "G"], theme: tag("百鬼"), archetype: "百鬼",
+    core: { yk21: 2, yk22: 2, yk23: 2, yk24: 4, yk25: 4, yk26: 3, yk27: 4, yk28: 3, yk29: 3, yk30: 3, yk31: 4, yk32: 3, yk33: 2, yk34: 1 } },
   // 第11.5弾:白単(回復)と青単(ドロー)
   { id: "t-mono-w", name: "原色:白単の癒しの聖堂", colors: ["W"], pure: true, theme: tag("原色"), archetype: "原色",
     core: { pc01: 2, pc02: 1, pc03: 2, pc04: 4, pc06: 2, pc07: 2, pc08: 4, pc09: 3, pc10: 3, pc11: 3, pc12: 2, pc13: 3, pc15: 2, hz65: 3, pc48: 2 } },

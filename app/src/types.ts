@@ -23,6 +23,8 @@ export type Card = {
   packs?: string[];
   /** 既存カード強化パックのカードの元カード */
   basedOn?: { id: string; kind: "強化版" | "リメイク" | "サポート" };
+  /** 両面カードの裏面(第14弾・開顕) */
+  back?: Card;
 };
 
 export type Pack = {
