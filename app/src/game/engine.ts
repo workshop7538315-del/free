@@ -1511,14 +1511,14 @@ export class Game {
     this.enterBattlefield(o, p);
     // 百鬼顕現で出たクリーチャーは+2/-2され、次の対戦相手のターンの終了時に墓地に置かれる
     if (o.zone === "battlefield") {
-      o.perm.push({ p: 2, t: -2, kw: [] });
+      o.perm.push({ p: 2, t: -2, kw: ["速攻"] });
       o.hyakkiDoomAfter = this.turn;
     }
     // その後、支払いでタップしたマナゾーンのカードを墓地に置く
     for (const m of paid) this.move(m, "graveyard");
     if (paid.length) this.addLog(`支払いに使ったマナゾーンのカード${paid.length}枚(${paid.map((m) => m.card.name).join("、")})が墓地に置かれた`, p);
     const h = hyakkiOf(o.card)!;
-    if (h.then?.length) this.pendingTriggers.push({ obj: o, ability: { a: "trigger", on: "etb", effects: h.then }, controller: p });
+    if (h.then?.length) this.pendingTriggers.push({ obj: o, ability: { a: "trigger", on: "etb", effects: h.then, ...(h.targets ? { targets: h.targets } : {}) }, controller: p });
   }
 
   /** 生成したカードを戦場に出す(速攻) */
@@ -3160,7 +3160,7 @@ export class Game {
             this.putIntoMana(o, p);
             this.addLog(`引いた${o.card.name}をマナゾーンに置いた`, p);
           }
-        } else {
+        } else if (await this.askYesNo(p, `${src.card.name}の紋章:引いた${o.card.name}を捨てますか?`, "may", o)) {
           this.move(o, "graveyard");
           this.addLog(`引いた${o.card.name}を捨てた`, p);
         }
@@ -3939,6 +3939,14 @@ function effectSummary(e: Effect): string {
       return "格闘";
     case "selfToMana":
       return "このカードを墓地からマナゾーンに置く";
+    case "awakenYakou":
+      return "墓地の百鬼に百鬼夜行を与える";
+    case "rasetsuTurn":
+      return "ライブラリーの一番上を比べる(追加のターン)";
+    case "rampTop":
+      return "ライブラリーの上からマナゾーンに置く";
+    case "damage":
+      return "ダメージを与える";
     case "destroy":
       return "対象を破壊する";
     case "duel":

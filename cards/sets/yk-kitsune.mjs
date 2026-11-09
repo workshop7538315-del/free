@@ -66,8 +66,8 @@ export const HYAKKI = [
   HK(legend(cr("yk21", "百鬼の魁 金剛羅刹", `${IMPOSSIBLE}{W}{U}{B}{R}{G}`, "鬼・百鬼", 0, 12, "M", [
     kw("速攻", "トランプル"),
     crest(stat({ s: "drawSort" })),
-    hyakki(6, E14.awakenYakou()),
-    attacks(E14.rasetsuTurn()),
+    hyakki(6, may(E14.awakenYakou())),
+    attacks(may(E14.rasetsuTurn())),
   ], { flavor: "百鬼の列の先頭を歩く。その後ろに、夜が続く。" }))),
   HK(legend(cr("yk22", "百鬼の幽姫 百々目", `${IMPOSSIBLE}{B}{B}{B}{R}{G}`, "鬼・百鬼", 0, 8, "M", [
     kw("接死"),
@@ -82,17 +82,28 @@ export const HYAKKI = [
     hyakki(5),
     toGraveyard(E14.handToMana(may(E.destroy())), T.perm(["クリーチャー", "アーティファクト", "エンチャント"], "opp")),
   ], { flavor: "槍の穂先が月を貫くと、行列が動き出す。" }))),
+  HK(legend(cr("yk35", "百鬼の大天狗", `${IMPOSSIBLE}{U}{U}{B}{G}{G}`, "鬼・百鬼", 0, 9, "M", [
+    kw("飛行"),
+    crest(stat({ s: "hyakkiDiscount", n: 1 })),
+    hyakki(6, E.bounce(), T.opp),
+    { ...toGraveyard(E14.handToMana(may(E.ramp(1)))), text: "百鬼の大天狗がどこからでも墓地に置かれたとき、あなたは手札のクリーチャー1枚をマナゾーンに置いてもよい。あなたの手札がないなら、代わりにライブラリーの一番上のカードをマナゾーンに置いてもよい。" },
+  ], { flavor: "羽団扇のひと振りで、行列の行く手の山が消える。" }))),
+  HK(legend(cr("yk36", "百鬼の大酒呑み 酒呑", `${IMPOSSIBLE}{B}{B}{R}{R}{G}`, "鬼・百鬼", 0, 11, "M", [
+    kw("トランプル"),
+    hyakki(6),
+    { ...toGraveyard(E14.handToMana(may(E.dmgOpp(2)))), text: "百鬼の大酒呑み 酒呑がどこからでも墓地に置かれたとき、あなたは手札のクリーチャー1枚をマナゾーンに置いてもよい。あなたの手札がないなら、代わりに対戦相手に2点のダメージを与えてもよい。" },
+  ], { flavor: "大江山の酒宴は、夜明けまで終わらない。" }))),
   // 支え(黒緑・すべてクリーチャー)
-  HK(cr("yk24", "百鬼の小鬼", "{B}", "鬼", 2, 2, "C", [etb(E14.handToMana())], { flavor: "持っているものは、何でも土に埋めたがる。" })),
+  HK(cr("yk24", "百鬼の小鬼", "{B}", "鬼", 2, 1, "C", [etb(E14.handToMana())], { flavor: "持っているものは、何でも土に埋めたがる。" })),
   HK(cr("yk25", "山童", "{1}{G}", "鬼", 2, 3, "C", [etb(E.ramp(1))], { flavor: "夏は川に、冬は山に棲む。" })),
   HK(cr("yk26", "鬼火の案内人", "{2}{B}", "鬼火", 2, 2, "U", [{ ...etb(E.tutor({ sub: "百鬼" }, "mana")), text: "鬼火の案内人が戦場に出たとき、あなたのライブラリーから百鬼のカードを1枚探し、マナゾーンに置く。その後ライブラリーを切り直す。" }], { flavor: "ついていけば、行列の先頭に出る。" })),
   HK(cr("yk27", "土蜘蛛", "{2}{G}", "蜘蛛", 2, 3, "C", [kw("到達", "接死"), dies(E14.handToMana())], { flavor: "古い塚の穴の奥で、糸を張っている。" })),
   HK(cr("yk28", "付喪神の行列", "{3}{G}", "付喪神", 3, 4, "U", [etb(E14.handAllToMana())], { flavor: "捨てられた鍋も傘も、百年たてば歩き出す。" })),
-  HK(cr("yk29", "ぬらりひょん", "{2}{B}{G}", "鬼", 3, 3, "R", [stat({ s: "hyakkiDiscount", n: 2 }), crest(stat({ s: "hyakkiDiscount", n: 1 }))], { flavor: "いつのまにか上座に座り、茶をすすっている。" })),
+  HK(cr("yk29", "ぬらりひょん", "{2}{B}{G}", "鬼", 3, 3, "R", [stat({ s: "hyakkiDiscount", n: 1 }), crest(stat({ s: "hyakkiDiscount", n: 1 }))], { flavor: "いつのまにか上座に座り、茶をすすっている。" })),
   HK(cr("yk30", "牛鬼", "{3}{B}{G}", "鬼", 5, 4, "U", [kw("トランプル"), dies(E14.selfToMana())], { flavor: "浜に現れ、影を舐めて人を殺す。" })),
   HK(cr("yk31", "山姥", "{2}{B}", "鬼", 2, 2, "C", [etb(E.shrink(2), T.opp)], { flavor: "宿を借りた旅人は、朝には骨になっている。" })),
-  HK(cr("yk32", "鎌鼬", "{1}{B}", "獣", 3, 1, "C", [kw("速攻"), dies(E14.handToMana())], { flavor: "斬られたことに、血が出てから気づく。" })),
-  HK(cr("yk33", "輪入道", "{4}{B}", "鬼", 5, 3, "U", [kw("速攻"), etb(E14.handToMana())], { flavor: "火の車輪が通ったあとには、魂がひとつ足りない。" })),
+  HK(cr("yk32", "鎌鼬", "{1}{B}", "獣", 2, 1, "C", [kw("速攻"), dies(E14.handToMana())], { flavor: "斬られたことに、血が出てから気づく。" })),
+  HK(cr("yk33", "輪入道", "{4}{B}", "鬼", 4, 3, "U", [kw("速攻"), etb(E14.handToMana())], { flavor: "火の車輪が通ったあとには、魂がひとつ足りない。" })),
   HK(cr("yk34", "大百足", "{4}{G}{G}", "蟲", 6, 6, "U", [kw("トランプル"), etb(E.ramp(1))], { flavor: "山を七巻き半する。" })),
 ];
 

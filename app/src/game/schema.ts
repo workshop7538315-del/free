@@ -511,7 +511,7 @@ export type Ability = { text?: string } & (
   /** 開顕(第14弾):唱えるとき、コストが0以下まで軽減されているなら、裏面で唱えてもよい */
   | { a: "kaiken" }
   /** 百鬼顕現 N(第14弾):手札にほかのカードがないなら、{N}を払ってマナゾーンか手札からこれを戦場に出す。その後、支払いでタップしたマナゾーンのカードを墓地に置く */
-  | { a: "hyakki"; n: number; then?: Effect[] }
+  | { a: "hyakki"; n: number; then?: Effect[]; targets?: TargetSpec[] }
 );
 
 /** モード呪文の選択肢 */

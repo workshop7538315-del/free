@@ -374,7 +374,7 @@ export const E14 = {
 /** 開顕:コストが0以下まで軽減されているなら、裏面で唱えてもよい */
 export const kaiken = () => ({ a: "kaiken" });
 /** 百鬼顕現 N */
-export const hyakki = (n, then) => ({ a: "hyakki", n, ...(then ? { then: [then].flat() } : {}) });
+export const hyakki = (n, then, targets) => ({ a: "hyakki", n, ...(then ? { then: [then].flat() } : {}), ...(targets ? { targets: [targets].flat() } : {}) });
 /** 両面カード:表に裏面をつける(裏面の文章も作る) */
 export const withBack = (front, back) => ({ ...front, back: { ...back, text: cardText(back) } });
 /** 生成専用のカード(文章をつけておく) */
@@ -763,9 +763,9 @@ function effectText(e, name, abil, notes) {
     case "selfToMana":
       return `${name}を墓地からマナゾーンに置${m ? "いてもよい" : "く"}。`;
     case "awakenYakou":
-      return "あなたの墓地にある百鬼顕現を持つカードは、すべて百鬼夜行を得る。(ターン終了時に、このターンにマナゾーンから墓地に置かれていたなら、それを戦場に出す。その後、あなたのクリーチャーは+2/+1の修整を受ける)";
+      return (m ? "あなたは次を行ってもよい。" : "") + "あなたの墓地にある百鬼顕現を持つカードは、すべて百鬼夜行を得る。(ターン終了時に、このターンにマナゾーンから墓地に置かれていたなら、それを戦場に出す。その後、あなたのクリーチャーは+2/+1の修整を受ける)";
     case "rasetsuTurn":
-      return "お互いのライブラリーの一番上のカードのマナ総量を比べる。あなたのほうが大きいなら、このターンのあとに追加のターンを得る。(この効果で追加のターンを得るのは1ゲームに1回)";
+      return (m ? "あなたは次を行ってもよい。" : "") + "お互いのライブラリーの一番上のカードのマナ総量を比べる。あなたのほうが大きいなら、このターンのあとに追加のターンを得る。(この効果で追加のターンを得るのは1ゲームに1回)";
     case "handAllToMana":
       return "あなたの手札をすべてマナゾーンに置く。";
     case "topIfSub":
@@ -949,7 +949,7 @@ function staticText(abil, name, card) {
       body = "あなたが任務を進めるとき、代わりに2回進める。";
       break;
     case "drawSort":
-      body = "あなたがカードを引くたび、それがクリーチャーならマナゾーンに置いてもよい。クリーチャーでないなら、それを捨てる。";
+      body = "あなたがカードを引くたび、それがクリーチャーならマナゾーンに置いてもよい。クリーチャーでないなら、それを捨ててもよい。";
       break;
     case "manaWard":
       body = "あなたのマナゾーンのカードは、対戦相手の効果を受けない。";
@@ -1021,7 +1021,7 @@ function abilityTextBody(abil, card) {
     case "kaiken":
       return `開顕(この呪文を唱えるためのコストが0以下まで軽減されているなら、裏面《${card.back?.name ?? "?"}》として唱えてもよい)`;
     case "hyakki":
-      return `百鬼顕現 {${abil.n}}(あなたの手札にほかのカードがないなら、ソーサリーのタイミングで、マナゾーンか手札から{${abil.n}}を払ってこのクリーチャーを戦場に出す。その後、支払いでタップしたマナゾーンのカードをすべて墓地に置く。このクリーチャーは+2/-2の修整を受け、次の対戦相手のターンの終了時に墓地に置かれる)${abil.then?.length ? `そうしたとき、${bodyText({ effects: abil.then }, name)}` : ""}`;
+      return `百鬼顕現 {${abil.n}}(あなたの手札にほかのカードがないなら、ソーサリーのタイミングで、マナゾーンか手札から{${abil.n}}を払ってこのクリーチャーを戦場に出す。その後、支払いでタップしたマナゾーンのカードをすべて墓地に置く。このクリーチャーは+2/-2の修整を受けて速攻を得て、次の対戦相手のターンの終了時に墓地に置かれる)${abil.then?.length ? `そうしたとき、${bodyText({ effects: abil.then, targets: abil.targets }, name)}` : ""}`;
     case "pureCost":
       return "純色払い(このカードのコストは、すべて同じ1色のマナで支払わなければならない)";
     case "gem":

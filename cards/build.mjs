@@ -331,7 +331,7 @@ const DECKS = [
   { id: "yk-kitsune", name: "狐火:稲荷の社(欠色)", colors: [], theme: tag("狐火"), archetype: "狐火",
     core: { yk01: 3, yk02: 2, yk03: 3, yk04: 3, yk05: 3, yk06: 2, yk07: 4, yk08: 4, yk09: 3, yk10: 2, yk11: 3, yk12: 4, yk13: 2, yk14: 2 } },
   { id: "yk-hyakki", name: "百鬼:百鬼夜行(黒緑)", colors: ["B", "G"], theme: tag("百鬼"), archetype: "百鬼",
-    core: { yk21: 2, yk22: 2, yk23: 2, yk24: 4, yk25: 4, yk26: 3, yk27: 4, yk28: 3, yk29: 3, yk30: 3, yk31: 4, yk32: 3, yk33: 2, yk34: 1 } },
+    core: { yk21: 2, yk22: 2, yk23: 2, yk35: 1, yk36: 1, yk24: 4, yk25: 4, yk26: 3, yk27: 4, yk28: 3, yk29: 3, yk30: 3, yk31: 4, yk32: 1, yk33: 2, yk34: 1 } },
   // 第11.5弾:白単(回復)と青単(ドロー)
   { id: "t-mono-w", name: "原色:白単の癒しの聖堂", colors: ["W"], pure: true, theme: tag("原色"), archetype: "原色",
     core: { pc01: 2, pc02: 1, pc03: 2, pc04: 4, pc06: 2, pc07: 2, pc08: 4, pc09: 3, pc10: 3, pc11: 3, pc12: 2, pc13: 3, pc15: 2, hz65: 3, pc48: 2 } },
