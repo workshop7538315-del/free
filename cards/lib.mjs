@@ -631,7 +631,7 @@ function effectText(e, name, abil, notes) {
         return `${name}は対戦相手がコントロールする各クリーチャー${e.players ? "と対戦相手" : ""}にそれぞれ${a(e.n)}点のダメージを与える。`;
       return `${name}は各クリーチャー${e.players ? "と各プレイヤー" : ""}にそれぞれ${a(e.n)}点のダメージを与える。`;
     case "destroy":
-      return `${it(e.tg)}を破壊する。`;
+      return `${it(e.tg)}を破壊${m ? "してもよい" : "する"}。`;
     case "destroyAll": {
       const f = { ...(e.filter ?? {}), ...(e.maxPower !== undefined ? { maxPower: e.maxPower } : {}) };
       if (!Object.keys(f).length) return e.who === "opp" ? "対戦相手がコントロールするクリーチャーをすべて破壊する。" : "すべてのクリーチャーを破壊する。";
@@ -761,7 +761,7 @@ function effectText(e, name, abil, notes) {
     case "handToMana":
       return `あなたは手札のクリーチャー1枚をマナゾーンに置いてもよい。${e.orElse ? `あなたの手札がないなら、代わりに${e.orElse.map((x) => effectText(x, name, abil, notes)).join("")}` : ""}`;
     case "selfToMana":
-      return `${name}を墓地からマナゾーンに置く。`;
+      return `${name}を墓地からマナゾーンに置${m ? "いてもよい" : "く"}。`;
     case "awakenYakou":
       return "あなたの墓地にある百鬼顕現を持つカードは、すべて百鬼夜行を得る。(ターン終了時に、このターンにマナゾーンから墓地に置かれていたなら、それを戦場に出す。その後、あなたのクリーチャーは+2/+1の修整を受ける)";
     case "rasetsuTurn":

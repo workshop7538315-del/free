@@ -289,7 +289,7 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
     else if (a.type === "cycle") s = scoreCycle(g, p, a.uid);
     else if (a.type === "trap") s = scoreTrap(g, p, a, main);
     // 百鬼顕現:呼べるなら呼ぶ(マナ総量100の大型)
-    else if (a.type === "hyakki") s = main ? 9 : -1;
+    else if (a.type === "hyakki") s = main ? scoreHyakki(g, p, a.uid) : -1;
     else if (a.type === "summon")
       s =
         a.via === "entrata" ? scoreEntrata(g, p, a.uid)
@@ -302,6 +302,21 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
     if (s > 0 && (!best || s > best.s)) best = { a, s };
   }
   return best?.a ?? pass;
+}
+
+// ---------------------------------------------------------------- 百鬼顕現(第14弾)
+/** 金剛羅刹(百鬼夜行を与える)は、マナゾーンの百鬼を支払いで墓地に落として、まとめて呼び戻せる */
+function scoreHyakki(g: Game, p: PlayerId, uid: number): number {
+  const me = g.players[p];
+  const o = g.find(uid);
+  if (!o) return -1;
+  const yakou = (x: Obj) => !!hyakkiOf(x.card)?.then?.some((e) => e.do === "awakenYakou");
+  const onField = (x: Obj) => me.battlefield.some((b) => b.card.name === x.card.name);
+  const fodder = me.mana.filter((m) => m !== o && hyakkiOf(m.card) && !yakou(m) && !onField(m)).length;
+  if (yakou(o)) return 9 + fodder * 2;
+  // 金剛羅刹を呼べるなら、ほかの百鬼はマナに残しておく(羅刹の支払いで墓地に落とす)
+  if (me.mana.concat(me.hand).some((x) => x !== o && yakou(x) && !onField(x) && g.canHyakki(p, x))) return -1;
+  return onField(o) ? 1 : 9;
 }
 
 // ---------------------------------------------------------------- 罠(第13弾)
@@ -1034,6 +1049,9 @@ function chooseYesNo(g: Game, p: PlayerId, d: Extract<Decision, { kind: "yesno" 
     case "lookTop":
       return !!d.obj && manaValue(d.obj.card.cost) > me.mana.length + 3;
     case "may": {
+      // 百々目:このターンにマナから墓地に落ちていて、金剛羅刹がいるなら、百鬼夜行で戻るので墓地に残す
+      if (d.prompt.includes("墓地からマナゾーンに置く") && d.obj && d.obj.fromManaTurn === g.turn && g.creatures(p).some((c) => c.card.name.includes("金剛羅刹")))
+        return false;
       // 開顕:純白の妖狐 ミナモ(ライブラリーを狐火だけにする)は、狐火の連鎖で勝ちきれそうなときだけ
       if (d.prompt.startsWith("開顕") && d.obj?.card.back) {
         const back = d.obj.card.back;

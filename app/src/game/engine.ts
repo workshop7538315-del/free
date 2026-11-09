@@ -292,6 +292,8 @@ export const BLESSING_SLOTS = 5;
 export const BLESSING_MINAMO = "ミナモの加護";
 export const hyakkiOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "hyakki") as Extract<Ability, { a: "hyakki" }> | undefined;
 export const isLegendary = (c: Card) => c.type.includes("伝説");
+/** 同じ名前の伝説がすでに戦場にある(戻しても伝説のルールで墓地に置かれる) */
+const isLegendaryOnField = (g: Game, p: PlayerId, o: Obj) => g.players[p].battlefield.some((b) => b.card.name === o.card.name);
 /** 稲荷の紋章:マナ総量5以上のインスタントのコストが{2}少なくなる */
 const INARI: Ability = { a: "static", from: "mana", st: { s: "discount", filter: { type: "インスタント", minMV: 5 }, n: 2 } } as Ability;
 /** 罠(第13弾) */
@@ -1181,8 +1183,16 @@ export class Game {
   }
 
   /** マナを払う。選べる余地があれば、どのマナ源を使うかプレイヤーに聞く(CPU・おまかせはいつもの払い方) */
-  private async pay(p: PlayerId, cost: string, x: number, exclude?: Obj, only?: Color): Promise<boolean> {
-    const units = this.manaUnits(p, exclude, only);
+  private async pay(p: PlayerId, cost: string, x: number, exclude?: Obj, only?: Color, prefer?: (o: Obj) => boolean): Promise<boolean> {
+    let units = this.manaUnits(p, exclude, only);
+    // 先に使いたいマナ源(百鬼顕現:百鬼夜行で戻る百鬼をマナから墓地に落とす)
+    if (prefer) {
+      const pref = (u: (typeof units)[number]) => {
+        const o = u.tapGroup.startsWith("m") ? this.players[p].mana.find((m) => m.uid === Number(u.tapGroup.slice(1))) : undefined;
+        return o && prefer(o) ? 0 : 1;
+      };
+      units = units.map((u) => (pref(u) === 0 ? { ...u, priority: u.priority - 100 } : u));
+    }
     let pay = findPayment(cost, x, units);
     if (!pay) return false;
     const groups = [...new Set(units.map((u) => u.tapGroup))];
@@ -1490,7 +1500,8 @@ export class Game {
   private async hyakki(p: PlayerId, o: Obj) {
     const cost = this.hyakkiCost(p, o);
     this.lastPaidMana = [];
-    if (!(await this.pay(p, cost, 0, o.zone === "mana" ? o : undefined))) return;
+    const yakou = !!hyakkiOf(o.card)?.then?.some((e) => e.do === "awakenYakou");
+    if (!(await this.pay(p, cost, 0, o.zone === "mana" ? o : undefined, undefined, yakou ? (m) => !!hyakkiOf(m.card) && !isLegendaryOnField(this, p, m) : undefined))) return;
     const paid = this.lastPaidMana.filter((m) => m.zone === "mana");
     this.usedCards.add(o.card.id);
     this.addLog(`百鬼顕現:${cost}を払って${o.card.name}を呼び出した`, p);
@@ -3911,6 +3922,10 @@ function effectSummary(e: Effect): string {
       return e.to === "hand" ? "墓地のカードを手札に戻す" : e.to === "battlefield" ? "墓地のカードを戦場に戻す" : "墓地のカードをマナゾーンに置く";
     case "fightSelf":
       return "格闘";
+    case "selfToMana":
+      return "このカードを墓地からマナゾーンに置く";
+    case "destroy":
+      return "対象を破壊する";
     case "duel":
       return "決闘";
     default:
