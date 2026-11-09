@@ -96,6 +96,8 @@ export type Obj = {
   fromManaTurn?: number;
   /** 百鬼夜行を持つ(墓地にあるあいだ) */
   yakou?: boolean;
+  /** 百鬼顕現で出た:このターン番号より後の、対戦相手のターンの終了時に墓地に置かれる */
+  hyakkiDoomAfter?: number;
   /** 罠を裏向きで仕掛けた(裏向きに戻した)ターン番号。次のターンから発動できる(第13弾) */
   setTurn?: number;
   /** 任務カウンター(第13弾) */
@@ -592,6 +594,7 @@ export class Game {
       }
     }
     if (fromZone === "graveyard" && to !== "graveyard") o.yakou = false;
+    if (fromZone === "battlefield") o.hyakkiDoomAfter = undefined;
     if (o.front && to !== "battlefield" && to !== "stack") {
       o.card = o.front;
       o.front = undefined;
@@ -1506,6 +1509,11 @@ export class Game {
     this.usedCards.add(o.card.id);
     this.addLog(`百鬼顕現:${cost}を払って${o.card.name}を呼び出した`, p);
     this.enterBattlefield(o, p);
+    // 百鬼顕現で出たクリーチャーは+2/-2され、次の対戦相手のターンの終了時に墓地に置かれる
+    if (o.zone === "battlefield") {
+      o.perm.push({ p: 2, t: -2, kw: [] });
+      o.hyakkiDoomAfter = this.turn;
+    }
     // その後、支払いでタップしたマナゾーンのカードを墓地に置く
     for (const m of paid) this.move(m, "graveyard");
     if (paid.length) this.addLog(`支払いに使ったマナゾーンのカード${paid.length}枚(${paid.map((m) => m.card.name).join("、")})が墓地に置かれた`, p);
@@ -3859,6 +3867,13 @@ export class Game {
       }
     }
     this.queueTriggers("endStep", this.sources(p));
+    // 百鬼顕現で出たクリーチャー:次の対戦相手のターンの終了時に墓地に置かれる
+    for (const q of [0, 1] as PlayerId[])
+      for (const o of [...this.players[q].battlefield])
+        if (o.hyakkiDoomAfter !== undefined && this.active !== o.controller && this.turn > o.hyakkiDoomAfter) {
+          this.addLog(`百鬼顕現:${o.card.name}が墓地に置かれた`, o.controller);
+          this.move(o, "graveyard");
+        }
     // 百鬼夜行:このターンにマナゾーンから墓地に置かれた百鬼夜行を持つカードを戦場に出し、場のクリーチャーを+2/+1(第14弾)
     for (const q of [this.active, this.other(this.active)] as PlayerId[]) {
       for (const o of [...this.players[q].graveyard]) {

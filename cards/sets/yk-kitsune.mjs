@@ -66,7 +66,7 @@ export const HYAKKI = [
   HK(legend(cr("yk21", "百鬼の魁 金剛羅刹", `${IMPOSSIBLE}{W}{U}{B}{R}{G}`, "鬼・百鬼", 0, 12, "M", [
     kw("速攻", "トランプル"),
     crest(stat({ s: "drawSort" })),
-    hyakki(5, E14.awakenYakou()),
+    hyakki(6, E14.awakenYakou()),
     attacks(E14.rasetsuTurn()),
   ], { flavor: "百鬼の列の先頭を歩く。その後ろに、夜が続く。" }))),
   HK(legend(cr("yk22", "百鬼の幽姫 百々目", `${IMPOSSIBLE}{B}{B}{B}{R}{G}`, "鬼・百鬼", 0, 8, "M", [

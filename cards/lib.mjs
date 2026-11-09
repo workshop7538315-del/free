@@ -1021,7 +1021,7 @@ function abilityTextBody(abil, card) {
     case "kaiken":
       return `開顕(この呪文を唱えるためのコストが0以下まで軽減されているなら、裏面《${card.back?.name ?? "?"}》として唱えてもよい)`;
     case "hyakki":
-      return `百鬼顕現 {${abil.n}}(あなたの手札にほかのカードがないなら、ソーサリーのタイミングで、マナゾーンか手札から{${abil.n}}を払ってこのクリーチャーを戦場に出す。その後、支払いでタップしたマナゾーンのカードをすべて墓地に置く)${abil.then?.length ? `そうしたとき、${bodyText({ effects: abil.then }, name)}` : ""}`;
+      return `百鬼顕現 {${abil.n}}(あなたの手札にほかのカードがないなら、ソーサリーのタイミングで、マナゾーンか手札から{${abil.n}}を払ってこのクリーチャーを戦場に出す。その後、支払いでタップしたマナゾーンのカードをすべて墓地に置く。このクリーチャーは+2/-2の修整を受け、次の対戦相手のターンの終了時に墓地に置かれる)${abil.then?.length ? `そうしたとき、${bodyText({ effects: abil.then }, name)}` : ""}`;
     case "pureCost":
       return "純色払い(このカードのコストは、すべて同じ1色のマナで支払わなければならない)";
     case "gem":
