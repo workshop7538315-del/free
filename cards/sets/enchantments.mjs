@@ -8,7 +8,7 @@ export const ENCHANTMENTS = tagAll("エンチャント", [
   aura("enc01", "祈りの光輪", "{W}", "C", [buff(1, 1, ["絆魂"])]),
   aura("enc02", "天啓の鎧", "{1}{W}", "C", [buff(2, 2)]),
   aura("enc03", "光輝の翼", "{2}{W}", "U", [buff(1, 1, ["飛行"])]),
-  ecr("enc04", "星座の祭司", "{1}{W}", "人間・クレリック", 2, 2, "U", [onEnchant(E.gain(2))]),
+  ecr("enc04", "星座の祭司", "{1}{W}", "人間・クレリック", 2, 3, "U", [onEnchant(E.gain(2))]),
   ench("enc05", "聖域の結界", "{2}{W}", "R", [onEnchant(E.token(1, 1, 1, "W", "スピリット", ["飛行"]))]),
   ecr("enc06", "加護を授ける者", "{3}{W}", "スピリット", 2, 4, "R", [kw("飛行"), scale(countPerm(F.enchant), 1, 0)]),
   ecr("enc07", "夢見の霧", "{1}{U}", "スピリット", 1, 3, "C", [onEnchant(E.lookTop())]),

@@ -72,7 +72,7 @@ export const COMMEDIA = [
   tagged(ench("cm26", "生け贄の舞台", "{2}{B}", "U", [act({ mana: "{1}", sac: {} }, E.draw(1))])),
   tagged(ins("cm27", "終幕の刃", "{B}{R}", "C", spell([E.destroy(), E.applause(TRAGEDY, 1)], T.creF({ maxPower: 3 })))),
   tagged(sor("cm28", "端役の群れ", "{2}{B}", "C", spell(extra(3)))),
-  tagged(cr("cm29", "黒衣の演出家", "{2}{B}{R}", "眷属・シャーマン", 3, 3, "R", [selfIf(applause(TRAGEDY, 3), 2, 2, ["威迫"]), once(onSacrifice()(E.dmg(1), T.any))])),
+  tagged(cr("cm29", "黒衣の演出家", "{2}{B}{R}", "眷属・シャーマン", 3, 2, "R", [selfIf(applause(TRAGEDY, 3), 2, 2, ["威迫"]), once(onSacrifice()(E.dmg(1), T.any))])),
   tagged(ins("cm38", "幕引きの一撃", "{2}{B}", "U", spell([E.destroy(), { ...E.draw(1), if: applause(TRAGEDY, 3) }], T.cre))),
   tagged(cr("cm37", "劇場の亡霊", "{3}{B}", "眷属・スピリット", 2, 3, "C", [kw("飛行"), dies(E.applause(TRAGEDY, 2))])),
 
