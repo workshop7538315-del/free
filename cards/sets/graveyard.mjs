@@ -21,7 +21,7 @@ export const GRAVEYARD = tagAll("墓地", [
   sor("grv16", "再生の雨", "{2}{G}", "U", [spell(E.ret("hand"), T.gyCre), flashback("{4}{G}")]),
   cr("grv17", "大地の墓守", "{3}{G}", "エルフ・シャーマン", 3, 3, "U", [etb(E.mill(3, "you")), selfIf(TH, 3, 3, ["トランプル"])]),
   sor("grv18", "再演の種", "{1}{G}", "C", [spell(E.ramp(1)), flashback("{3}{G}")]),
-  cr("grv19", "深き淵の魔術師", "{U}{B}", "人間・ウィザード", 2, 3, "U", [etb([E.mill(3, "you"), E.draw(1)])]),
+  cr("grv19", "深き淵の魔術師", "{U}{B}", "人間・ウィザード", 3, 3, "U", [etb([E.mill(3, "you"), E.draw(1)])]),
   sor("grv20", "記憶の葬列", "{2}{U}{B}", "R", spell([E.mill(8, "opp"), E.draw(1)])),
   sor("grv21", "腐敗と再生", "{1}{B}{G}", "U", spell([E.mill(3, "you"), E.ret("hand")], T.gyCre)),
   cr("grv22", "墓地の王", "{2}{B}{G}", "ゾンビ・エルフ", 3, 3, "R", [etb(E.mill(3, "you")), selfIf(TH, 3, 3, ["トランプル"])]),

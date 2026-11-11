@@ -74,7 +74,7 @@ export const COMMEDIA = [
   tagged(sor("cm28", "端役の群れ", "{2}{B}", "C", spell(extra(3)))),
   tagged(cr("cm29", "黒衣の演出家", "{2}{B}{R}", "眷属・シャーマン", 3, 3, "R", [selfIf(applause(TRAGEDY, 3), 2, 2, ["威迫"]), once(onSacrifice()(E.dmg(1), T.any))])),
   tagged(ins("cm38", "幕引きの一撃", "{2}{B}", "U", spell([E.destroy(), { ...E.draw(1), if: applause(TRAGEDY, 3) }], T.cre))),
-  tagged(cr("cm37", "劇場の亡霊", "{3}{B}", "眷属・スピリット", 3, 3, "C", [kw("飛行"), dies(E.applause(TRAGEDY, 2))])),
+  tagged(cr("cm37", "劇場の亡霊", "{3}{B}", "眷属・スピリット", 2, 3, "C", [kw("飛行"), dies(E.applause(TRAGEDY, 2))])),
 
   // ================================================================ 【喜劇】のメイン(赤の攻撃)
   tagged(sor("cm30", "ザンニの行列", "{2}{R}", "C", spell(zanni(3)))),
@@ -109,7 +109,7 @@ export const COMMEDIA = [
   tagged(ins("cm46", "ニコの蛍火", "{1}{U}{R}", "U", spell([E.dmg(2), E.applause(MAD, 1)], T.any), { flavor: "ニコが指を鳴らすと、客席に蛍が舞った。誰も火事だとは思わなかった。それも演出のうちだから。" })),
   tagged(cr("cm47", "ニコの落書き小鬼", "{1}{R}", "眷属・小鬼", 2, 1, "C", [kw("速攻"), castSpell(E.pumpSelf(1, 0))], { flavor: "楽屋の壁には、のっぽの女と大男の似顔絵。どちらも鼻が三つある。" })),
   tagged(art("cm48", "ラ・クリマの涙壺", "{1}{B}", "U", [etb(E.lookTop()), act({ sacSelf: true }, E.draw(1))], { flavor: "「この壺には観客の涙を集めているの。あの男の客席では、一滴も集まらなかったけれど」──オッタヴィア" })),
-  tagged(cr("cm49", "オッタヴィアの喪服の侍女", "{2}{B}", "眷属・侍女", 2, 3, "C", [dies([E.lose(1), E.gain(1)])], { flavor: "主人の影から生まれ、主人の影のように黙って立つ。泣くのは舞台の上でだけ。" })),
+  tagged(cr("cm49", "オッタヴィアの喪服の侍女", "{2}{B}", "眷属・侍女", 2, 2, "C", [dies([E.lose(1), E.gain(1)])], { flavor: "主人の影から生まれ、主人の影のように黙って立つ。泣くのは舞台の上でだけ。" })),
   tagged(sor("cm50", "ジョコンドの大笑い", "{2}{R}", "C", spell([zanni(2), E.pumpAll(1, 0)]), { flavor: "「腹から笑え! 腹筋が割れるまでな!」──レオーネ" })),
   tagged(cr("cm51", "レオーネの力持ち", "{2}{R}", "眷属・戦士", 3, 3, "C", [kw("トランプル")], { flavor: "座長の力こぶから生まれた。本人いわく「悲劇派ののっぽより、俺のほうが背が高く見える」。" })),
 ];

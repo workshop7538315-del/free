@@ -26,7 +26,7 @@ const SON = "ドラゴン・九子";
 const son = (id, name, cost, p, t, rar, abilities, extra, sub = SON) => tagged(cr(id, name, cost, sub, p, t, rar, abilities, extra));
 
 export const KYUSHI = [
-  son("ry01", "贔屓", "{1}{B}{R}", 1, 5, "U", [], { flavor: "九子の長兄。重いものを背負うことを好む。守護者の石碑も、弟たちも。" }),
+  son("ry01", "贔屓", "{1}{B}{R}", 1, 4, "U", [], { flavor: "九子の長兄。重いものを背負うことを好む。守護者の石碑も、弟たちも。" }),
   son("ry02", "螭吻", "{1}{B}", 2, 3, "R", [...tiers(2, 4), dragon({ mill: 3 }), etb(E.dig(UNDER, 2, 3))], { flavor: "遠くを望むことを好む。屋根の端から、まだ来ない明日を見ている。" }),
   son("ry03", "狻猊", "{2}{R}", 3, 3, "R", [...tiers(2, 4), dragon({ discard: 2 }), etb(E.volley(UNDER, 2))], { flavor: "火と煙を好む。香炉の上で、退屈そうに炎を吐く。" }),
   son("ry04", "狴犴", "{2}{B}", 3, 4, "R", [...tiers(2, 4), dragon({ life: 4 }, { ambush: true }), etb(E.shrink(UNDER), T.opp)], { flavor: "訴えを好む。悪事を見れば、呼ばれなくても裁きに来る。" }),

@@ -77,7 +77,7 @@ export const HEROES = [
   // ================================================================ 墓地:深淵の書庫(青黒)
   tagged("墓地", ace(cr("hr34", "深淵の司書 モルガナ", "{2}{U}{B}", "人間・ウィザード", 3, 4, "M", [etb([E.ret("hand"), E.draw(1)], T.gyCre), selfIf("threshold", 2, 2, ["飛行"])]), "grv12")),
   tagged("墓地", ace(sor("hr35", "モルガナの禁書", "{1}{U}{B}", "R", spell([E.ret("hand"), E.draw(1)], T.gyCre)), "grv07")),
-  tagged("墓地", ace(cr("hr36", "書庫の亡者", "{U}{B}", "ゾンビ", 2, 3, "U", [selfIf("threshold", 1, 1, ["飛行"])]), "grv05")),
+  tagged("墓地", ace(cr("hr36", "書庫の亡者", "{U}{B}", "ゾンビ", 3, 3, "U", [selfIf("threshold", 1, 1, ["飛行"])]), "grv05")),
 
   // ================================================================ 生け贄:血の宴(黒赤)
   tagged("生け贄", ace(cr("hr37", "血の宴の主 ザルグ", "{2}{B}{R}", "デーモン", 4, 3, "M", [act({ sac: {} }, E.dmg(2), T.any), once(onSacrifice()(E.draw(1)))]), "rk08")),
@@ -95,12 +95,12 @@ export const HEROES = [
   tagged("カウンター", ace(cr("hr45", "不屈の獣", "{B}{G}", "ビースト", 2, 2, "U", [kw("不屈"), etb(E.countersSelf(1))]), "ctr20")),
 
   // ================================================================ 呪文:嵐の詠唱(青赤)
-  tagged("呪文", ace(cr("hr46", "嵐の詠唱者 ラザール", "{1}{U}{R}", "人間・ウィザード", 2, 3, "M", [castSpell(E.dmgOpp(1))]), "rk05")),
+  tagged("呪文", ace(cr("hr46", "嵐の詠唱者 ラザール", "{1}{U}{R}", "人間・ウィザード", 3, 3, "M", [castSpell(E.dmgOpp(1))]), "rk05")),
   tagged("呪文", ace(ins("hr47", "ラザールの嵐", "{1}{U}{R}", "R", spell([E.dmg(2), E.lookTop()], T.any)), "spl11")),
-  tagged("呪文", ace(cr("hr48", "ラザールの弟子", "{U}{R}", "人間・ウィザード", 1, 2, "U", [castSpell(E.pumpSelf(1, 1))]), "spl18")),
+  tagged("呪文", ace(cr("hr48", "ラザールの弟子", "{U}{R}", "人間・ウィザード", 2, 2, "U", [castSpell(E.pumpSelf(1, 1))]), "spl18")),
 
   // ================================================================ 装備:武具の行進(赤白)
-  tagged("装備", ace(cr("hr49", "武具の王 ベルトラン", "{2}{R}{W}", "人間・騎士", 3, 3, "M", [kw("先制攻撃"), etb(E.tutor(EQ)), selfIf(control(EQ, 1), 2, 2)]), "rk04")),
+  tagged("装備", ace(cr("hr49", "武具の王 ベルトラン", "{2}{R}{W}", "人間・騎士", 3, 4, "M", [kw("先制攻撃"), etb(E.tutor(EQ)), selfIf(control(EQ, 1), 2, 2)]), "rk04")),
   tagged("装備", ace(equipment("hr50", "ベルトランの宝剣", "{R}{W}", "R", "{1}", { p: 2, t: 1, kw: ["先制攻撃"] }, [etb(E.draw(1))]), "eqp08")),
   tagged("装備", ace(cr("hr51", "ベルトランの従騎士", "{R}{W}", "人間・騎士", 2, 3, "U", [etb(E.create(BLADE))]), "rk13")),
 
@@ -120,9 +120,9 @@ export const HEROES = [
   tagged("マナ武装", ace(cr("hr60", "巨獣の仔", "{1}{G}", "ビースト", 2, 2, "U", [selfIf("pureColor", 1, 1, ["到達"])]), "g005")),
 
   // ================================================================ 部族:ゴブリンの大群(赤単)
-  tagged("部族", ace(cr("hr61", "ゴブリン大親分 ギギ", "{2}{R}", "ゴブリン", 2, 2, "M", [lord(F.goblin, 1, 0), selfIf("pureColor", 1, 1)]), "rk09")),
+  tagged("部族", ace(cr("hr61", "ゴブリン大親分 ギギ", "{2}{R}", "ゴブリン", 2, 3, "M", [lord(F.goblin, 1, 0), selfIf("pureColor", 1, 1)]), "rk09")),
   tagged("部族", ace(sor("hr62", "ギギのゴブリンの大爆発", "{2}{R}", "R", spell([E.dmgAllOpp(1), { ...E.dmgOpp(2), if: "pureColor" }])), "adv26")),
-  tagged("部族", ace(cr("hr63", "ギギの子分", "{R}", "ゴブリン", 1, 1, "U", [kw("速攻"), selfIf("pureColor", 1, 0)]), "r021")),
+  tagged("部族", ace(cr("hr63", "ギギの子分", "{R}", "ゴブリン", 2, 1, "U", [kw("速攻"), selfIf("pureColor", 1, 0)]), "r021")),
 
   // ================================================================ 部族:エルフの森(緑単)
   tagged("部族", ace(cr("hr64", "エルフの森長 リーフィア", "{2}{G}", "エルフ・ドルイド", 2, 2, "M", [kw("到達"), etb(E.token(1, 1, 1, "G", "エルフ・戦士"), undefined, { if: "pureColor" })]), "rk15")),

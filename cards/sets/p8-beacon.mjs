@@ -74,7 +74,7 @@ export const BEACON = [
   basedOn(ins("cb42", "継戦の誓い", "{W}", "C", modal([["あなたのクリーチャー1体は+1/+3", E.pump(1, 3), T.you], ["1/1の兵士を生成し、2点のライフを得る", [soldier(1), E.gain(2)]]])), "w013", "サポート"),
 
   // ================================================================ 赤(ゴブリン・マナ武装)
-  tag("部族", basedOn(cr("cb43", "ゴブリンの烽火番", "{R}", "ゴブリン", 1, 1, "C", [kw("速攻"), raid(endStep(E.token(1, 1, 1, "R", "ゴブリン")))]), "trb03", "サポート")),
+  tag("部族", basedOn(cr("cb43", "ゴブリンの烽火番", "{R}", "ゴブリン", 2, 1, "C", [kw("速攻"), raid(endStep(E.token(1, 1, 1, "R", "ゴブリン")))]), "trb03", "サポート")),
   tag("部族", basedOn(cr("cb44", "ゴブリンの戦太鼓", "{2}{R}", "ゴブリン・戦士", 2, 2, "U", [lord(F.goblin, 1, 0, ["速攻"]), raid(attacks(E.dmgOpp(1)))]), "trb01", "強化版")),
   tag("マナ武装", basedOn(ench("cb45", "烈火の覚醒", "{1}{R}", "U", [endStep(E.draw(1), undefined, { if: armed("R", 5) })]), "arm14", "サポート")),
   basedOn(cr("cb46", "炎嵐の大戦士", "{3}{R}{R}", "人間・戦士", 5, 4, "R", [kw("速攻"), raid(attacks(E.dmgAllOpp(1)))]), "r005", "強化版"),

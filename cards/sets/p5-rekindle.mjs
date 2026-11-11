@@ -27,11 +27,11 @@ export const REKINDLE = [
   // ---------------------------------------------------------------- リメイク:元のカードの考え方を、別の形で作り直す
   basedOn(cr("rk11", "先陣の旗手", "{2}{R}{W}", "人間・兵士", 3, 3, "U", [kw("速攻"), attacks(E.token(1, 1, 1, "W", "人間・兵士", ["速攻"]))]), "w017", "リメイク"),
   tag("呪文", basedOn(ins("rk12", "炎の呪文砕き", "{1}{U}{R}", "U", spell([E.counter(0), E.dmg(2, 1)], [{ t: "spell", noncreature: true }, T.any])), "u012", "リメイク")),
-  tag("装備", basedOn(cr("rk13", "武具の英雄", "{1}{R}{W}", "人間・騎士", 3, 3, "R", [kw("先制攻撃"), etb(E.ret("battlefield"), T.gyF(EQ)), selfIf(control(EQ, 1), 1, 1)]), "eqp14", "リメイク")),
+  tag("装備", basedOn(cr("rk13", "武具の英雄", "{1}{R}{W}", "人間・騎士", 3, 4, "R", [kw("先制攻撃"), etb(E.ret("battlefield"), T.gyF(EQ)), selfIf(control(EQ, 1), 1, 1)]), "eqp14", "リメイク")),
   tag("生け贄", basedOn(cr("rk14", "血盟の司祭", "{B}{R}", "人間・クレリック", 2, 3, "U", [act({ sac: {} }, E.dmg(2), T.any)]), "ari02", "リメイク")),
   tag("部族", basedOn(cr("rk15", "エルフの大号令", "{2}{G}{G}", "エルフ・ドルイド", 2, 2, "R", [etb(E.token(countPerm(F.elf), 1, 1, "G", "エルフ・戦士"))]), "trb08", "リメイク")),
   tag("鉄機", basedOn(art("rk16", "鉄機の量産工場", "{3}", "R", [upkeep(construct(1))]), "tek16", "リメイク")),
-  tag("呪文", basedOn(cr("rk17", "嵐の詠唱者", "{U}{R}", "人間・ウィザード", 1, 2, "U", [castSpell(E.token(1, 1, 1, "R", "エレメンタル", ["速攻"]))]), "spl01", "リメイク")),
+  tag("呪文", basedOn(cr("rk17", "嵐の詠唱者", "{U}{R}", "人間・ウィザード", 1, 3, "U", [castSpell(E.token(1, 1, 1, "R", "エレメンタル", ["速攻"]))]), "spl01", "リメイク")),
   tag("マナ武装", basedOn(cr("rk18", "烈火の戦士", "{R}", "人間・戦士", 2, 1, "C", [kw("速攻"), selfIf(armed("R", 3), 1, 1, ["先制攻撃"])]), "arm13", "リメイク")),
   // ---------------------------------------------------------------- サポート:元のカードやアーキタイプを支える
   tag("装備", basedOn(ench("rk19", "鍛冶の聖火", "{1}{R}", "U", [discount(EQ, 1), allyEnter(EQ)(E.token(1, 1, 1, "W", "人間・兵士"))]), "eqp08", "サポート")),
