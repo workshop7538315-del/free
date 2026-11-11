@@ -60,17 +60,17 @@ export const ELDORADO = [
   tagged(cr("eld44", "黄金郷の語り部", "{1}{G}", "エルフ・シャーマン", 2, 2, "C", [once(allyEnter(PIONEER)(E.draw(1))), etb(E.lookTop())])),
 
   // ================================================================ 白赤のメイン:発明家と装備
-  tagged(cr("eld24", "若き発明家", "{1}{R}", "人間・職人", 2, 1, "C", [kw("速攻"), etb(E.create(GOLD))])),
+  tagged(cr("eld24", "若き発明家", "{1}{R}", "人間・職人", 2, 2, "C", [kw("速攻"), etb(E.create(GOLD))])),
   tagged(cr("eld25", "工房の見習い", "{W}", "人間・職人", 1, 2, "C", [selfIf(control(EQ, 1), 1, 1), etb(E.lookTop())])),
   tagged(art("eld26", "鍛冶場の炉", "{2}", "C", [act({ mana: "{1}", tap: true }, E.pump(1, 0, ["先制攻撃"]), T.you), etb(E.create(GOLD))])),
   tagged(acr("eld27", "機械仕掛けの斥候", "{2}", "構築物", 1, 1, "C", [kw("飛行"), etb(E.lookTop())])),
   tagged(sor("eld28", "発明家の閃き", "{1}{R}", "C", modal([["クリーチャー1体かプレイヤー1人に2点", E.dmg(2), T.any], ["1枚引き、《黄金》を1枚生成する", [E.draw(1), E.create(GOLD)]]]))),
-  tagged(cr("eld29", "光の工匠", "{2}{W}", "人間・職人", 2, 3, "U", [etb(E.tutor(EQ))])),
+  tagged(cr("eld29", "光の工匠", "{2}{W}", "人間・職人", 3, 3, "U", [etb(E.tutor(EQ))])),
   tagged(ins("eld30", "黄金の天秤", "{1}{W}", "C", modal([["あなたのクリーチャー1体は+2/+2", E.pump(2, 2), T.you], ["3点のライフを得て、《黄金》を1枚生成する", [E.gain(3), E.create(GOLD)]]]))),
   tagged(ench("eld31", "発明の大工房", "{1}{R}{W}", "R", [once(allyEnter(EQ)(E.draw(1))), endStep(E.create(GOLD), undefined, { if: control(EQ, 2) })])),
   tagged(sor("eld32", "鋼の行軍", "{2}{R}{W}", "U", spell([E.pumpAll(1, 1), E.create(GOLD)]))),
   tagged(equipment("eld33", "試作の剣", "{1}", "C", "{1}", { p: 1, t: 1 }, [etb(E.create(GOLD))])),
-  tagged(cr("eld34", "発明家の助手", "{1}{W}", "人間・職人", 2, 2, "C", [once(allyEnter(EQ)(E.gain(2)))])),
+  tagged(cr("eld34", "発明家の助手", "{1}{W}", "人間・職人", 2, 3, "C", [once(allyEnter(EQ)(E.gain(2)))])),
   tagged(equipment("eld35", "黄金の鎧", "{2}", "U", "{2}", { p: 1, t: 2, kw: ["警戒"] }, [etb(E.lookTop())])),
 
   // ================================================================ 黄金郷(多色・複数の効果)

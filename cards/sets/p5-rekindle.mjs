@@ -44,7 +44,7 @@ export const REKINDLE = [
   basedOn(ins("rk26", "赤白の連携", "{R}{W}", "U", spell(E.pumpAll(2, 0, ["先制攻撃"]))), "m022", "サポート"),
   tag("呪文", basedOn(sor("rk27", "青赤の閃き", "{U}{R}", "C", spell([E.draw(2), E.discard(1), E.dmgOpp(1)])), "spl04", "サポート")),
   tag("部族", basedOn(cr("rk28", "エルフの戦士長", "{1}{G}", "エルフ・戦士", 2, 2, "C", [lord(F.elf, 1, 0)]), "trb05", "サポート")),
-  tag("鉄機", basedOn(acr("rk29", "鉄機の突撃隊長", "{3}", "構築物", 2, 2, "U", [kw("速攻"), lord(F.artifact, 1, 0)]), "tek04", "サポート")),
+  tag("鉄機", basedOn(acr("rk29", "鉄機の突撃隊長", "{3}", "構築物", 3, 2, "U", [kw("速攻"), lord(F.artifact, 1, 0)]), "tek04", "サポート")),
   basedOn(cr("rk30", "灰の継承者", "{2}{R}", "人間・狂戦士", 3, 2, "C", [kw("輪廻"), dash("{R}")]), "adv12", "サポート"),
 ];
 

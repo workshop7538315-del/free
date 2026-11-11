@@ -67,8 +67,8 @@ export const GATE = [
   g(ench("hz27", "魂の供物", "{B}", "C", [offering(1), etb([E.lose(1), E.gain(1)])])),
   g(cr("hz28", "祖霊の巫女", "{1}{W}", "人間・クレリック", 2, 3, "C", [offering(1, SPIRIT), etb(E.lookTop())])),
   g(cr("hz29", "墓所の語り部", "{2}{B}", "ゾンビ", 2, 2, "C", [offering(1, SPIRIT), dies(E.draw(1))])),
-  g(cr("hz30", "祖霊の守人", "{2}{W}", "スピリット", 2, 2, "C", [offering(1, SPIRIT), kw("飛行")])),
-  g(cr("hz31", "祖霊を呼ぶ者", "{1}{W}{B}", "人間・シャーマン", 2, 3, "U", [kw("絆魂"), once(onSacrifice()(E.create(LAMP)))])),
+  g(cr("hz30", "祖霊の守人", "{2}{W}", "スピリット", 2, 3, "C", [offering(1, SPIRIT), kw("飛行")])),
+  g(cr("hz31", "祖霊を呼ぶ者", "{1}{W}{B}", "人間・シャーマン", 3, 3, "U", [kw("絆魂"), once(onSacrifice()(E.create(LAMP)))])),
 
   // ================================================================ 奉納:機神(青赤)
   g(art("hz32", "機神の設計図", "{U}", "C", [offering(1, MACHINE), etb(E.lookTop())])),

@@ -73,7 +73,7 @@ export const HYAKKI = [
     kw("接死"),
     etb(E.destroy(), T.opp),
     { ...charge(E.tutor({ sub: "百鬼" }, "mana")), text: "チャージ時 ― あなたのライブラリーから百鬼のカードを1枚探し、マナゾーンに置く。その後ライブラリーを切り直す。" },
-    hyakki(4),
+    hyakki(5),
     toGraveyard(E14.handToMana(may(E14.selfToMana()))),
   ], { flavor: "百の目が、百の闇を見ている。" }))),
   HK(legend(cr("yk23", "百鬼の一番槍", `${IMPOSSIBLE}{W}{W}{B}{B}{G}`, "鬼・百鬼", 0, 10, "M", [
