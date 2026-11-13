@@ -199,7 +199,7 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
   };
   // 秘蔵庫のカードはメインには入れない
   // 第11弾の英雄と関連カード(hr)は、core で指定したデッキにだけ入れる(自動では足さない)
-  const pool = out.filter((c) => fits(c) && !/^hr\d/.test(c.id) && !c.id.startsWith("sg") && !c.id.startsWith("sh") && !c.id.startsWith("ry") && !c.id.startsWith("eg") && !c.id.startsWith("yk") && !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast", "lesson", "dragon"].includes(a.a)));
+  const pool = out.filter((c) => fits(c) && !/^hr\d/.test(c.id) && !c.id.startsWith("sg") && !c.id.startsWith("sh") && !c.id.startsWith("ry") && !c.id.startsWith("eg") && !c.id.startsWith("yk") && !c.id.startsWith("sf") && !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast", "lesson", "idolLesson", "dragon"].includes(a.a)));
   const inSet = (c) => !!set && c.id.startsWith(set);
   const themed = (c) => inSet(c) || (!!theme && theme(c));
   const score = (c) => {
@@ -266,7 +266,7 @@ function buildDeck({ colors, theme, set, generic = false, allowColorless = false
   let ex = 0;
   for (const [id, n] of Object.entries(extra)) {
     const c = out.find((x) => x.id === id);
-    if (!c || !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast", "lesson", "dragon"].includes(a.a))) throw new Error(`秘蔵庫のカード ${id} がありません`);
+    if (!c || !c.abilities.some((a) => ["releaseSummon", "entrata", "pioneer", "assemble", "evolveOnly", "gem", "curtainCall", "vaultCast", "lesson", "idolLesson", "dragon"].includes(a.a))) throw new Error(`秘蔵庫のカード ${id} がありません`);
     if (n > 2) throw new Error(`秘蔵庫の ${id} は2枚まで`);
     deck[id] = Math.min(n, RESTRICTED[id] ?? n);
     ex += n;
@@ -327,6 +327,10 @@ const DECKS = [
     core: { eg21: 2, eg22: 2, eg23: 2, eg24: 2, eg25: 1, eg26: 3, eg27: 3, eg28: 2, eg29: 3, eg30: 2, eg31: 2, eg32: 2, eg33: 2, eg34: 2, eg35: 2, eg36: 2, eg37: 1, eg38: 2, eg39: 1, eg40: 2 } },
   { id: "eg-pharaoh", name: "ファラオ:罠のピラミッド(青黒緑)", colors: ["U", "B", "G"], theme: tag("ファラオ"), archetype: "ファラオ",
     core: { eg41: 3, eg42: 2, eg43: 3, eg44: 2, eg45: 1, eg46: 2, eg47: 2, eg48: 1, eg49: 2, eg50: 2, eg51: 2, eg52: 3, eg53: 1, eg54: 2, eg55: 2, eg56: 2, eg57: 1, eg61: 2, eg58: 1, eg59: 1, eg60: 3 } },
+  // 第15弾
+  { id: "sf-group", name: "Stella Facet:三人のステージ(白青赤)", colors: ["W", "U", "R"], theme: tag("アイドル"), archetype: "アイドル",
+    core: { sf07: 2, sf08: 3, sf09: 3, sf12: 3, sf13: 2, sf14: 4, sf15: 2, sf16: 2, sf17: 1, sf18: 3, sf31: 2, sf34: 1, sf36: 3, sf38: 2, sf19: 2, sf33: 2, sf26: 2, sf27: 1 },
+    extra: { sf01: 1, sf02: 1, sf03: 1, sf04: 1, sf05: 1, sf06: 1 } },
   // 第14弾
   { id: "yk-kitsune", name: "狐火:稲荷の社(欠色)", colors: [], theme: tag("狐火"), archetype: "狐火",
     core: { yk01: 3, yk02: 2, yk03: 3, yk04: 3, yk05: 3, yk06: 2, yk07: 4, yk08: 4, yk09: 3, yk10: 2, yk11: 3, yk12: 4, yk13: 2, yk14: 2 } },

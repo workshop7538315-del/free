@@ -354,6 +354,28 @@ export const E13 = {
   curseGain: (id) => ({ do: "applauseGain", cat: "呪い", id }),
   consume: (n, then) => ({ do: "consume", cat: "呪い", n, then: [then].flat() }),
 };
+// 第15弾:アイドル
+export const E15 = {
+  audition: (cards, n = 1) => ({ do: "audition", n, cards }),
+  lessonDuel: () => ({ do: "lessonDuel", tg: 0 }),
+};
+const GENRE_JA = { Da: "ダンス", Vo: "ボーカル", Vi: "ビジュアル" };
+const NEED_JA = { creature: "クリーチャー・カード", spell: "インスタントかソーサリーのカード", perm: "エンチャントかアーティファクトのカード" };
+const FLIP_JA = {
+  duelWin: "これを装備しているクリーチャーが決闘に勝ったとき",
+  counterBounce: "あなたが呪文を打ち消すか、対戦相手のパーマネントを手札に戻したとき",
+  gold: "あなたがそのターンに《黄金》を1つ以上生成しているとき",
+  hitPlayer: "これを装備しているクリーチャーがプレイヤーに戦闘ダメージを与えたとき",
+  secondDraw: "あなたがそのターンに2枚以上のカードを引いているとき",
+  gain6: "あなたがそのターンに合計6点以上のライフを得ているとき",
+};
+/** レッスン:秘蔵庫の両面の装備品。プロデュースでつけ、条件で裏返ってアイドルになる */
+export const idolLesson = (id, name, cost, rar, genre, need, flip, buff, back, abilities = [], extra = {}) => ({
+  ...equipment(id, name, cost, rar, "{2}", buff, [{ a: "idolLesson", genre, need, flip }, ...abilities], extra),
+  subtype: "装備品・レッスン",
+  back: { ...back, text: cardText(back) },
+});
+
 // 第14弾:狐火と百鬼
 const genDesc = (c) => c.short ? `《${c.short}》` : `《${c.name}》(${c.cost} ${c.type}${c.subtype ? `─${c.subtype}` : ""}:${(c.text ?? []).join(" ")}${c.back ? ` / 裏面《${c.back.name}》${c.back.power}/${c.back.toughness}:${(c.back.text ?? []).join(" ")}` : ""})`;
 export const E14 = {
@@ -431,6 +453,9 @@ const COUNT_TEXT = {
   crests: "あなたのマナゾーンにある紋章を持つカードの枚数",
   colorlessMana: "あなたのマナゾーンにある欠色のカード(裏向きを含む)の枚数",
   graveyardCreatures: "あなたの墓地にあるクリーチャー・カードの枚数",
+  gold: "あなたの場にある《黄金》の数",
+  facetCount: "あなたのファセットシャイン・クリーチャーの数",
+  facetPower: "これ以外のあなたのファセットシャイン・クリーチャーのパワーの合計",
 };
 const PER_TEXT = {
   under: "このカードの下に重なっているカード1枚につき",
@@ -443,6 +468,8 @@ const PER_TEXT = {
   crests: "あなたのマナゾーンにある紋章を持つカード1枚につき",
   colorlessMana: "あなたのマナゾーンにある欠色のカード1枚につき",
   graveyardCreatures: "あなたの墓地にあるクリーチャー・カード1枚につき",
+  gold: "あなたの場にある《黄金》1つにつき",
+  facetCount: "あなたのファセットシャイン・クリーチャー1体につき",
 };
 function countText(n) {
   if (n.count === "applause") return `あなたの${applauseName(n.cat)}の数`;
@@ -499,6 +526,10 @@ export function condLabel(c) {
       hegemonyWu: "覇業【呉】",
       hegemonyShu: "覇業【蜀】",
       vacuum: "真空",
+      groupVoDa: "グループ活動 Vo+Da",
+      groupVoVi: "グループ活動 Vo+Vi",
+      groupDaVi: "グループ活動 Da+Vi",
+      groupAll: "グループ活動 Vo+Da+Vi",
     }[c] ?? null
   );
 }
@@ -768,6 +799,10 @@ function effectText(e, name, abil, notes) {
       return (m ? "あなたは次を行ってもよい。" : "") + "お互いのライブラリーの一番上のカードのマナ総量を比べる。あなたのほうが大きいなら、このターンのあとに追加のターンを得る。(この効果で追加のターンを得るのは1ゲームに1回)";
     case "handAllToMana":
       return "あなたの手札をすべてマナゾーンに置く。";
+    case "audition":
+      return e.n === 1 ? "オーディションを行う。" : `オーディションを${e.n}回行う。`;
+    case "lessonDuel":
+      return `これを装備しているクリーチャーは、${it(e.tg)}と決闘する。`;
     case "topIfSub":
       return `あなたのライブラリーの一番上を見る。それが${e.sub}なら、手札に加える。`;
     case "paidColorKw":
@@ -907,6 +942,8 @@ const TRIGGER_PREFIX = {
   oppDies: () => "対戦相手のクリーチャーが死亡するたび、",
   questDone: () => "あなたが任務を達成するたび、",
   trapUse: () => "あなたが罠を発動するたび、",
+  equippedAttacks: () => "これを装備しているクリーチャーが攻撃するたび、",
+  hitPlayer: (name) => `${name}がプレイヤーに戦闘ダメージを与えるたび、`,
 };
 
 function staticText(abil, name, card) {
@@ -1018,6 +1055,8 @@ function abilityTextBody(abil, card) {
       const cond = abil.cond === "attacked" ? "このターン、装備しているクリーチャーが攻撃したなら" : "装備しているクリーチャーに装備品が2つ以上ついているなら";
       return `組み立て【${COLOR_JA[abil.color]}】 / 武装進化 ― ${cond}、そのクリーチャーと${name}を《${abil.partnerName}》に武装進化してもよい。`;
     }
+    case "idolLesson":
+      return `プロデュース ― ${NEED_JA[abil.need]}を1枚捨てる(このカードのコストを払い、秘蔵庫から出して、あなたのクリーチャー1体につける)\n裏返り ― ${FLIP_JA[abil.flip]}、これが${GENRE_JA[abil.genre]}の練習生(かその練習生がなったアイドル)についているなら、これは裏返ってそのクリーチャーに重なり、そのクリーチャーは裏面のアイドルになる。`;
     case "kaiken":
       return `開顕(この呪文を唱えるためのコストが0以下まで軽減されているなら、裏面《${card.back?.name ?? "?"}》として唱えてもよい)`;
     case "hyakki":

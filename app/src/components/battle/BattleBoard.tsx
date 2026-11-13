@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { Action, BlockAnswer, Decision, Game, Obj, Player, PlayerId, TargetRef } from "../../game/engine";
-import { STEP_NAMES, abilitiesOf, isCreatureCard, manaColors, releaseAbility, trapOf, questOf, applauseName, BLESSING_TEXT, APPLAUSE_RULE, APPLAUSE_CAP } from "../../game/engine";
+import { STEP_NAMES, abilitiesOf, isCreatureCard, manaColors, releaseAbility, trapOf, questOf, applauseName, BLESSING_TEXT, APPLAUSE_RULE, APPLAUSE_CAP, idolLessonOf } from "../../game/engine";
 import type { HumanAgent } from "../../game/human";
 import { cardColors, manaValue } from "../../lib/mana";
 import { useIsMobile, useMotion } from "../../lib/motion";
@@ -318,7 +318,7 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks, 
         {me.extra.length > 0 && !mobile && (
           <section className="hand extra-zone" aria-label="あなたの秘蔵庫">
             <h3 className="zone-label">
-              秘蔵庫 {me.extra.length}枚<span className="zone-hint">(リリース召喚・エントラータ・開拓進化・組み立て・龍生で出す)</span>
+              秘蔵庫 {me.extra.length}枚<span className="zone-hint">(リリース召喚・エントラータ・開拓進化・組み立て・龍生・プロデュースで出す)</span>
             </h3>
             <div className="hand-cards">
               {me.extra.map((o) => (
@@ -1187,6 +1187,11 @@ function actionLabel(g: Game, a: Action): string {
       if (a.mode === "set") return o ? `罠を仕掛ける(${g.trapSetCost(ME, o) || "{0}"}・裏向き)` : "罠を仕掛ける";
       if (a.mode === "flip") return "罠を発動する(コストなし)";
       return `裏向きに仕掛け直す(${tr?.cost ?? ""})`;
+    }
+    case "produce": {
+      const o = g.find(a.uid);
+      const l = o && idolLessonOf(o.card);
+      return o && l ? `プロデュース(${o.card.cost}+${{ creature: "クリーチャー", spell: "インスタントかソーサリー", perm: "エンチャントかアーティファクト" }[l.need]}を1枚捨てる)` : "プロデュース";
     }
     case "hyakki": {
       const o = g.find(a.uid);

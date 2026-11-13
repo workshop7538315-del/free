@@ -5,6 +5,7 @@
  */
 import { SUMMON_POOL } from "./pool";
 import type { Card } from "../types";
+import type { Genre, LessonFlip } from "./schema";
 import type { Ability, ActivatedCost, Amount, Applause, Cond, Effect, Filter, StaticSpec, TargetSpec, TriggerEvent, SpellMode } from "./schema";
 import { cardColors, manaValue, parseCost, type Color } from "../lib/mana";
 import { findPayment, type ManaUnit } from "./payment";
@@ -96,6 +97,16 @@ export type Obj = {
   fromManaTurn?: number;
   /** 百鬼夜行を持つ(墓地にあるあいだ) */
   yakou?: boolean;
+  /** 第15弾:練習生とアイドルの担当(ダンス・ボーカル・ビジュアル) */
+  genre?: Genre;
+  /** アイドルになった(レッスンが裏返った) */
+  isIdol?: boolean;
+  /** 下に重なったアイドルの面(能力が加わる) */
+  idolStack?: Card[];
+  /** 出来事の通し番号:決闘に勝った、プレイヤーに戦闘ダメージを与えた、レッスンをつけた */
+  wonDuelSeq?: number;
+  hitPlayerSeq?: number;
+  lessonSeq?: number;
   /** 百鬼顕現で出た:このターン番号より後の、対戦相手のターンの終了時に墓地に置かれる */
   hyakkiDoomAfter?: number;
   /** 罠を裏向きで仕掛けた(裏向きに戻した)ターン番号。次のターンから発動できる(第13弾) */
@@ -166,6 +177,13 @@ export type Player = {
   questsDone: number;
   /** このターンに仕掛けた罠の数(加護《迷宮の回廊》) */
   trapsSetThisTurn: number;
+  /** 第15弾:出来事の通し番号(黄金を生成した、打ち消すか手札に戻した、引いた、ライフを得た) */
+  goldSeq?: number;
+  goldTurn?: number;
+  cbSeq?: number;
+  drawSeq?: number;
+  gainSeq?: number;
+  lifeGainedThisTurn?: number;
   /** 金剛羅刹の追加ターンを使った(第14弾) */
   rasetsuUsed?: boolean;
   /** ミナモの加護の残りカウントと、出す《銀白の巫女 ミナモ》 */
@@ -205,6 +223,8 @@ export type Action =
   | { type: "equip"; uid: number }
   /** 百鬼顕現(第14弾) */
   | { type: "hyakki"; uid: number }
+  /** プロデュース(第15弾):手札を1枚捨てて、秘蔵庫のレッスンを自分のクリーチャーにつけて出す */
+  | { type: "produce"; uid: number }
   /** 罠(第13弾):set=手札から仕掛ける、flip=裏向きの罠を発動する(コストなし)、reset=表向きの罠をコストを払って裏向きに仕掛け直す */
   | { type: "trap"; uid: number; mode: "set" | "flip" | "reset" }
   /** 秘蔵庫からリリース召喚する(via: "entrata" ならエントラータ) */
@@ -215,7 +235,7 @@ export type Decision =
   | { kind: "target"; prompt: string; spec: TargetSpec; options: TargetRef[]; source: Obj; effects: Effect[]; index: number }
   | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "kicker" | "lookTop" | "mulligan" | "reclaim" | "blessing" | "learn" | "learnDiscard" | "altCost" | "trap"; obj?: Obj; subject?: Obj }
   | { kind: "number"; prompt: string; min: number; max: number; reason?: "x" | "burn"; obj?: Obj }
-  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" | "pioneerBase" | "heist" | "muster" | "dig" | "shatter" | "tuck" | "rotate" | "dragon" | "dragonBase" | "altTap" | "manaToGrave" | "underToVault" | "underToHand" | "quest" | "setTrap" | "regrow" | "seek" | "foxCover" }
+  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" | "pioneerBase" | "heist" | "muster" | "dig" | "shatter" | "tuck" | "rotate" | "dragon" | "dragonBase" | "altTap" | "manaToGrave" | "underToVault" | "underToHand" | "quest" | "setTrap" | "regrow" | "seek" | "foxCover" | "lesson" | "produceDiscard" }
   | { kind: "attackers"; options: number[] }
   /** モード呪文:選択肢から1つ選ぶ(答えは番号) */
   | { kind: "mode"; prompt: string; options: string[]; source: Obj; modes: SpellMode[] }
@@ -275,7 +295,7 @@ export const dragonOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "dragon"
 /** 龍生九子の名前(睚眦の「9種がそろう」) */
 export const NINE_SONS = ["贔屓", "螭吻", "蒲牢", "狴犴", "饕餮", "覇下", "睚眦", "狻猊", "椒図"];
 export const isExtraCard = (c: Card) =>
-  abilitiesOf(c).some((a) => a.a === "dragon" || a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly" || a.a === "gem" || a.a === "curtainCall" || a.a === "vaultCast" || a.a === "lesson");
+  abilitiesOf(c).some((a) => a.a === "dragon" || a.a === "releaseSummon" || a.a === "entrata" || a.a === "pioneer" || a.a === "assemble" || a.a === "evolveOnly" || a.a === "gem" || a.a === "curtainCall" || a.a === "vaultCast" || a.a === "lesson" || a.a === "idolLesson");
 export const curtainOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "curtainCall") as Extract<Ability, { a: "curtainCall" }> | undefined;
 export const pioneerOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "pioneer") as Extract<Ability, { a: "pioneer" }> | undefined;
 export const assembleOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "assemble") as Extract<Ability, { a: "assemble" }> | undefined;
@@ -294,6 +314,11 @@ export const BLESSING_SLOTS = 5;
 export const BLESSING_MINAMO = "ミナモの加護";
 export const hyakkiOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "hyakki") as Extract<Ability, { a: "hyakki" }> | undefined;
 export const isLegendary = (c: Card) => c.type.includes("伝説");
+export const idolLessonOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "idolLesson") as Extract<Ability, { a: "idolLesson" }> | undefined;
+export const GENRE_JA: Record<Genre, string> = { Da: "ダンス", Vo: "ボーカル", Vi: "ビジュアル" };
+const NEED_JA = { creature: "クリーチャー", spell: "インスタントかソーサリー", perm: "エンチャントかアーティファクト" } as const;
+export const fitsNeed = (c: Card, need: "creature" | "spell" | "perm") =>
+  need === "creature" ? isCreatureCard(c) : need === "spell" ? c.type.includes("インスタント") || c.type.includes("ソーサリー") : c.type.includes("エンチャント") || c.type.includes("アーティファクト");
 /** 同じ名前の伝説がすでに戦場にある(戻しても伝説のルールで墓地に置かれる) */
 const isLegendaryOnField = (g: Game, p: PlayerId, o: Obj) => g.players[p].battlefield.some((b) => b.card.name === o.card.name);
 /** 稲荷の紋章:マナ総量5以上のインスタントのコストが{2}少なくなる */
@@ -790,6 +815,14 @@ export class Game {
         return pl.questsDone > 0;
       case "kaiken":
         return !!obj?.viaKaiken;
+      case "groupVoDa":
+        return this.hasIdols(p, ["Vo", "Da"]);
+      case "groupVoVi":
+        return this.hasIdols(p, ["Vo", "Vi"]);
+      case "groupDaVi":
+        return this.hasIdols(p, ["Da", "Vi"]);
+      case "groupAll":
+        return this.hasIdols(p, ["Vo", "Da", "Vi"]);
       case "buriedInMana":
         return pl.mana.some((o) => !o.faceDown && abilitiesOf(o.card).some((a) => a.a === "buried"));
       case "pureColor": {
@@ -840,6 +873,12 @@ export class Game {
         return pl.mana.filter(crestActive).length;
       case "colorlessMana":
         return pl.mana.filter((o) => manaColors(o).length === 0).length;
+      case "gold":
+        return pl.battlefield.filter((o) => o.card.name === "黄金").length;
+      case "facetCount":
+        return this.creatures(p).filter((o) => this.isFacet(o)).length;
+      case "facetPower":
+        return 0;
       case "colorsInMana":
         return new Set(pl.mana.flatMap(manaColors)).size;
       case "perm":
@@ -885,7 +924,10 @@ export class Game {
       const under = o.covers !== undefined ? this.players[o.owner].mana.find((m) => m.uid === o.covers) : undefined;
       return [...own, ...(o.inari ? [INARI] : []), ...(under ? abilitiesOf(under.card).filter(isCrestAbility) : [])];
     }
-    return abilitiesOf(o.card).filter((a) => !isCrestAbility(a));
+    const own = abilitiesOf(o.card).filter((a) => !isCrestAbility(a));
+    // 下に重なったアイドルの面の能力も加わる(第15弾)
+    if (o.idolStack?.length) return [...own, ...o.idolStack.flatMap((c) => abilitiesOf(c).filter((a) => !isCrestAbility(a) && a.a !== "kw"))];
+    return own;
   }
 
   /** 能力を持ちうるパーマネントとマナゾーンのカード */
@@ -1395,6 +1437,8 @@ export class Game {
       if (tr.on || !(tr.targets ?? []).every((t) => this.targetOptions(t, p).length > 0)) continue;
       if (this.trapReady(p, o)) out.push({ type: "trap", uid: o.uid, mode: "flip" });
     }
+    // プロデュース(第15弾):秘蔵庫のレッスン
+    if (this.sorcerySpeed(p)) for (const o of pl.extra) if (this.canProduce(p, o)) out.push({ type: "produce", uid: o.uid });
     // 百鬼顕現:手札にほかのカードがないなら、マナゾーンか手札から(第14弾)
     if (this.sorcerySpeed(p)) for (const o of [...pl.mana, ...pl.hand]) if (this.canHyakki(p, o)) out.push({ type: "hyakki", uid: o.uid });
     // 龍生:メインフェイズ(狴犴は相手の悪事に割り込める)。回数の制限はない
@@ -1451,10 +1495,14 @@ export class Game {
       if (!await this.pay(p, eq.cost, 0)) return;
       this.usedCards.add(o.card.id);
       o.attachedTo = (target as { uid: number }).uid;
+      o.lessonSeq = ++this.evSeq;
       this.addLog(`${o.card.name}を${this.describeRef(target)}に装備した`, p);
     } else if (a.type === "activate") {
       const o = this.players[p].battlefield.find((x) => x.uid === a.uid);
       if (o && this.canActivate(p, o, a.index)) await this.activate(p, o, a.index);
+    } else if (a.type === "produce") {
+      const o = this.players[p].extra.find((x) => x.uid === a.uid);
+      if (o && this.canProduce(p, o) && this.sorcerySpeed(p)) await this.produce(p, o);
     } else if (a.type === "hyakki") {
       const o = this.find(a.uid);
       if (o && o.controller === p && this.canHyakki(p, o) && this.sorcerySpeed(p)) await this.hyakki(p, o);
@@ -1477,6 +1525,97 @@ export class Game {
         }
       }
     }
+  }
+
+  // ------------------------------------------------------------ 第15弾:オーディション・プロデュース・レッスン
+  private evSeq = 0;
+
+  /** ファセットシャイン・クリーチャー:曲「ファセット・シャイン」のアイドル(重なった面も含む) */
+  isFacet(o: Obj): boolean {
+    return !!o.isIdol && [o.card, ...(o.idolStack ?? [])].some((c) => c.song === "ファセット・シャイン");
+  }
+
+  /** グループ活動:指定の担当のアイドルをコントロールしている */
+  hasIdols(p: PlayerId, gs: Genre[]): boolean {
+    const idols = this.creatures(p).filter((o) => o.isIdol);
+    return gs.every((g) => idols.some((o) => o.genre === g));
+  }
+
+  canProduce(p: PlayerId, o: Obj): boolean {
+    const l = idolLessonOf(o.card);
+    if (!l || o.zone !== "extra") return false;
+    const pl = this.players[p];
+    if (!pl.hand.some((h) => fitsNeed(h.card, l.need))) return false;
+    if (!this.creatures(p).length) return false;
+    return this.canPay(p, o.card.cost, 0);
+  }
+
+  private async produce(p: PlayerId, o: Obj) {
+    const l = idolLessonOf(o.card)!;
+    const pl = this.players[p];
+    const discards = pl.hand.filter((h) => fitsNeed(h.card, l.need));
+    const [d] = await this.askCards(p, `プロデュース:捨てる${NEED_JA[l.need]}を選んでください`, discards, 1, "produceDiscard");
+    if (!d) return;
+    // 練習生(担当が合うもの)を先に並べる
+    const cs = [...this.creatures(p)].sort((a, b) => Number(b.genre === l.genre) - Number(a.genre === l.genre));
+    if (!cs.length) return;
+    if (!(await this.pay(p, o.card.cost, 0))) return;
+    this.move(d, "graveyard");
+    const [c] = await this.askCards(p, `${o.card.name}をつけるクリーチャーを選んでください(${GENRE_JA[l.genre]}の練習生なら、条件を満たすと裏返る)`, cs, 1, "lesson");
+    this.usedCards.add(o.card.id);
+    this.move(o, "battlefield", { controller: p });
+    o.attachedTo = c.uid;
+    o.lessonSeq = ++this.evSeq;
+    this.addLog(`プロデュース:${d.card.name}を捨てて、${o.card.name}を${c.card.name}につけた`, p);
+    this.entered(o);
+  }
+
+  /** レッスンの裏返りの条件(つけたあとに起きたこと) */
+  private lessonReady(l: LessonFlip, eq: Obj, c: Obj): boolean {
+    const pl = this.players[c.controller];
+    const after = (n?: number) => n !== undefined && n > (eq.lessonSeq ?? 0);
+    switch (l) {
+      case "duelWin":
+        return after(c.wonDuelSeq);
+      case "counterBounce":
+        return after(pl.cbSeq);
+      // 「このターンに」の条件は、つける前に満たしていてもよい
+      case "gold":
+        return pl.goldTurn === this.turn;
+      case "hitPlayer":
+        return after(c.hitPlayerSeq);
+      case "secondDraw":
+        return pl.drawsThisTurn >= 2;
+      case "gain6":
+        return (pl.lifeGainedThisTurn ?? 0) >= 6;
+    }
+  }
+
+  /** 状況起因:条件を満たしたレッスンは裏返り、装備しているクリーチャーに重なってアイドルになる */
+  private checkLessons(): boolean {
+    let changed = false;
+    for (const pl of this.players)
+      for (const eq of [...pl.battlefield]) {
+        const l = idolLessonOf(eq.card);
+        if (!l || eq.attachedTo === null || eq.attachedTo === undefined || !eq.card.back) continue;
+        const c = pl.battlefield.find((x) => x.uid === eq.attachedTo);
+        if (!c || c.genre !== l.genre || !this.lessonReady(l.flip, eq, c)) continue;
+        const idol = eq.card.back;
+        const before = c.card.name;
+        if (c.isIdol) (c.idolStack ??= []).push(c.card);
+        c.card = idol;
+        c.isIdol = true;
+        // レッスンは裏返って、クリーチャーの下に重なる(戦場を離れると一緒に離れ、秘蔵庫に戻る)
+        pl.battlefield.splice(pl.battlefield.indexOf(eq), 1);
+        eq.attachedTo = null;
+        eq.zone = "under";
+        (c.under ??= []).push(eq);
+        this.addLog(`${eq.card.name}が裏返り、${before}は《${idol.name}》になった!`, c.controller);
+        // 裏面の「戦場に出たとき」
+        for (const ab of abilitiesOf(idol)) if (ab.a === "trigger" && ab.on === "etb") this.pendingTriggers.push({ obj: c, ability: ab, controller: c.controller });
+        changed = true;
+      }
+    return changed;
   }
 
   // ------------------------------------------------------------ 第14弾:百鬼顕現・開顕・狐火
@@ -1949,6 +2088,8 @@ export class Game {
   gainLife(p: PlayerId, n: number) {
     if (n <= 0) return;
     this.players[p].life += n;
+    this.players[p].lifeGainedThisTurn = (this.players[p].lifeGainedThisTurn ?? 0) + n;
+    this.players[p].gainSeq = ++this.evSeq;
     this.queueTriggers("lifeGain", this.sources(p));
   }
 
@@ -1986,6 +2127,8 @@ export class Game {
 
   private amount(n: Amount, ctx: Ctx): number {
     if (typeof n === "object" && n.count === "under") return ctx.item.obj.under?.length ?? 0;
+    if (typeof n === "object" && n.count === "facetPower")
+      return this.creatures(ctx.item.controller).filter((o) => o !== ctx.item.obj && this.isFacet(o)).reduce((s, o) => s + Math.max(0, this.power(o)), 0);
     return this.count(n, ctx.item.controller, ctx.item.x, ctx.item.burnCount);
   }
 
@@ -2791,6 +2934,7 @@ export class Game {
       case "bounce": {
         const o = this.refObj(ctx, e.tg);
         if (o) {
+          if (o.controller !== p) pl.cbSeq = ++this.evSeq;
           this.move(o, "hand");
           this.addLog(`${o.card.name}が手札に戻った`, p);
         }
@@ -2920,6 +3064,7 @@ export class Game {
           if (s) {
             this.stack = this.stack.filter((x) => x !== s);
             this.addLog(`${s.obj.card.name}が打ち消された`, p);
+            pl.cbSeq = ++this.evSeq;
             if (s.kind === "spell") this.move(s.obj, s.flashback ? "exile" : "graveyard");
           }
         }
@@ -3067,6 +3212,7 @@ export class Game {
         const won = lethal(b) && !lethal(a);
         this.addLog(`${a.card.name}が${b.card.name}と決闘した${won ? "(勝利)" : ""}`, p);
         if (won) {
+          a.wonDuelSeq = ++this.evSeq;
           await this.runEffects(e.win ?? [], ctx);
           this.queueTriggers("duelWin", this.sources(p));
         }
@@ -3164,6 +3310,41 @@ export class Game {
           this.move(o, "graveyard");
           this.addLog(`引いた${o.card.name}を捨てた`, p);
         }
+        break;
+      }
+      case "audition": {
+        const cards = e.cards as Record<Genre, Card>;
+        for (let i = 0; i < e.n; i++) {
+          const top = pl.library[0];
+          if (!top) break;
+          const t = top.card.type;
+          const gs: Genre[] = [];
+          if (t.includes("クリーチャー")) gs.push("Da");
+          if (t.includes("インスタント") || t.includes("ソーサリー")) gs.push("Vo");
+          if (t.includes("エンチャント") || t.includes("アーティファクト")) gs.push("Vi");
+          let g: Genre | undefined = gs[0];
+          if (gs.length > 1) {
+            const idx = await this.ask<number>(p, { kind: "mode", prompt: `オーディション:${top.card.name}。どの練習生を生成しますか?`, options: gs.map((x) => `${GENRE_JA[x]}の練習生`), source: src, modes: [] });
+            g = gs[Math.max(0, Math.min(gs.length - 1, Math.floor(idx ?? 0)))];
+          }
+          this.addLog(`オーディション:ライブラリーの一番上は${top.card.name}だった${g ? `。${GENRE_JA[g]}の練習生を生成した` : "(練習生は生まれなかった)"}`, p);
+          this.shuffle(pl.library);
+          if (!g) continue;
+          const o = this.newObj(cards[g], p, "battlefield");
+          o.token = true;
+          o.genre = g;
+          o.tokenColors = [{ Da: "R", Vo: "U", Vi: "W" }[g] as Color];
+          pl.battlefield.push(o);
+          o.sick = true;
+          this.entered(o);
+        }
+        break;
+      }
+      case "lessonDuel": {
+        const a = src.zone === "battlefield" && src.attachedTo !== null ? this.find(src.attachedTo as number) : undefined;
+        const b = this.refObj(ctx, e.tg);
+        if (!a || !b) break;
+        await this.runEffect({ do: "duel", tg: [e.tg], self: true } as Effect, { ...ctx, item: { ...ctx.item, obj: a } } as Ctx);
         break;
       }
       case "handAllToMana": {
@@ -3463,6 +3644,10 @@ export class Game {
           pl.hand.push(o);
         }
         this.addLog(`《${e.card.name}》を${e.n}枚手札に加えた(生成)`, p);
+        if (e.card.name === "黄金" && e.n > 0) {
+          pl.goldSeq = ++this.evSeq;
+          pl.goldTurn = this.turn;
+        }
         break;
       }
       case "ingest": {
@@ -3540,6 +3725,7 @@ export class Game {
             break;
           }
       pl.drawsThisTurn++;
+      pl.drawSeq = ++this.evSeq;
       if (pl.drawsThisTurn === 2) this.queueTriggers("secondDraw", this.sources(p));
       if (i === 0) this.pushTrapEvent("oppDraw", this.other(p));
     }
@@ -3559,6 +3745,7 @@ export class Game {
           }
         }
       }
+      if (this.checkLessons()) changed = true;
       // 伝説:同じ名前の伝説が2つ以上あれば、新しいものを残して墓地へ(第14弾)
       for (const p of this.players) {
         const seen = new Map<string, Obj>();
@@ -3656,6 +3843,8 @@ export class Game {
     if (comic >= 2) this.gainApplause(p, "喜劇", comic >= 3 ? 2 : 1, true);
     this.addLog(`${attackers.map((o) => o.card.name).join("、")}で攻撃した`, p);
     this.queueTriggers("attacks", attackers);
+    // 装備しているクリーチャーが攻撃するたび(第15弾のレッスン)
+    for (const a of attackers) this.queueTriggers("equippedAttacks", this.players[p].battlefield.filter((o) => o.attachedTo === a.uid));
     // 自分のクリーチャーが攻撃するたび(任務など)
     for (const a of attackers)
       for (const src of this.sources(p))
@@ -3769,6 +3958,10 @@ export class Game {
     for (const h of hits) {
       if (typeof h.to === "number") {
         this.dealDamage(h.src, { kind: "player", id: h.to as PlayerId }, h.n, true);
+        if (h.n > 0 && h.src.zone === "battlefield") {
+          h.src.hitPlayerSeq = ++this.evSeq;
+          this.queueTriggers("hitPlayer", [h.src]);
+        }
         toPlayer[h.to] = (toPlayer[h.to] ?? 0) + h.n;
       } else this.dealDamage(h.src, h.to, h.n, true);
     }
@@ -3836,6 +4029,7 @@ export class Game {
       q.enteredThisTurn.clear();
       q.pioneeredThisTurn = false;
       q.drawsThisTurn = 0;
+      q.lifeGainedThisTurn = 0;
       q.assembledThisTurn = false;
       q.evolvedThisTurn = false;
       q.trapsSetThisTurn = 0;

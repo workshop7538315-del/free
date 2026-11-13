@@ -25,6 +25,8 @@ export type Card = {
   basedOn?: { id: string; kind: "強化版" | "リメイク" | "サポート" };
   /** 両面カードの裏面(第14弾・開顕) */
   back?: Card;
+  /** アイドルの曲名(第15弾:「ファセット・シャイン」など) */
+  song?: string;
 };
 
 export type Pack = {

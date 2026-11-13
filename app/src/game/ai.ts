@@ -6,6 +6,7 @@ import type { Amount, Applause, Effect, TargetSpec } from "./schema";
 import { cardColors, colorPips, manaValue, parseCost, COLORS, type Color } from "../lib/mana";
 import {
   hyakkiOf,
+  idolLessonOf,
   matchFilter,
   abilitiesOf,
   burnAbility,
@@ -290,6 +291,8 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
     else if (a.type === "trap") s = scoreTrap(g, p, a, main);
     // 百鬼顕現:呼べるなら呼ぶ(マナ総量100の大型)
     else if (a.type === "hyakki") s = main ? scoreHyakki(g, p, a.uid) : -1;
+    // プロデュース:担当が合う練習生(まだその担当のレッスンをつけていない)がいるなら
+    else if (a.type === "produce") s = main ? scoreProduce(g, p, a.uid) : -1;
     else if (a.type === "summon")
       s =
         a.via === "entrata" ? scoreEntrata(g, p, a.uid)
@@ -302,6 +305,32 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
     if (s > 0 && (!best || s > best.s)) best = { a, s };
   }
   return best?.a ?? pass;
+}
+
+// ---------------------------------------------------------------- プロデュース(第15弾)
+/** まだ裏返っていないレッスンで、その条件のもの(担当が合うクリーチャーについている) */
+function pendingFlip(g: Game, p: PlayerId, flip: string): boolean {
+  const me = g.players[p];
+  return me.battlefield.some((e) => {
+    const l = idolLessonOf(e.card);
+    if (!l || l.flip !== flip || e.attachedTo === null || e.attachedTo === undefined) return false;
+    const c = g.find(e.attachedTo);
+    return !!c && c.genre === l.genre;
+  });
+}
+
+function scoreProduce(g: Game, p: PlayerId, uid: number): number {
+  const me = g.players[p];
+  const o = g.find(uid);
+  const l = o && idolLessonOf(o.card);
+  if (!o || !l) return -1;
+  const wearing = (c: Obj) => me.battlefield.some((e) => e.attachedTo === c.uid && idolLessonOf(e.card));
+  const fit = g.creatures(p).filter((c) => c.genre === l.genre && !wearing(c));
+  if (!fit.length) return -1;
+  // 基本のレッスン(裏面がファセット・シャイン)を先に。アイドルになった練習生に2枚目
+  const basic = o.card.back?.song === "ファセット・シャイン";
+  const hasIdol = fit.some((c) => c.isIdol);
+  return basic && !hasIdol ? 8 : !basic && hasIdol ? 7.5 : 5;
 }
 
 // ---------------------------------------------------------------- 百鬼顕現(第14弾)
@@ -534,6 +563,8 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
     }
     case "bounce":
     case "tuck":
+      // レッスン(打ち消すか手札に戻す)を裏返せるなら、それだけで価値がある
+      if (e.do === "bounce" && bestOpp > 0 && pendingFlip(g, p, "counterBounce")) return Math.max(5, bestOpp * 0.6);
       return bestOpp >= 4 ? bestOpp * 0.6 : 0;
     case "bounceAll": {
       const theirs = oppCreatures.reduce((s, o) => s + creatureValue(g, o), 0);
@@ -675,6 +706,7 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
     case "addiction":
       return me.hand.some((x) => hasDiscardTrigger(x.card)) ? 0.5 : -1.5;
     case "create":
+      if (e.card.name === "黄金" && pendingFlip(g, p, "gold")) return 5;
       // 生成したカードの価値(軽い呪文やトークンを想定)
       return e.n * (0.9 + Math.min(manaValue(e.card.cost), 4) * 0.25);
     case "ingest":
@@ -764,6 +796,11 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
       return (me.applause["呪い"] ?? 0) * 1.3;
     case "setFromGrave":
       return Math.min(e.n, me.graveyard.filter((o) => isTrapCard(o.card)).length) * 2;
+    // 第15弾
+    case "audition":
+      return e.n * (me.extra.some((o) => idolLessonOf(o.card)) ? 2.2 : 1.2);
+    case "lessonDuel":
+      return 1;
     // 第14弾
     case "genLib":
       return n(e.n) * 0.9;
@@ -1097,6 +1134,13 @@ function chooseCards(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseC
         return ao ? creatureValue(g, b) - creatureValue(g, a) : creatureValue(g, a) - creatureValue(g, b);
       });
       break;
+    case "produceDiscard": {
+      // プロデュース:レッスンを裏返すのに使うカード(手札に戻す・打ち消す・黄金・オーディション)は残す
+      const helps = (c: Card) => abilitiesOf(c).some((a) => "effects" in a && (a.effects as Effect[]).some((e) => ["bounce", "counter", "audition"].includes(e.do) || (e.do === "create" && (e as { card: Card }).card.name === "黄金")));
+      const v = (c: Card) => keepValue(g, p, c) + (helps(c) ? 5 : 0) + (c.name === "フィナーレ・シャイン" ? 4 : 0);
+      sorted = [...objs].sort((a, b) => v(a.card) - v(b.card));
+      break;
+    }
     case "discard": {
       // 陶酔(捨てられたとき)を持つカードは、捨てると得をする
       const v = (c: Card) => keepValue(g, p, c) - (hasDiscardTrigger(c) ? 4 : 0);

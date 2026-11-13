@@ -32,6 +32,8 @@ export type Filter = {
 export type Applause = "狂気" | "悲劇" | "喜劇" | "呪い";
 
 export type CondName =
+  /** グループ活動(第15弾) */
+  | "groupVoDa" | "groupVoVi" | "groupDaVi" | "groupAll"
   /** 開顕で出た(第14弾) */
   | "kaiken"
   /** 替天行道:対戦相手のライフかクリーチャーの数があなたより多い(第12弾) */
@@ -116,7 +118,7 @@ export type Cond =
   /** 系譜:これらの名前の神が、自分の戦場か墓地にある(第13弾) */
   | { lineage: string[] };
 
-export type CountKind = "mana" | "creatures" | "graveyard" | "graveyardCreatures" | "colorsInMana" | "hand" | "oppCreatures" | "burned" | "crests" | "colorlessMana";
+export type CountKind = "gold" | "facetPower" | "facetCount" | "mana" | "creatures" | "graveyard" | "graveyardCreatures" | "colorsInMana" | "hand" | "oppCreatures" | "burned" | "crests" | "colorlessMana";
 
 /** 数。"X"=唱えたときのX、count=数を数える、perm=条件に合う自分のパーマネントの数 */
 export type Amount = number | "X" | { count: CountKind } | { count: "under" } | { count: "perm"; filter: Filter } | { count: "applause"; cat: Applause } | { count: "primary"; color: Color };
@@ -308,6 +310,10 @@ export type Effect = Common &
     | { do: "awakenYakou" }
     /** お互いのライブラリーの一番上のマナ総量を比べ、自分のほうが高ければ追加ターン(1ゲームに1回) */
     | { do: "rasetsuTurn" }
+    /** オーディション:ライブラリーの一番上を公開し、タイプに合う練習生を生成する(第15弾) */
+    | { do: "audition"; n: number; cards: unknown }
+    /** 装備しているクリーチャーと、対象のクリーチャーが決闘する */
+    | { do: "lessonDuel"; tg: number }
     /** 内部:金剛羅刹の紋章で引いたカードを仕分ける */
     | { do: "drawSortCard"; uid: number }
   );
@@ -365,7 +371,15 @@ export type TriggerEvent =
   /** あなたがほかの任務を達成するたび */
   | "questDone"
   /** あなたが罠を発動するたび(裏向きから使うたび) */
-  | "trapUse";
+  | "trapUse"
+  /** このパーマネント(装備品)を装備しているクリーチャーが攻撃するたび(第15弾) */
+  | "equippedAttacks"
+  /** このクリーチャーがプレイヤーに戦闘ダメージを与えるたび */
+  | "hitPlayer";
+
+export type Genre = "Da" | "Vo" | "Vi";
+/** レッスンが裏返る条件 */
+export type LessonFlip = "duelWin" | "counterBounce" | "gold" | "hitPlayer" | "secondDraw" | "gain6";
 
 export type StaticSpec =
   /** 自分の(他の)クリーチャー全体の強化。filter で種族などを絞れる */
@@ -495,6 +509,8 @@ export type Ability = { text?: string } & (
   | { a: "oneShot" }
   /** 計略:秘蔵庫に入れるインスタント・ソーサリー。献策で手札に加える */
   | { a: "lesson" }
+  /** 第15弾:アイドルのレッスン(秘蔵庫の両面の装備品)。genre の練習生につけて、flip の条件で裏返る */
+  | { a: "idolLesson"; genre: Genre; need: "creature" | "spell" | "perm"; flip: LessonFlip }
   /** 覇業【呉】のあいだ、自分の水軍の条件をつねに満たす(孫権) */
   | { a: "navyAlways" }
   /** コスト軽減(第11.5弾):per があれば「per 1つにつき{mult}」、なければ{n}。if があればその条件のときだけ */
