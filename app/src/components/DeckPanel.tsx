@@ -152,7 +152,7 @@ export function DeckPanel(p: Props) {
               </section>
             ))}
           </div>
-          <ManaCurve curve={stats.curve} />
+          <ManaCurve curve={stats.curve} types={stats.types} />
           <ManaBalance stats={stats} />
         </>
       )}

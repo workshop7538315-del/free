@@ -1,4 +1,4 @@
-import type { DeckStats } from "../lib/deck";
+import { DECK_TYPES, type DeckStats, type DeckType } from "../lib/deck";
 import { COLORS, COLOR_NAMES } from "../lib/mana";
 
 /**
@@ -49,7 +49,7 @@ export function ManaBalance({ stats }: { stats: DeckStats }) {
   );
 }
 
-export function ManaCurve({ curve }: { curve: number[] }) {
+export function ManaCurve({ curve, types }: { curve: number[]; types?: Record<DeckType, number> }) {
   const max = Math.max(1, ...curve);
   return (
     <section aria-labelledby="curve-title">
@@ -68,6 +68,16 @@ export function ManaCurve({ curve }: { curve: number[] }) {
           </div>
         ))}
       </div>
+      {types && (
+        <ul className="type-counts" aria-label="カードタイプごとの枚数">
+          {DECK_TYPES.map((t) => (
+            <li key={t} className={types[t] ? "" : "zero"}>
+              <span className="type-name">{t}</span>
+              <span className="type-n">{types[t]}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

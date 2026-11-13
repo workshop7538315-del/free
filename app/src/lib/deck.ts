@@ -57,7 +57,12 @@ export type DeckStats = {
   sources: Record<Color, number>;
   /** 欠色カードの枚数(無色マナの源) */
   colorlessSources: number;
+  /** カードタイプごとの枚数(アーティファクト・クリーチャーなどは両方に数える) */
+  types: Record<DeckType, number>;
 };
+
+export const DECK_TYPES = ["クリーチャー", "ソーサリー", "インスタント", "エンチャント", "アーティファクト"] as const;
+export type DeckType = (typeof DECK_TYPES)[number];
 
 export const CURVE_MAX = 7;
 
@@ -66,9 +71,11 @@ export function deckStats(cards: DeckCards, byId: Map<string, Card>): DeckStats 
   const pips: Record<Color, number> = { W: 0, U: 0, B: 0, R: 0, G: 0 };
   const sources: Record<Color, number> = { W: 0, U: 0, B: 0, R: 0, G: 0 };
   let colorlessSources = 0;
+  const types = Object.fromEntries(DECK_TYPES.map((t) => [t, 0])) as Record<DeckType, number>;
   for (const [id, n] of Object.entries(cards)) {
     const card = byId.get(id);
     if (!card || isExtra(card)) continue;
+    for (const t of DECK_TYPES) if (card.type.includes(t)) types[t] += n;
     curve[Math.min(CURVE_MAX, manaValue(card.cost))] += n;
     const p = colorPips(card.cost);
     const colors = cardColors(card.cost);
@@ -76,7 +83,7 @@ export function deckStats(cards: DeckCards, byId: Map<string, Card>): DeckStats 
     for (const c of colors) sources[c] += n;
     if (colors.length === 0) colorlessSources += n;
   }
-  return { curve, pips, sources, colorlessSources };
+  return { curve, pips, sources, colorlessSources, types };
 }
 
 /** デッキリストをテキストにする(共有・メモ用) */

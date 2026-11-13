@@ -2806,3 +2806,29 @@ button.applause:focus-visible { outline: 2px solid var(--accent); outline-offset
 }
 .bs-check input { accent-color: var(--accent); }
 .pay-sources .btn { display: inline-flex; align-items: center; gap: 0.3rem; }
+
+/* マナカーブの下:カードタイプごとの枚数 */
+.type-counts {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+.type-counts li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--line, #d8d4cc);
+  border-radius: 999px;
+  font-size: 12px;
+}
+.type-counts li.zero {
+  opacity: 0.45;
+}
+.type-counts .type-n {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
