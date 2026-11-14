@@ -872,7 +872,7 @@ function effectText(e, name, abil, notes) {
     case "create": {
       const c = e.card;
       const pt = c.power !== undefined ? ` ${c.power}/${c.toughness}` : "";
-      if (c.pile && c.cost === "{0}") return `《${c.name}》(${c.type}:${c.text.join(" ") || "能力なし"})を${a(e.n)}個生成し、場に置く。`;
+      if (c.pile && c.cost === "{0}") return `《${c.name}》を${a(e.n)}個生成し、場に置く。`;
       return `《${c.name}》(${c.cost} ${c.type}${pt}:${c.text.join(" ") || "能力なし"})を${a(e.n)}枚あなたの手札に加える。`;
     }
     case "shuffleGraveyard":

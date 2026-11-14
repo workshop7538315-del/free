@@ -6,7 +6,7 @@
 //
 //   Stella Facet:ミニー(ダンス・赤)、ハル(ボーカル・青)、セラ(ビジュアル・白)。
 //   「ありふれたトークンたちから磨き上げられた存在」。
-import { cr, acr, ins, sor, art, ench, kw, spell, etb, dies, attacks, upkeep, endStep, castSpell, lifeGain, duelWin, secondDraw, once, stat, mana, act, lord, discount, equipment, T, E, E15, iff, idolLesson, gen, legend, cardText } from "../lib.mjs";
+import { allyAttacks, cr, acr, ins, sor, art, ench, kw, spell, etb, dies, attacks, upkeep, endStep, castSpell, lifeGain, duelWin, secondDraw, once, stat, mana, act, lord, discount, equipment, T, E, E15, iff, idolLesson, gen, legend, cardText } from "../lib.mjs";
 
 const tag = (t) => (c) => ({ ...c, tags: [...new Set([...(c.tags ?? []), t])] });
 const SF = tag("アイドル");
@@ -86,7 +86,7 @@ export const COMMON = [
 // ---------------------------------------------------------------- ミニー(赤)
 export const MINNIE = [
   MIN(cr("sf19", "おにぎりぱんだちゃん", "{1}{R}", "熊・ぬいぐるみ", 2, 2, "C", [dies(AUD(1))], { flavor: "ミニーのお気に入り。ほっぺに、ごはん粒がついている。" })),
-  MIN(cr("sf20", "おかわり番長", "{2}{R}", "ゴブリン", 3, 2, "C", [kw("速攻")], { flavor: "社員食堂の主。ミニーとは大盛り仲間。" })),
+  MIN(cr("sf20", "おかわり番長", "{2}{R}", "ゴブリン", 3, 3, "C", [kw("速攻")], { flavor: "社員食堂の主。ミニーとは大盛り仲間。" })),
   MIN(equipment("sf21", "リーダーの腕章", "{1}{R}", "U", "{1}", { p: 2, t: 0 }, [], { flavor: "赤い腕章をつけると、背筋がしゃんと伸びる。" })),
   MIN(equipment("sf22", "すべらないダンスシューズ", "{R}", "C", "{1}", { p: 1, t: 0, kw: ["先制攻撃"] }, [], { flavor: "どんな床でも、思いきりターンできる。" })),
   MIN(ench("sf23", "満腹ライブ", "{2}{R}", "U", [lord({ sub: "アイドル" }, 1, 0, ["速攻"]), etb(AUD(1))], { flavor: "お腹いっぱいのほうが、声が出る。……らしい。" })),
@@ -119,4 +119,30 @@ export const SERA = [
   SER(ins("sf42", "皆さまへのご挨拶", "{1}{W}", "C", spell([E.destroy(), E.gain(2)], { t: "creature", who: "opp", attacking: true }), { flavor: "「お引き取りくださいませ」" })),
 ];
 
-export const PACK15 = [...LESSONS, ...COMMON, ...MINNIE, ...HARU, ...SERA];
+
+// ---------------------------------------------------------------- ソロのための追加(各5種)
+//   名前はK-POPの用語から:キリングパート(曲の見せ場)、ダンスブレイク、チッケム(推しだけを撮った映像)、
+//   スミン(ストリーミングでの応援)、ヨントン(1対1のビデオ通話)、センイル広告(誕生日広告)、ファンサイン会、マスター(推しを撮る人)。
+export const MINNIE_SOLO = [
+  MIN(ins("sf43", "キリングパート", "{R}", "C", spell(E.pump(3, 0, ["先制攻撃"]), T.you), { flavor: "サビ前の一瞬。ここで全部持っていく。" })),
+  MIN(sor("sf44", "ダンスブレイク", "{R}", "U", spell(E.duel(E.counters(1, 0)), [T.you, T.opp]), { flavor: "音が止まった四小節、ステージは彼女だけのもの。" })),
+  MIN(cr("sf45", "チッケム撮影隊", "{2}{R}", "人間", 3, 2, "U", [kw("速攻"), once(allyAttacks()(E.dmgOpp(1)))], { flavor: "カメラはずっと、赤い髪だけを追っている。" })),
+  MIN(equipment("sf46", "推しうちわ", "{R}", "C", "{1}", { p: 2, t: 0, kw: ["速攻"] }, [], { flavor: "「ミニー こっち見て!」の文字は、手作り。" })),
+  MIN(ench("sf47", "深夜のトッポッキ", "{1}{R}", "R", [upkeep(E.counters(1), T.you), etb(AUD(1))], { flavor: "練習のあとの屋台は、いちばんの楽しみ。" })),
+];
+export const HARU_SOLO = [
+  HAL(ins("sf48", "ヨントン", "{1}{U}", "C", spell([E.bounce(), E.draw(1)], T.opp), { flavor: "画面越しのささやきに、相手は言葉を失った。" })),
+  HAL(ins("sf49", "スミン", "{1}{U}", "C", spell([E.draw(2), E.discard(1)]), { flavor: "眠っているあいだも、再生回数は回り続ける。" })),
+  HAL(cr("sf50", "夢見るクラゲ", "{2}{U}", "クラゲ", 1, 3, "C", [kw("飛行"), etb(E.draw(1))], { flavor: "ハルの夢の中を、ふわふわ泳いでいる。" })),
+  HAL(ench("sf51", "深夜ラジオ", "{2}{U}", "U", [secondDraw(AUD(1)), etb(E.draw(1))], { flavor: "眠れない夜、イヤホンの向こうから小さな歌声。" })),
+  HAL(ins("sf52", "囁くようなアンコール", "{2}{U}{U}", "R", spell([E.counter(), E.draw(1)], T.spell), { flavor: "アンコールは、いちばん小さな声で。" })),
+];
+export const SERA_SOLO = [
+  SER(ench("sf53", "センイル広告", "{2}{W}", "U", [etb([E.create(GOLD, 2), E.gain(2)])], { flavor: "駅の大きな看板に、ファンからのお祝いの言葉。" })),
+  SER(sor("sf54", "ファンサイン会", "{1}{W}", "C", spell([E.gain(3), E.create(GOLD), E15.invest(1, AUD(1))]), { flavor: "一人ひとりの名前を、丁寧に書いていく。" })),
+  SER(ins("sf55", "ショーケースの招待状", "{W}", "C", spell([E.pump(1, 2, ["警戒"]), E.gain(2)], T.you), { flavor: "「本日はようこそ。どうぞ、お楽しみくださいませ」" })),
+  SER(art("sf56", "マスターの望遠レンズ", "{2}{W}", "U", [once(lifeGain(E15.invest(1, E.draw(1)))), etb(E.create(GOLD))], { flavor: "千枚撮って、いちばんの一枚を選ぶ。" })),
+  SER(cr("sf57", "セラ家の執事", "{2}{W}", "人間", 2, 3, "R", [kw("警戒"), etb([E.create(GOLD), E.gain(2)])], { flavor: "「お嬢様のお客様は、わたくしのお客様でございます」" })),
+];
+
+export const PACK15 = [...LESSONS, ...COMMON, ...MINNIE, ...HARU, ...SERA, ...MINNIE_SOLO, ...HARU_SOLO, ...SERA_SOLO];
