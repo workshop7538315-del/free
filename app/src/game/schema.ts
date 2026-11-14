@@ -314,6 +314,8 @@ export type Effect = Common &
     | { do: "audition"; n: number; cards: unknown }
     /** 装備しているクリーチャーと、対象のクリーチャーが決闘する */
     | { do: "lessonDuel"; tg: number }
+    /** 資産運用 N:《黄金》をN個使ってもよい。そうしたなら then(第15弾) */
+    | { do: "invest"; n: number; then: Effect[] }
     /** 内部:金剛羅刹の紋章で引いたカードを仕分ける */
     | { do: "drawSortCard"; uid: number }
   );

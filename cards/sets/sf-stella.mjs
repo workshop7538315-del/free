@@ -24,7 +24,7 @@ export const TRAINEES = {
   Vo: trainee("sfg2", "練習生(ボーカル)", "U"),
   Vi: trainee("sfg3", "練習生(ビジュアル)", "W"),
 };
-const GOLD = gen("tk-ougon", "黄金", "{0}", "アーティファクト", [{ a: "mana", produce: ["any"], sacSelf: true }]);
+const GOLD = gen("tk-ougon", "黄金", "{0}", "アーティファクト", [{ a: "mana", produce: ["any"], sacSelf: true }], { pile: true });
 const GOODNIGHT = gen("sfg4", "おやすみなさい…", "{0}", "インスタント", [spell(E.counter(), T.spell)]);
 const AUD = (n = 1) => E15.audition(TRAINEES, n);
 const BS = E15.backstage();
@@ -112,10 +112,10 @@ export const SERA = [
   SER(cr("sf35", "真珠の白鳥", "{2}{W}", "鳥", 2, 2, "C", [kw("飛行"), etb(E.gain(2))], { flavor: "セラの家の庭の池に、毎年やってくる。" })),
   SER(cr("sf36", "黄金の小鳥", "{1}{W}", "鳥", 1, 1, "C", [kw("飛行"), etb(E.create(GOLD))], { flavor: "光るものを集めては、セラの窓辺に置いていく。" })),
   SER(equipment("sf37", "絢爛のティアラ", "{1}{W}", "U", "{1}", { p: 1, t: 1, kw: ["絆魂"] }, [], { flavor: "重さよりも、似合うことのほうが大事。" })),
-  SER(art("sf38", "セラのティーセット", "{2}{W}", "U", [etb(E.create(GOLD)), upkeep(E.gain(2))], { flavor: "「お話の前に、まずは一杯いかが?」" })),
+  SER(art("sf38", "セラのティーセット", "{2}{W}", "U", [etb(E.create(GOLD)), upkeep([E.gain(2), E15.invest(1, AUD(1))])], { flavor: "「お話の前に、まずは一杯いかが?」" })),
   SER(ench("sf39", "お嬢様の舞踏会", "{2}{W}", "R", [once(lifeGain(E.create(GOLD))), etb(AUD(1))], { flavor: "招待状は、来てくれた人みんなの分ある。" })),
   SER(ench("sf40", "規範の舞台", "{1}{W}", "U", [endStep(E.gain(2)), etb(E.gain(2))], { flavor: "誰かのお手本になることを、彼女は怖がらない。" })),
-  SER(sor("sf41", "凛として、優雅に", "{2}{W}", "C", spell([E.gain(4), E.create(GOLD)]), { flavor: "ドレスの裾をつまんで、一礼。" })),
+  SER(sor("sf41", "凛として、優雅に", "{2}{W}", "C", spell([E.gain(4), E.create(GOLD), E15.invest(1, E.draw(1))]), { flavor: "ドレスの裾をつまんで、一礼。" })),
   SER(ins("sf42", "皆さまへのご挨拶", "{1}{W}", "C", spell([E.destroy(), E.gain(2)], { t: "creature", who: "opp", attacking: true }), { flavor: "「お引き取りくださいませ」" })),
 ];
 

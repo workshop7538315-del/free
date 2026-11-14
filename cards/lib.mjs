@@ -166,7 +166,9 @@ export const modal = (modes) => ({
 /** 生成されるカード(カードリストには入らない) */
 export const gen = (id, name, cost, type, abilities, extra = {}) => {
   const c = { id, name, cost, type, rarity: "生成", abilities: [abilities ?? []].flat(2), ...extra };
-  return { ...c, text: cardText(c) };
+  const text = cardText(c);
+  // 資源トークン:同じ名前のものは場で1つの山に重なる
+  return { ...c, text: c.pile ? [...text, "(山:同じ名前のものは場で1つに重なり、数で数える。1つずつ使える)"] : text };
 };
 /** filter に合う呪文を唱えるたび */
 export const onCast = (filter) => trig("cast", filter);
@@ -358,6 +360,8 @@ export const E13 = {
 export const E15 = {
   audition: (cards, n = 1) => ({ do: "audition", n, cards }),
   backstage: () => ({ a: "backstage" }),
+  /** 資産運用 N:《黄金》をN個使ってもよい。そうしたなら then */
+  invest: (n, then) => ({ do: "invest", n, then: [then].flat() }),
   lessonDuel: () => ({ do: "lessonDuel", tg: 0 }),
 };
 const GENRE_JA = { Da: "ダンス", Vo: "ボーカル", Vi: "ビジュアル" };
@@ -802,6 +806,8 @@ function effectText(e, name, abil, notes) {
       return "あなたの手札をすべてマナゾーンに置く。";
     case "audition":
       return e.n === 1 ? "オーディションを行う。" : `オーディションを${e.n}回行う。`;
+    case "invest":
+      return `資産運用 ${e.n} ― 《黄金》を${e.n}個使ってもよい。そうしたなら、${e.then.map((x) => effectText(x, name, abil, notes)).join("")}`;
     case "lessonDuel":
       return `これを装備しているクリーチャーは、${it(e.tg)}と決闘する。`;
     case "topIfSub":
@@ -866,6 +872,7 @@ function effectText(e, name, abil, notes) {
     case "create": {
       const c = e.card;
       const pt = c.power !== undefined ? ` ${c.power}/${c.toughness}` : "";
+      if (c.pile && c.cost === "{0}") return `《${c.name}》(${c.type}:${c.text.join(" ") || "能力なし"})を${a(e.n)}個生成し、場に置く。`;
       return `《${c.name}》(${c.cost} ${c.type}${pt}:${c.text.join(" ") || "能力なし"})を${a(e.n)}枚あなたの手札に加える。`;
     }
     case "shuffleGraveyard":

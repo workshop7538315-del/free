@@ -29,7 +29,7 @@ const G_ = (c) => tagged(c);
 
 // ---------------------------------------------------------------- 生成されるカード
 /** 札束:{0} のアーティファクト。生け贄に捧げると好きな色のマナを1つ出す */
-const CASH = gen("tk-satsutaba", "札束", "{0}", "アーティファクト", [{ a: "mana", produce: ["any"], sacSelf: true }]);
+const CASH = gen("tk-satsutaba", "札束", "{0}", "アーティファクト", [{ a: "mana", produce: ["any"], sacSelf: true }], { pile: true });
 const heist = (n) => E.heist(n, CASH);
 const phantom = (n) => E.token(n, 2, 2, "U", "イリュージョン", ["飛行"]);
 const thug = (n) => E.token(n, 2, 1, "R", "人間・ならず者", ["速攻"]);

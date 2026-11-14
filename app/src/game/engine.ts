@@ -97,6 +97,8 @@ export type Obj = {
   fromManaTurn?: number;
   /** 百鬼夜行を持つ(墓地にあるあいだ) */
   yakou?: boolean;
+  /** 資源トークンの山の数(1つなら undefined) */
+  pile?: number;
   /** 第15弾:練習生とアイドルの担当(ダンス・ボーカル・ビジュアル) */
   genre?: Genre;
   /** アイドルになった(レッスンが裏返った) */
@@ -605,6 +607,16 @@ export class Game {
       this.addLog(`${o.card.name}は戦場を離れなかった`, o.controller);
       return;
     }
+    // 山になった資源トークンは、1つだけ場を離れる(まとめて離れるときを除く)
+    if (o.zone === "battlefield" && to !== "battlefield" && (o.pile ?? 1) > 1 && !this.wholePile) {
+      o.pile = (o.pile ?? 1) - 1 > 1 ? (o.pile ?? 1) - 1 : undefined;
+      const one = this.newObj(o.card, o.controller, "battlefield");
+      one.token = o.token;
+      one.generated = o.generated;
+      one.tokenColors = o.tokenColors;
+      this.players[o.controller].battlefield.push(one);
+      o = one;
+    }
     const fromZone = o.zone;
     // 第14弾:マナゾーンから墓地へ(百鬼夜行)、重なりの解消、両面カードは表に戻る、墓地を離れると百鬼夜行を失う
     if (fromZone === "mana" && to === "graveyard") o.fromManaTurn = this.turn;
@@ -876,7 +888,7 @@ export class Game {
       case "colorlessMana":
         return pl.mana.filter((o) => manaColors(o).length === 0).length;
       case "gold":
-        return pl.battlefield.filter((o) => o.card.name === "黄金").length;
+        return pl.battlefield.filter((o) => o.card.name === "黄金").reduce((s, o) => s + (o.pile ?? 1), 0);
       case "facetCount":
         return this.creatures(p).filter((o) => this.isFacet(o)).length;
       case "facetPower":
@@ -1185,7 +1197,9 @@ export class Game {
         if (a.a !== "mana") continue;
         // 生け贄に捧げて出すマナ(《黄金》)は最後に使う
         if (a.sacSelf) {
-          units.push({ tapGroup: `s${o.uid}`, options: a.produce[0] === "any" ? ["W", "U", "B", "R", "G"] : a.produce.map((s) => s.replace(/[{}]/g, "")), priority: 3 });
+          // 山になった《黄金》は、その数だけ使える
+          for (let k = 0; k < (o.pile ?? 1); k++)
+            units.push({ tapGroup: `s${o.uid}${k ? `.${k}` : ""}`, options: a.produce[0] === "any" ? ["W", "U", "B", "R", "G"] : a.produce.map((s) => s.replace(/[{}]/g, "")), priority: 3 });
           continue;
         }
         if (a.produce[0] === "any") units.push({ tapGroup: `b${o.uid}`, options: ["W", "U", "B", "R", "G"], priority: 2 });
@@ -1223,7 +1237,7 @@ export class Game {
   private manaSourceOf(p: PlayerId, group: string, colors: string[]): ManaSource {
     const pl = this.players[p];
     if (group.startsWith("pool")) return { group, label: "浮いているマナ", colors };
-    const uid = Number(group.slice(1));
+    const uid = parseInt(group.slice(1));
     const o = group.startsWith("m") ? pl.mana.find((m) => m.uid === uid) : pl.battlefield.find((m) => m.uid === uid);
     const name = o ? (o.faceDown && o.zone === "mana" ? `裏:${o.card.name}` : o.card.name) : "?";
     return { group, label: group.startsWith("s") ? `${name}(生け贄に捧げる)` : group.startsWith("b") ? `${name}(タップ)` : name, colors, uid };
@@ -1271,7 +1285,7 @@ export class Game {
           this.queueTriggers("tapped", [o]);
         }
       } else if (g.startsWith("s")) {
-        const o = pl.battlefield.find((m) => m.uid === Number(g.slice(1)));
+        const o = pl.battlefield.find((m) => m.uid === parseInt(g.slice(1)));
         if (o) this.sacrifice(o, p);
       } else if (g.startsWith("b")) {
         const o = pl.battlefield.find((m) => m.uid === Number(g.slice(1)));
@@ -2074,7 +2088,32 @@ export class Game {
   }
 
   /** 戦場に出たときの誘発(自身と、他のパーマネントの「〜が出るたび」) */
+  /** 資源トークンを1つ生成して、場の山に置く */
+  private putPile(card: Card, p: PlayerId) {
+    const o = this.newObj(card, p, "battlefield");
+    o.generated = true;
+    this.players[p].battlefield.push(o);
+    this.entered(o);
+  }
+
+  /** まとめて場を離れる(山ごと) */
+  private wholePile = false;
+
+  /** 資源トークンを山に重ねる。重ねたら true */
+  private mergePile(o: Obj): boolean {
+    if (!o.card.pile || o.zone !== "battlefield") return false;
+    const pl = this.players[o.controller];
+    const pile = pl.battlefield.find((x) => x !== o && x.card.name === o.card.name && x.card.pile);
+    if (!pile) return false;
+    pile.pile = (pile.pile ?? 1) + (o.pile ?? 1);
+    pl.battlefield.splice(pl.battlefield.indexOf(o), 1);
+    o.zone = "limbo";
+    this.addLog(`${pile.card.name}が山に重なった(×${pile.pile})`, o.controller);
+    return true;
+  }
+
   private entered(o: Obj) {
+    if (this.mergePile(o)) return;
     if (isHero(o.card)) this.players[o.controller].heroes.add(o.card.name);
     if (isCreatureCard(o.card)) this.pushTrapEvent("oppEnter", this.other(o.controller), o.uid);
     this.queueTriggers("etb", [o]);
@@ -2225,7 +2264,7 @@ export class Game {
       .map((o) => {
         const off = offeringOf(o.card);
         const bonus = off && (!off.sub || subs.includes(off.sub)) ? off.n : 0;
-        return { o, value: manaValue(o.card.cost) + bonus };
+        return { o, value: (manaValue(o.card.cost) + bonus) * (o.pile ?? 1) };
       });
   }
 
@@ -2258,7 +2297,9 @@ export class Game {
       }
     pl.releasedThisTurn = true;
     this.addLog(`${picked.map((x) => x.o.card.name).join("、")}をリリースし、${o.card.name}をリリース召喚した`, p);
+    this.wholePile = true;
     for (const x of picked) this.sacrifice(x.o, p);
+    this.wholePile = false;
     this.usedCards.add(o.card.id);
     this.enterBattlefield(o, p);
   }
@@ -3362,6 +3403,18 @@ export class Game {
         }
         break;
       }
+      case "invest": {
+        const golds = () => pl.battlefield.filter((o) => o.card.name === "黄金").reduce((s, o) => s + (o.pile ?? 1), 0);
+        if (golds() < e.n) break;
+        if (!(await this.askYesNo(p, `資産運用 ${e.n}:《黄金》を${e.n}個使いますか?`, "may", src))) break;
+        for (let k = 0; k < e.n; k++) {
+          const g = pl.battlefield.find((o) => o.card.name === "黄金");
+          if (g) this.move(g, "graveyard");
+        }
+        this.addLog(`資産運用:《黄金》を${e.n}個使った`, p);
+        await this.runEffects(e.then, ctx);
+        break;
+      }
       case "lessonDuel": {
         const a = src.zone === "battlefield" && src.attachedTo !== null ? this.find(src.attachedTo as number) : undefined;
         const b = this.refObj(ctx, e.tg);
@@ -3424,7 +3477,9 @@ export class Game {
         const idx = await this.ask<number>(p, { kind: "mode", prompt: `${src.card.name}:相手の場のどれをすべて破壊しますか?`, options: kinds.map((k) => `${k}(${count(k)})`), source: src, modes: [] });
         const k = kinds[Math.max(0, Math.min(2, Math.floor(idx ?? 0)))];
         const victims = this.players[opp].battlefield.filter((o) => o.card.type.includes(k));
+        this.wholePile = true;
         for (const o of victims) this.destroy(o);
+        this.wholePile = false;
         this.addLog(`${src.card.name}:相手の${k}を${victims.length}つ破壊した`, p);
         const n = Math.max(0, e.base - victims.length);
         for (let i = 0; i < n; i++) {
@@ -3594,10 +3649,14 @@ export class Game {
         const pool = [...pl.extra];
         if (pool.length === 0) {
           if (e.fallback) {
-            const o = this.newObj(e.fallback as Card, p, "hand");
-            o.generated = true;
-            pl.hand.push(o);
-            this.addLog(`強盗 ${e.n}:秘蔵庫が空なので、《${e.fallback.name}》を手札に加えた`, p);
+            const fb = e.fallback as Card;
+            if (fb.pile && fb.cost === "{0}") this.putPile(fb, p);
+            else {
+              const o = this.newObj(fb, p, "hand");
+              o.generated = true;
+              pl.hand.push(o);
+            }
+            this.addLog(`強盗 ${e.n}:秘蔵庫が空なので、《${fb.name}》を生成した`, p);
           }
           break;
         }
@@ -3660,12 +3719,18 @@ export class Game {
         break;
       }
       case "create": {
-        for (let i = 0; i < e.n; i++) {
-          const o = this.newObj(e.card as Card, p, "hand");
-          o.generated = true;
-          pl.hand.push(o);
+        // {0}の資源トークン(《黄金》)は、手札を通らず場の山に重なる
+        if ((e.card as Card).pile && (e.card as Card).cost === "{0}") {
+          for (let i = 0; i < e.n; i++) this.putPile(e.card as Card, p);
+          this.addLog(`《${e.card.name}》を${e.n}個生成して、場に置いた`, p);
+        } else {
+          for (let i = 0; i < e.n; i++) {
+            const o = this.newObj(e.card as Card, p, "hand");
+            o.generated = true;
+            pl.hand.push(o);
+          }
+          this.addLog(`《${e.card.name}》を${e.n}枚手札に加えた(生成)`, p);
         }
-        this.addLog(`《${e.card.name}》を${e.n}枚手札に加えた(生成)`, p);
         if (e.card.name === "黄金" && e.n > 0) {
           pl.goldSeq = ++this.evSeq;
           pl.goldTurn = this.turn;

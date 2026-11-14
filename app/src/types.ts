@@ -27,6 +27,8 @@ export type Card = {
   back?: Card;
   /** アイドルの曲名(第15弾:「ファセット・シャイン」など) */
   song?: string;
+  /** 資源トークン:同じ名前のものは場で1つの山に重なる(黄金・札束・予備の歯車・供物の灯) */
+  pile?: boolean;
 };
 
 export type Pack = {

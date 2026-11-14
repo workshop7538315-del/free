@@ -799,6 +799,11 @@ function MiniCard({
             任務{o.quest ?? 0}/{q.n}
           </span>
         )}
+        {onField && (o.pile ?? 1) > 1 && (
+          <span className="mini-under" title={`${o.card.name}が${o.pile}個重なっている(1つずつ使える)`}>
+            ×{o.pile}
+          </span>
+        )}
         {onField && (o.under?.length ?? 0) > 0 && (
           <span className="mini-under" title={`下に${o.under!.length}枚重なっている`}>
             重{o.under!.length}
