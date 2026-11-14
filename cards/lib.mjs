@@ -357,6 +357,7 @@ export const E13 = {
 // 第15弾:アイドル
 export const E15 = {
   audition: (cards, n = 1) => ({ do: "audition", n, cards }),
+  backstage: () => ({ a: "backstage" }),
   lessonDuel: () => ({ do: "lessonDuel", tg: 0 }),
 };
 const GENRE_JA = { Da: "ダンス", Vo: "ボーカル", Vi: "ビジュアル" };
@@ -1055,6 +1056,8 @@ function abilityTextBody(abil, card) {
       const cond = abil.cond === "attacked" ? "このターン、装備しているクリーチャーが攻撃したなら" : "装備しているクリーチャーに装備品が2つ以上ついているなら";
       return `組み立て【${COLOR_JA[abil.color]}】 / 武装進化 ― ${cond}、そのクリーチャーと${name}を《${abil.partnerName}》に武装進化してもよい。`;
     }
+    case "backstage":
+      return "裏方(プロデュースで、指定のタイプでなくてもこのカードを捨ててよい)";
     case "idolLesson":
       return `プロデュース ― ${NEED_JA[abil.need]}を1枚捨てる(このカードのコストを払い、秘蔵庫から出して、あなたのクリーチャー1体につける)\n裏返り ― ${FLIP_JA[abil.flip]}、これが${GENRE_JA[abil.genre]}の練習生(かその練習生がなったアイドル)についているなら、これは裏返ってそのクリーチャーに重なり、そのクリーチャーは裏面のアイドルになる。`;
     case "kaiken":

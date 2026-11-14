@@ -315,6 +315,8 @@ export const BLESSING_MINAMO = "ミナモの加護";
 export const hyakkiOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "hyakki") as Extract<Ability, { a: "hyakki" }> | undefined;
 export const isLegendary = (c: Card) => c.type.includes("伝説");
 export const idolLessonOf = (c: Card) => abilitiesOf(c).find((a) => a.a === "idolLesson") as Extract<Ability, { a: "idolLesson" }> | undefined;
+/** プロデュースで捨てられる:指定のタイプか、裏方を持つカード */
+export const canProduceDiscard = (c: Card, need: "creature" | "spell" | "perm") => fitsNeed(c, need) || abilitiesOf(c).some((a) => a.a === "backstage");
 export const GENRE_JA: Record<Genre, string> = { Da: "ダンス", Vo: "ボーカル", Vi: "ビジュアル" };
 const NEED_JA = { creature: "クリーチャー", spell: "インスタントかソーサリー", perm: "エンチャントかアーティファクト" } as const;
 export const fitsNeed = (c: Card, need: "creature" | "spell" | "perm") =>
@@ -1545,7 +1547,7 @@ export class Game {
     const l = idolLessonOf(o.card);
     if (!l || o.zone !== "extra") return false;
     const pl = this.players[p];
-    if (!pl.hand.some((h) => fitsNeed(h.card, l.need))) return false;
+    if (!pl.hand.some((h) => canProduceDiscard(h.card, l.need))) return false;
     if (!this.creatures(p).length) return false;
     return this.canPay(p, o.card.cost, 0);
   }
@@ -1553,8 +1555,8 @@ export class Game {
   private async produce(p: PlayerId, o: Obj) {
     const l = idolLessonOf(o.card)!;
     const pl = this.players[p];
-    const discards = pl.hand.filter((h) => fitsNeed(h.card, l.need));
-    const [d] = await this.askCards(p, `プロデュース:捨てる${NEED_JA[l.need]}を選んでください`, discards, 1, "produceDiscard");
+    const discards = pl.hand.filter((h) => canProduceDiscard(h.card, l.need));
+    const [d] = await this.askCards(p, `プロデュース:捨てる${NEED_JA[l.need]}(か裏方のカード)を選んでください`, discards, 1, "produceDiscard");
     if (!d) return;
     // 練習生(担当が合うもの)を先に並べる
     const cs = [...this.creatures(p)].sort((a, b) => Number(b.genre === l.genre) - Number(a.genre === l.genre));
@@ -3314,22 +3316,42 @@ export class Game {
       }
       case "audition": {
         const cards = e.cards as Record<Genre, Card>;
-        for (let i = 0; i < e.n; i++) {
-          const top = pl.library[0];
-          if (!top) break;
-          const t = top.card.type;
+        const genresOf = (c: Card): Genre[] => {
+          const t = c.type;
           const gs: Genre[] = [];
           if (t.includes("クリーチャー")) gs.push("Da");
           if (t.includes("インスタント") || t.includes("ソーサリー")) gs.push("Vo");
           if (t.includes("エンチャント") || t.includes("アーティファクト")) gs.push("Vi");
-          let g: Genre | undefined = gs[0];
+          return gs;
+        };
+        for (let i = 0; i < e.n; i++) {
+          // 練習生は担当ごとに場に1体まで(アイドルになった子は数えない)
+          const onField = new Set(this.creatures(p).filter((o) => o.genre && !o.isIdol).map((o) => o.genre as Genre));
+          const open = (c: Card) => genresOf(c).filter((g) => !onField.has(g));
+          // 出せないことが確定しているなら、代わりに1枚引く
+          if (!pl.library.some((o) => open(o.card).length)) {
+            this.addLog(`オーディション:${onField.size >= 3 ? "練習生が3人そろっている" : "ライブラリーに新しい練習生になれるカードがない"}ので、代わりにカードを1枚引く`, p);
+            this.draw(p, 1);
+            continue;
+          }
+          // まだ場にない練習生になれるカードが出るまでめくる
+          const shown: string[] = [];
+          let hit: Obj | undefined;
+          for (const o of pl.library) {
+            shown.push(o.card.name);
+            if (open(o.card).length) {
+              hit = o;
+              break;
+            }
+          }
+          const gs = open(hit!.card);
+          let g = gs[0];
           if (gs.length > 1) {
-            const idx = await this.ask<number>(p, { kind: "mode", prompt: `オーディション:${top.card.name}。どの練習生を生成しますか?`, options: gs.map((x) => `${GENRE_JA[x]}の練習生`), source: src, modes: [] });
+            const idx = await this.ask<number>(p, { kind: "mode", prompt: `オーディション:${hit!.card.name}。どの練習生を生成しますか?`, options: gs.map((x) => `${GENRE_JA[x]}の練習生`), source: src, modes: [] });
             g = gs[Math.max(0, Math.min(gs.length - 1, Math.floor(idx ?? 0)))];
           }
-          this.addLog(`オーディション:ライブラリーの一番上は${top.card.name}だった${g ? `。${GENRE_JA[g]}の練習生を生成した` : "(練習生は生まれなかった)"}`, p);
+          this.addLog(`オーディション:${shown.length}枚めくった(${shown.join("、")})。${GENRE_JA[g]}の練習生を生成した`, p);
           this.shuffle(pl.library);
-          if (!g) continue;
           const o = this.newObj(cards[g], p, "battlefield");
           o.token = true;
           o.genre = g;

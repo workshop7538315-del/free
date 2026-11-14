@@ -510,6 +510,8 @@ export type Ability = { text?: string } & (
   /** 計略:秘蔵庫に入れるインスタント・ソーサリー。献策で手札に加える */
   | { a: "lesson" }
   /** 第15弾:アイドルのレッスン(秘蔵庫の両面の装備品)。genre の練習生につけて、flip の条件で裏返る */
+  /** 裏方:プロデュースで、指定のタイプでなくてもこのカードを捨ててよい(第15弾) */
+  | { a: "backstage" }
   | { a: "idolLesson"; genre: Genre; need: "creature" | "spell" | "perm"; flip: LessonFlip }
   /** 覇業【呉】のあいだ、自分の水軍の条件をつねに満たす(孫権) */
   | { a: "navyAlways" }

@@ -27,6 +27,7 @@ export const TRAINEES = {
 const GOLD = gen("tk-ougon", "黄金", "{0}", "アーティファクト", [{ a: "mana", produce: ["any"], sacSelf: true }]);
 const GOODNIGHT = gen("sfg4", "おやすみなさい…", "{0}", "インスタント", [spell(E.counter(), T.spell)]);
 const AUD = (n = 1) => E15.audition(TRAINEES, n);
+const BS = E15.backstage();
 
 // ---------------------------------------------------------------- アイドル(レッスンの裏面)
 const idol = (id, name, song, sub, p, t, abilities, flavor) => ({ ...legend(cr(id, name, "{0}", `${sub}・アイドル`, p, t, "M", abilities, { flavor })), song });
@@ -69,14 +70,14 @@ export const COMMON = [
     iff("groupAll", E.tapAll()),
     iff("groupAll", E.pumpAll(2, 2, ["トランプル"])),
   ]), { flavor: "三つの光がひとつに重なったとき、ステージは星空になる。" })),
-  SF(sor("sf08", "運命のオーディション", "{2}", "U", spell(AUD(2)), { flavor: "番号札を握る手が、少しだけ震えていた。" })),
-  SF(sor("sf09", "追加オーディション", "{2}", "C", spell([AUD(1), E.draw(1)]), { flavor: "「もう一人、見てほしい子がいるんです」" })),
-  SF(sor("sf10", "原石を、磨く", "{1}", "C", spell([E.counters(2), iff("groupVoDa", E.draw(1)), iff("groupDaVi", E.draw(1))], T.you), { flavor: "光るかどうかは、磨いてみるまでわからない。" })),
-  SF(ins("sf11", "プロデューサーの采配", "{2}", "C", spell(E.pump(2, 2, ["呪禁"]), T.you), { flavor: "「大丈夫。今日のステージは、きみのものだ」" })),
-  SF(ench("sf12", "初舞台", "{2}", "U", [etb(AUD(1)), lord({ sub: "練習生" }, 1, 1)], { flavor: "幕が上がる直前の静けさを、きっと一生忘れない。" })),
-  SF(ench("sf13", "三人のステージ", "{3}", "R", [lord({ sub: "アイドル" }, 1, 1), upkeep(AUD(1)), endStep(E.draw(1), undefined, { if: "groupAll" })], { flavor: "三人で立つと、ステージが少し狭く感じる。" })),
-  SF(cr("sf14", "事務所の看板猫", "{2}", "猫", 2, 2, "C", [etb(AUD(1))], { flavor: "オーディション会場に、いつのまにか紛れ込んでいる。" })),
-  SF(art("sf15", "三人分の楽譜", "{2}", "C", [mana("W", "U", "R"), etb(E.draw(1))], { flavor: "それぞれのパートに、それぞれの書き込み。" })),
+  SF(sor("sf08", "運命のオーディション", "{2}", "U", [spell(AUD(2)), BS], { flavor: "番号札を握る手が、少しだけ震えていた。" })),
+  SF(sor("sf09", "追加オーディション", "{2}", "C", [spell([AUD(1), E.draw(1)]), BS], { flavor: "「もう一人、見てほしい子がいるんです」" })),
+  SF(sor("sf10", "原石を、磨く", "{1}", "C", [spell([E.counters(2), iff("groupVoDa", E.draw(1)), iff("groupDaVi", E.draw(1))], T.you), BS], { flavor: "光るかどうかは、磨いてみるまでわからない。" })),
+  SF(ins("sf11", "プロデューサーの采配", "{2}", "C", [spell(E.pump(2, 2, ["呪禁"]), T.you), BS], { flavor: "「大丈夫。今日のステージは、きみのものだ」" })),
+  SF(ench("sf12", "初舞台", "{2}", "U", [etb(AUD(1)), lord({ sub: "練習生" }, 1, 1), BS], { flavor: "幕が上がる直前の静けさを、きっと一生忘れない。" })),
+  SF(ench("sf13", "三人のステージ", "{3}", "R", [lord({ sub: "アイドル" }, 1, 1), upkeep(AUD(1)), endStep(E.draw(1), undefined, { if: "groupAll" }), BS], { flavor: "三人で立つと、ステージが少し狭く感じる。" })),
+  SF(cr("sf14", "事務所の看板猫", "{2}", "猫", 2, 2, "C", [etb(AUD(1)), BS], { flavor: "オーディション会場に、いつのまにか紛れ込んでいる。" })),
+  SF(art("sf15", "三人分の楽譜", "{2}", "C", [mana("W", "U", "R"), etb(E.draw(1)), BS], { flavor: "それぞれのパートに、それぞれの書き込み。" })),
   SF(ins("sf16", "二人のハーモニー", "{1}{U}{R}", "U", spell([E.dmg(3), iff("groupVoDa", E.draw(1))], T.cre), { flavor: "息を合わせるのに、言葉はいらない。" })),
   SF(ins("sf17", "視線とステップ", "{R}{W}", "U", spell([E.pump(2, 2), iff("groupDaVi", E.pump(0, 0, ["先制攻撃"])), iff("groupDaVi", E.create(GOLD))], T.you), { flavor: "一歩踏み出すたび、視線がついてくる。" })),
   SF(ins("sf18", "歌と微笑み", "{1}{W}{U}", "U", spell([E.bounce(), iff("groupVoVi", E.gain(3))], T.opp), { flavor: "微笑まれて、歌われて、気づけば席を立っていた。" })),

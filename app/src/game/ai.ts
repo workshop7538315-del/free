@@ -797,8 +797,12 @@ function effectValue(g: Game, p: PlayerId, e: Effect, targets: TargetSpec[], inC
     case "setFromGrave":
       return Math.min(e.n, me.graveyard.filter((o) => isTrapCard(o.card)).length) * 2;
     // 第15弾
-    case "audition":
-      return e.n * (me.extra.some((o) => idolLessonOf(o.card)) ? 2.2 : 1.2);
+    case "audition": {
+      // 練習生は担当ごとに1体まで。出せないならドロー
+      const have = new Set(g.creatures(p).filter((o) => o.genre && !o.isIdol).map((o) => o.genre));
+      const room = Math.min(e.n, 3 - have.size);
+      return room * (me.extra.some((o) => idolLessonOf(o.card)) ? 2.2 : 1.2) + (e.n - room) * 1;
+    }
     case "lessonDuel":
       return 1;
     // 第14弾
@@ -1137,7 +1141,9 @@ function chooseCards(g: Game, p: PlayerId, d: Extract<Decision, { kind: "chooseC
     case "produceDiscard": {
       // プロデュース:レッスンを裏返すのに使うカード(手札に戻す・打ち消す・黄金・オーディション)は残す
       const helps = (c: Card) => abilitiesOf(c).some((a) => "effects" in a && (a.effects as Effect[]).some((e) => ["bounce", "counter", "audition"].includes(e.do) || (e.do === "create" && (e as { card: Card }).card.name === "黄金")));
-      const v = (c: Card) => keepValue(g, p, c) + (helps(c) ? 5 : 0) + (c.name === "フィナーレ・シャイン" ? 4 : 0);
+      // 裏方のカードは、捨てるためにある
+      const back = (c: Card) => abilitiesOf(c).some((a) => a.a === "backstage");
+      const v = (c: Card) => keepValue(g, p, c) + (helps(c) && !back(c) ? 5 : 0) + (c.name === "フィナーレ・シャイン" ? 4 : 0) - (back(c) ? 3 : 0);
       sorted = [...objs].sort((a, b) => v(a.card) - v(b.card));
       break;
     }
