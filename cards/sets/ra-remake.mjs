@@ -136,7 +136,7 @@ export const ANALYZER = [
   cr("ra60", "清貧の裁官 アナライザー", "{7}", "エミュレート・天使", 4, 2, "M", [
     vaultCast,
     analyzer(ANALYSIS, 5),
-    etb(E16.codePick(CODES)),
+    { ...etb(E16.codePick(CODES), undefined, { if: "summoned" }), text: "清貧の裁官 アナライザーを召喚したとき(唱えて戦場に出たとき。コピーでは働かない)、Code: Beatdown(《Code: Aggressive》《Code: Face》《Code: Tempo》)、Code: Control(《Code: Tempo》《Code: Permission》《Code: Removal》《Code: Prison》《Code: Hand Disruption》)、Code: Special(《Code: Ramp》《Code: Card Advantage》《Code: Toolbox》)からそれぞれ1枚を選び、手札に生成する。" },
     endStep(E16.analyzerReduce()),
   ], { flavor: "「分析完了。最適解を出力します」" }),
 ];

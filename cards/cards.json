@@ -61568,8 +61568,8 @@
     "text": [
       "アラワレル(このカードは秘蔵庫に入れる。あなたはソーサリーのタイミングで、秘蔵庫からこのカードを唱えてもよい。戦場を離れたら、秘蔵庫には戻らない)",
       "ゲーム開始時に、これがあなたのデッキか秘蔵庫にあるなら、あなたのライブラリーに《分析対象》を5枚生成する。\n信仰(アナライザー):あなたのターンの終了時に、ライブラリーに《分析対象》がなく、手札がちょうど13枚なら、信仰が1増える。信仰が3になったら、あなたはゲームに勝利する。",
-      "清貧の裁官 アナライザーが戦場に出たとき、Code: Beatdown(《Code: Aggressive》《Code: Face》《Code: Tempo》)、Code: Control(《Code: Tempo》《Code: Permission》《Code: Removal》《Code: Prison》《Code: Hand Disruption》)、Code: Special(《Code: Ramp》《Code: Card Advantage》《Code: Toolbox》)からそれぞれ1枚を選び、手札に生成する。",
-      "あなたの終了ステップの開始時に、あなたのマナゾーンのマナの種類(白・青・黒・赤・緑・欠色)2つにつき、あなたの手札のカード1枚のコストを{1}少なくする(最大3)。6種類すべてがあるなら、これが戦場に出たときの能力をもう一度行う。"
+      "清貧の裁官 アナライザーを召喚したとき(唱えて戦場に出たとき。コピーでは働かない)、Code: Beatdown(《Code: Aggressive》《Code: Face》《Code: Tempo》)、Code: Control(《Code: Tempo》《Code: Permission》《Code: Removal》《Code: Prison》《Code: Hand Disruption》)、Code: Special(《Code: Ramp》《Code: Card Advantage》《Code: Toolbox》)からそれぞれ1枚を選び、手札に生成する。",
+      "あなたの終了ステップの開始時に、あなたのマナゾーンのマナの種類(白・青・黒・赤・緑・欠色)2つにつき、あなたの手札のカード1枚のコストを{1}少なくする(最大3)。6種類すべてがあるなら、これを召喚したときの能力をもう一度行う。"
     ],
     "pack": "p16a",
     "packs": [
@@ -61638,7 +61638,7 @@
                       }
                     ],
                     "text": [
-                      "1/1のundefinedのエミュレート・ゴブリン・クリーチャー・トークンを1体生成する。あなたのエミュレートのトークン1体のコピーであるトークンを1体出す。"
+                      "1/1のundefinedのエミュレート・ゴブリン・クリーチャー・トークンを1体生成する。あなたのエミュレート1体のコピーであるトークンを1体出す。"
                     ]
                   },
                   {
@@ -61909,7 +61909,9 @@
               }
             ]
           }
-        ]
+        ],
+        "if": "summoned",
+        "text": "清貧の裁官 アナライザーを召喚したとき(唱えて戦場に出たとき。コピーでは働かない)、Code: Beatdown(《Code: Aggressive》《Code: Face》《Code: Tempo》)、Code: Control(《Code: Tempo》《Code: Permission》《Code: Removal》《Code: Prison》《Code: Hand Disruption》)、Code: Special(《Code: Ramp》《Code: Card Advantage》《Code: Toolbox》)からそれぞれ1枚を選び、手札に生成する。"
       },
       {
         "a": "trigger",

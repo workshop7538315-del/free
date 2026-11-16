@@ -593,7 +593,7 @@ function condPrefix(c) {
   if (typeof c === "object" && "manaMV" in c) return `あなたのマナゾーンにあるカードのマナ総量の合計が${c.manaMV}以上なら、`;
   if (typeof c === "object") return `あなたが${filterPhrase(c.control, "permanent")}を${c.n}${unitOf(c.control)}以上コントロールしているなら、`;
   if (typeof c === "object" && "lineage" in c) return `${c.lineage.map((n) => `《${n}》`).join("か")}があなたの戦場か墓地にあるなら、`;
-  return { paidR: "赤で払ったなら、", paidB: "黒で払ったなら、", paidW: "白で払ったなら、", paidWnot13: "白で払ったなら(ライフが13でないとき)、", paidBnot13: "黒で払ったなら(ライフが13でないとき)、", paidWor13: "白で払ったかライフが13なら、", paidBor13: "黒で払ったかライフが13なら、", oppNot13: "対戦相手のライフが13でないなら、", kaiken: "開顕で唱えられたなら、", questDone: "このゲームであなたが任務を達成したなら、", pioneeredGame: "このゲームであなたが開拓進化をしたなら、", buriedInMana: "あなたのマナゾーンに埋蔵を持つカードがあるなら、", burned: "燃焼したなら、", kicked: "追加払いしたなら、", fewerMana: "あなたのマナゾーンのカードが対戦相手より少ないなら、", notMoreMana: "あなたのマナゾーンのカードが対戦相手の枚数以下なら、" }[c];
+  return { summoned: "召喚して出たなら、", paidR: "赤で払ったなら、", paidB: "黒で払ったなら、", paidW: "白で払ったなら、", paidWnot13: "白で払ったなら(ライフが13でないとき)、", paidBnot13: "黒で払ったなら(ライフが13でないとき)、", paidWor13: "白で払ったかライフが13なら、", paidBor13: "黒で払ったかライフが13なら、", oppNot13: "対戦相手のライフが13でないなら、", kaiken: "開顕で唱えられたなら、", questDone: "このゲームであなたが任務を達成したなら、", pioneeredGame: "このゲームであなたが開拓進化をしたなら、", buriedInMana: "あなたのマナゾーンに埋蔵を持つカードがあるなら、", burned: "燃焼したなら、", kicked: "追加払いしたなら、", fewerMana: "あなたのマナゾーンのカードが対戦相手より少ないなら、", notMoreMana: "あなたのマナゾーンのカードが対戦相手の枚数以下なら、" }[c];
 }
 
 /** 条件の前置き(常在能力に付けるとき) */
@@ -884,7 +884,7 @@ function effectText(e, name, abil, notes) {
     case "analysisDraw":
       return "あなたの墓地にある《分析対象》の数+1枚まで、カードを引く。";
     case "copyEmulate":
-      return "あなたのエミュレートのトークン1体のコピーであるトークンを1体出す。";
+      return "あなたのエミュレート1体のコピーであるトークンを1体出す。";
     case "emulatesPump":
       return `ターン終了時まで、あなたのエミュレートはすべて+${e.p}/+${e.t}${e.kw?.length ? `の修整を受け、${e.kw.join("・")}を得る` : "の修整を受ける"}。`;
     case "counterUpTo":
@@ -894,7 +894,7 @@ function effectText(e, name, abil, notes) {
     case "handExile":
       return "対戦相手の手札を見て、その中から1枚を選んで追放する。";
     case "analyzerReduce":
-      return "あなたのマナゾーンのマナの種類(白・青・黒・赤・緑・欠色)2つにつき、あなたの手札のカード1枚のコストを{1}少なくする(最大3)。6種類すべてがあるなら、これが戦場に出たときの能力をもう一度行う。";
+      return "あなたのマナゾーンのマナの種類(白・青・黒・赤・緑・欠色)2つにつき、あなたの手札のカード1枚のコストを{1}少なくする(最大3)。6種類すべてがあるなら、これを召喚したときの能力をもう一度行う。";
     case "invest":
       return `資産運用 ${e.n} ― 《黄金》を${e.n}個使ってもよい。そうしたなら、${e.then.map((x) => effectText(x, name, abil, notes)).join("")}`;
     case "lessonDuel":

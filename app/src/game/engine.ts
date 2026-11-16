@@ -99,6 +99,8 @@ export type Obj = {
   yakou?: boolean;
   /** 第16a弾:ステラが出したときの数、刺客の蓄積、刺客を与えられた、手札にあるあいだの強化、星座の合計 */
   stellaX?: number;
+  /** 唱えて戦場に出た(コピーやトークン、踏み倒しは含まない) */
+  summoned?: boolean;
   assassin?: number;
   grantedAssassin?: boolean;
   handBuff?: { p: number; kw: string[] };
@@ -648,6 +650,7 @@ export class Game {
       }
     }
     if (fromZone === "graveyard" && to !== "graveyard") o.yakou = false;
+    if (fromZone === "battlefield") o.summoned = undefined;
     if (fromZone === "battlefield") o.hyakkiDoomAfter = undefined;
     if (o.front && to !== "battlefield" && to !== "stack") {
       o.card = o.front;
@@ -853,6 +856,8 @@ export class Game {
         return pl.questsDone > 0;
       case "kaiken":
         return !!obj?.viaKaiken;
+      case "summoned":
+        return !!obj?.summoned;
       case "paidW":
         return obj?.paidColor === "W";
       case "paidB":
@@ -2277,6 +2282,8 @@ export class Game {
           this.entered(item.obj);
           return;
         }
+        // 召喚して(唱えて)出た(第16a弾:アナライザーの「召喚したとき」)
+        item.obj.summoned = true;
         this.enterBattlefield(item.obj, item.controller, item.burned, item.x, item.kicked, item.burnCount, item.dashed);
         return;
       }
@@ -3784,10 +3791,10 @@ export class Game {
         break;
       }
       case "copyEmulate": {
-        // コピーできるのはトークンのエミュレートだけ(アナライザー自身をコピーして、Codeを無限に生成できないように)
-        const es = this.creatures(p).filter((o) => o.token && matchFilter(o.card, { sub: "エミュレート" }));
+        // アナライザーもコピーできる(コピーは唱えていないので「召喚したとき」は働かない)
+        const es = this.creatures(p).filter((o) => matchFilter(o.card, { sub: "エミュレート" }));
         if (!es.length) break;
-        const [o] = await this.askCards(p, "コピーするエミュレート(トークン)を選んでください", [...es].sort((a, b) => this.power(b) - this.power(a)), 1, "pick");
+        const [o] = await this.askCards(p, "コピーするエミュレートを選んでください", [...es].sort((a, b) => this.power(b) - this.power(a)), 1, "pick");
         if (!o) break;
         const t = this.newObj(o.card, p, "battlefield");
         t.token = true;

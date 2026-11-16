@@ -35,7 +35,7 @@ export type Applause = "狂気" | "悲劇" | "喜劇" | "呪い";
 
 export type CondName =
   /** 第16a弾:払った色・ライフ13 */
-  | "paidW" | "paidB" | "paidR" | "paidWor13" | "paidBor13" | "paidWnot13" | "paidBnot13" | "life13" | "oppNot13"
+  | "summoned" | "paidW" | "paidB" | "paidR" | "paidWor13" | "paidBor13" | "paidWnot13" | "paidBnot13" | "life13" | "oppNot13"
   /** グループ活動(第15弾) */
   | "groupVoDa" | "groupVoVi" | "groupDaVi" | "groupAll"
   /** 開顕で出た(第14弾) */
