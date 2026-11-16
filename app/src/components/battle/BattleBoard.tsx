@@ -320,7 +320,7 @@ export function BattleBoard({ game: g, human, result, onRematch, onExit, decks, 
         {me.extra.length > 0 && !mobile && (
           <section className="hand extra-zone" aria-label="あなたの秘蔵庫">
             <h3 className="zone-label">
-              秘蔵庫 {me.extra.length}枚<span className="zone-hint">(リリース召喚・エントラータ・開拓進化・組み立て・龍生・プロデュースで出す)</span>
+              秘蔵庫 {me.extra.length}枚<span className="zone-hint">(リリース召喚・エントラータ・開拓進化・組み立て・龍生・プロデュース・アラワレルで出す)</span>
             </h3>
             <div className="hand-cards">
               {me.extra.map((o) => (
