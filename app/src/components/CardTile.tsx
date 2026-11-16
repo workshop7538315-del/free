@@ -1,14 +1,19 @@
+import { useSyncExternalStore } from "react";
+import { getBattleSettings, subscribeBattleSettings } from "../lib/battleSettings";
 import type { Card } from "../types";
 import { maxCopies } from "../lib/deck";
 import { cardColors, colorCategory } from "../lib/mana";
 import { ManaCost } from "./ManaCost";
 import { KeywordTip } from "./KeywordTip";
-import { splitKeywords } from "../lib/keywords";
+import { splitKeywords, stripReminders } from "../lib/keywords";
 import { cardName, packLabel, packShort } from "../lib/packs";
 import { CardTip } from "./CardTip";
 
 /** ルール文中の {5}{G}{G} や {T} を記号に、キーワードを説明つきにして表示する */
-export function RulesText({ text }: { text: string }) {
+export function RulesText({ text: raw }: { text: string }) {
+  // 設定「キーワードの説明なし」:キーワードのあとのかっこ書きを省く
+  const hide = useSyncExternalStore(subscribeBattleSettings, () => getBattleSettings().hideReminders);
+  const text = hide ? stripReminders(raw) : raw;
   const parts = text.split(/((?:\{[^}]+\})+)/);
   return (
     <>

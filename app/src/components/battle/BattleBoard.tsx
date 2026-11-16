@@ -8,6 +8,8 @@ import { ManaCost } from "../ManaCost";
 import { findPayment } from "../../game/payment";
 import { getBattleSettings, setBattlePlaying } from "../../lib/battleSettings";
 import { RulesText } from "../CardTile";
+import { CardTip } from "../CardTip";
+import type { Card } from "../../types";
 import { copyText, deckText, logText, resultLine, type DeckInfo } from "../../lib/battleLog";
 
 // 自分と相手。オンライン対戦で後攻側の部屋に入った人は 1 が自分になる(BattleBoard の me で切り替える)
@@ -881,7 +883,9 @@ function Center(props: CenterProps) {
         <ol className="stack" aria-label="スタック(上から解決)">
           {[...g.stack].reverse().map((s) => (
             <li key={s.id} className={s.controller === ME ? "is-me" : "is-cpu"}>
-              <strong>{s.obj.card.name}</strong>
+              <strong>
+                <CardTip card={s.obj.card} className="stack-name" />
+              </strong>
               {s.kind !== "spell" && "の能力"}({s.controller === ME ? "あなた" : "相手"})
               {s.targets.length > 0 && ` → ${s.targets.map((t) => g.describeRef(t)).join("、")}`}
             </li>
@@ -926,7 +930,9 @@ function Prompt({ g, d, selected, attackSel, blocks, blocker, chosen, num, setNu
           </p>
           {o && acts.length > 0 && (
             <div className="prompt-actions prompt-card-actions">
-              <span className="prompt-card">{o.card.name}</span>
+              <span className="prompt-card">
+                <CardTip card={o.card} className="prompt-card-name" />
+              </span>
               {acts.map((a, i) => (
                 <button key={i} type="button" className="btn btn-primary" onClick={() => answer(a)}>
                   {actionLabel(g, a)}
@@ -1319,12 +1325,62 @@ function CardDetail({ g, o }: { g: Game; o: Obj | null }) {
           {onField && o.damage > 0 && <span className="detail-damage">(ダメージ {o.damage})</span>}
         </p>
       )}
+      {onField && (o.idolStack?.length ?? 0) > 0 && (
+        <p className="detail-under">
+          下に重なったアイドルの面(能力が加わる):
+          {o.idolStack!.map((c, i) => (
+            <span key={i}>
+              {i > 0 && "、"}
+              <CardTip card={c} className="under-name" />
+            </span>
+          ))}
+        </p>
+      )}
       {onField && (o.under?.length ?? 0) > 0 && (
         <p className="detail-under">
-          下に重なっているカード({o.under!.length}枚{g.underBonus(o) > 0 ? "、1枚につき+1/+1" : ""}):{o.under!.map((u) => u.card.name).join("、")}
+          下に重なっているカード({o.under!.length}枚{g.underBonus(o) > 0 ? "、1枚につき+1/+1" : ""}):
+          {o.under!.map((u, i) => (
+            <span key={u.uid}>
+              {i > 0 && "、"}
+              <CardTip card={u.card} className="under-name" />
+            </span>
+          ))}
         </p>
       )}
     </section>
+  );
+}
+
+/** 対戦に出てくるカード(名前→カード)。ログのカード名にツールチップをつけるのに使う */
+function gameCards(g: Game): Map<string, Card> {
+  const map = new Map<string, Card>();
+  const add = (c?: Card) => {
+    if (!c || map.has(c.name)) return;
+    map.set(c.name, c);
+    if (c.back) add(c.back);
+  };
+  for (const p of g.players)
+    for (const o of [...p.library, ...p.hand, ...p.battlefield, ...p.graveyard, ...p.mana, ...p.extra, ...(p.exile ?? [])]) {
+      add(o.card);
+      if (o.front) add(o.front);
+      for (const u of o.under ?? []) add(u.card);
+      for (const c of o.idolStack ?? []) add(c);
+    }
+  for (const s of g.stack) add(s.obj.card);
+  return map;
+}
+
+/** 文中のカード名をツールチップつきにする */
+function LinkedText({ text, cards, re }: { text: string; cards: Map<string, Card>; re: RegExp | null }) {
+  if (!re) return <>{text}</>;
+  const parts = text.split(re);
+  return (
+    <>
+      {parts.map((part, i) => {
+        const c = i % 2 === 1 ? cards.get(part) : undefined;
+        return c ? <CardTip key={i} card={c} className="log-card" /> : <span key={i}>{part}</span>;
+      })}
+    </>
   );
 }
 
@@ -1385,6 +1441,9 @@ function CopyButtons({ g, decks }: { g: Game; decks?: { mine: DeckInfo; cpu: Dec
 
 function Log({ g, decks }: { g: Game; decks?: { mine: DeckInfo; cpu: DeckInfo } }) {
   const ref = useRef<HTMLOListElement>(null);
+  const cards = gameCards(g);
+  const names = [...cards.keys()].filter((n) => n.length >= 2).sort((a, b) => b.length - a.length);
+  const re = names.length ? new RegExp(`(${names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`) : null;
   const last = g.log[g.log.length - 1]?.id;
   useEffect(() => {
     const el = ref.current;
@@ -1397,7 +1456,7 @@ function Log({ g, decks }: { g: Game; decks?: { mine: DeckInfo; cpu: DeckInfo } 
       <ol ref={ref}>
         {g.log.slice(-120).map((l) => (
           <li key={l.id} className={l.player === ME ? "is-me" : l.player === CPU ? "is-cpu" : "is-sys"}>
-            {l.text}
+            <LinkedText text={l.text} cards={cards} re={re} />
           </li>
         ))}
       </ol>

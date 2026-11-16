@@ -162,7 +162,7 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
             <option value="">パック:すべて</option>
             {PACKS.map((p) => (
               <option key={p.id} value={p.id}>
-                第{p.number}弾「{p.name}」({p.total})
+                第{p.number}弾「{p.name.length > 12 ? `${p.name.slice(0, 12)}…` : p.name}」({p.total})
               </option>
             ))}
           </select>

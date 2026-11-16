@@ -26,6 +26,10 @@ export function BattleSettingsPanel() {
         <input type="checkbox" checked={s.oppInstants} onChange={(e) => setBattleSettings({ oppInstants: e.target.checked })} />
         <span>相手ターンのインスタント確認</span>
       </label>
+      <label className="bs-field bs-check" title="カードの文章で、キーワードのあとのかっこ書きの説明を省略する(キーワードにカーソルを当てるか押すと説明が出る)">
+        <input type="checkbox" checked={s.hideReminders} onChange={(e) => setBattleSettings({ hideReminders: e.target.checked })} />
+        <span>キーワードの説明なし(ツールチップだけ)</span>
+      </label>
     </div>
   );
 }

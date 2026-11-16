@@ -57,3 +57,47 @@ export function cardKeywords(card: Card): Set<string> {
   }
   return found;
 }
+
+/**
+ * キーワードの直後のかっこ書き(説明)を取り除く。キーワードの説明はツールチップで読める。
+ * 生成するカードの中身(《X》({R} …))のように、キーワードでないものの後ろのかっこは残す。
+ */
+export function stripReminders(text: string): string {
+  const segs = splitKeywords(text);
+  let out = "";
+  let skip = false;
+  for (let i = 0; i < segs.length; i++) {
+    let t = segs[i].text;
+    if (skip && t.startsWith("(")) {
+      // 対応する閉じかっこまで(入れ子にも対応)を飛ばす。かっこが次の部分にまたがるときは続けて飛ばす
+      let depth = 0;
+      let j = 0;
+      let rest = t;
+      let k = i;
+      for (;;) {
+        for (j = 0; j < rest.length; j++) {
+          if (rest[j] === "(") depth++;
+          else if (rest[j] === ")") {
+            depth--;
+            if (depth === 0) break;
+          }
+        }
+        if (depth === 0 && j < rest.length) {
+          t = rest.slice(j + 1);
+          i = k;
+          break;
+        }
+        if (k + 1 >= segs.length) {
+          t = "";
+          i = k;
+          break;
+        }
+        k++;
+        rest = segs[k].text;
+      }
+    }
+    out += t;
+    skip = !!segs[i].keyword;
+  }
+  return out;
+}

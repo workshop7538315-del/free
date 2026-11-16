@@ -3,7 +3,7 @@
 //   第11弾の英雄の、別の時点・状態を描くリメイク。共通のテーマは「本来その色の得意なものとは少しずれたデッキ」。
 //   青緑:1/1の物量(ステラ)/ 黒赤:長期戦コントロール(ロザリンドとヴィオレッタ)/ 白黒:ライフ13固定(リーヴラ)
 //   単体の汎用カード《清貧の裁官 アナライザー》。
-import { cr, ins, sor, art, ench, kw, spell, etb, dies, upkeep, endStep, onCast, once, stat, lord, selfIf, T, E, E13, E16, iff, gen, legend, cardText, sympathy, constellation, evolve, assassin, inheritIntrigue, paidChoice, faithCost, freeOnIntrigue, anyNumber, analyzer, intrigueEnd } from "../lib.mjs";
+import { balancePayText, cr, ins, sor, art, ench, kw, spell, etb, dies, upkeep, endStep, onCast, once, stat, lord, selfIf, T, E, E13, E16, iff, gen, legend, cardText, sympathy, constellation, evolve, assassin, inheritIntrigue, paidChoice, faithCost, freeOnIntrigue, anyNumber, analyzer, intrigueEnd } from "../lib.mjs";
 
 const tag = (t) => (c) => ({ ...c, tags: [...new Set([...(c.tags ?? []), t])] });
 const STAR = tag("星図");
@@ -84,8 +84,10 @@ export const COURT_CARDS = [
 // ================================================================ 白黒:均衡の裁定(ライフ13固定)
 // 回復しすぎも自傷しすぎも許されず、ライフがちょうど13のときだけ強くなる。
 // 教義は「清貧であれ、慈善の境界に貧者を置くな」。
-const WILL = gen("ra40g", "均衡の意志", "{0}", "ソーサリー", [spell(E16.willOfBalance())]);
+const WILL = { ...gen("ra40g", "均衡の意志", "{0}", "ソーサリー", [spell(E16.willOfBalance())]), short: "均衡の意志" };
 // 混成(白/黒):白で払えば回復とリソース、黒で払えば自傷と妨害。ライフが13なら両方(ライフの増減は相殺して起きない)
+// 均衡払いの文章(白:w と wRes / 黒:b と bRes)
+const wbText = (w, wRes, b, bRes) => balancePayText("", [w, wRes].flat().filter(Boolean), [b, bRes].flat().filter(Boolean));
 const wb = (w, wRes, b, bRes) => [
   ...(w ? [iff("paidWnot13", w)] : []),
   ...[wRes].flat().map((e) => iff("paidWor13", e)),
@@ -98,20 +100,20 @@ export const LIBRA_CARDS = [
     anyNumber("リーヴラ"),
     faithCost("リーヴラ", 5, "{B}"),
     kw("飛行"),
-    etb([E16.millBoth(3), iff("life13", E14gen(WILL))]),
+    { ...etb([E16.millBoth(3), iff("life13", E14gen(WILL))]), text: "出たとき、各プレイヤーは切削3。ライフ13 ― あなたの墓地の枚数だけ《均衡の意志》をライブラリーに生成する。" },
     stat({ s: "rivraForm", faith: "リーヴラ" }),
   ], { flavor: "天秤の裁定者は、自らを秤に載せた。どちらにも傾かないように。" })),
-  LIBRA(sor("ra42", "清貧の誓い", "{W/B}", "C", [paidChoice(), spell(wb(E.gain(2), E.draw(1), E.lose(2, "you"), E.discard(1, "opp")))], { flavor: "持たざることを、誇りとせよ。" })),
-  LIBRA(ench("ra43", "慈善の境界", "{2}{W/B}", "U", [paidChoice(), etb(wb(E.gain(3), E13.regrow(1, { type: "クリーチャー" }), E.lose(3, "you"), E.destroy()), { t: "creature", who: "opp", filter: { maxMV: 3 } })], { flavor: "境界の外に、誰も置き去りにしてはならない。" })),
-  LIBRA(ins("ra44", "施しの鐘", "{W/B}", "C", [paidChoice(), spell(wb(E.gain(2), [E.create(GOLD), E.draw(1)], E.lose(2, "you"), [E.lose(2, "opp"), E.draw(1)]))], { flavor: "鐘が鳴るたび、誰かが分け与え、誰かが差し出す。" })),
+  LIBRA(sor("ra42", "清貧の誓い", "{W/B}", "C", [paidChoice(), { ...spell(wb(E.gain(2), E.draw(1), E.lose(2, "you"), E.discard(1, "opp"))), text: wbText(E.gain(2), E.draw(1), E.lose(2, "you"), E.discard(1, "opp")) }], { flavor: "持たざることを、誇りとせよ。" })),
+  LIBRA(ench("ra43", "慈善の境界", "{2}{W/B}", "U", [paidChoice(), { ...etb(wb(E.gain(3), E13.regrow(1, { type: "クリーチャー" }), E.lose(3, "you"), E.destroy()), { t: "creature", who: "opp", filter: { maxMV: 3 } }), text: "出たとき、均衡払い ― 白:あなたは3点のライフを得る。あなたの墓地のクリーチャー・カード1枚を手札に戻す。 黒:あなたは3点のライフを失う。対戦相手のマナ総量3以下のクリーチャー1体を対象とし、それを破壊する。" }], { flavor: "境界の外に、誰も置き去りにしてはならない。" })),
+  LIBRA(ins("ra44", "施しの鐘", "{W/B}", "C", [paidChoice(), { ...spell(wb(E.gain(2), [E.create(GOLD), E.draw(1)], E.lose(2, "you"), [E.lose(2, "opp"), E.draw(1)])), text: wbText(E.gain(2), [E.create(GOLD), E.draw(1)], E.lose(2, "you"), [E.lose(2, "opp"), E.draw(1)]) }], { flavor: "鐘が鳴るたび、誰かが分け与え、誰かが差し出す。" })),
   LIBRA(cr("ra45", "天秤の巡礼者", "{1}{W}{B}", "人間・クレリック", 2, 3, "C", [selfIf("life13", 2, 2, ["飛行"])], { flavor: "目指すのは頂でも谷でもなく、ちょうど真ん中。" })),
   LIBRA(cr("ra46", "均衡の番人", "{2}{W}{B}", "天使", 3, 4, "U", [etb(E16.nudge13(2)), selfIf("life13", 1, 1, ["警戒"])], { flavor: "傾いた皿を、そっと戻す。" })),
   LIBRA(cr("ra47", "秤皿の天使", "{2}{W}{B}", "天使", 3, 4, "R", [kw("飛行"), upkeep(E16.nudge13(2)), endStep(E.draw(1), undefined, { if: "life13" })], { flavor: "片方の皿に羽根を、もう片方に涙を。" })),
   LIBRA(cr("ra48", "清貧の修道女", "{W}{B}", "人間・クレリック", 2, 3, "C", [{ ...lord(undefined, 1, 0), if: "life13" }], { flavor: "多くを望まない者は、多くを与えられる。" })),
   LIBRA(sor("ra49", "審判の日の約束", "{3}{W}{B}", "R", { ...spell([iff("life13", E.destroyAll(undefined, undefined, "opp")), { ...E.destroyAll(), unless: "life13" }]), text: "あなたのライフがちょうど13なら、対戦相手のクリーチャーをすべて破壊する。そうでないなら、すべてのクリーチャーを破壊する。" }, { flavor: "均衡を保った者だけが、審判の日に立っていられる。" })),
-  LIBRA(sor("ra50", "献身と贖罪", "{2}{W/B}", "U", [paidChoice(), spell(wb(E.gain(4), E.draw(2), E.lose(4, "you"), E.lose(4, "opp")))], { flavor: "与えた分だけ、奪われる。奪った分だけ、与える。" })),
+  LIBRA(sor("ra50", "献身と贖罪", "{2}{W/B}", "U", [paidChoice(), { ...spell(wb(E.gain(4), E.draw(2), E.lose(4, "you"), E.lose(4, "opp"))), text: wbText(E.gain(4), E.draw(2), E.lose(4, "you"), E.lose(4, "opp")) }], { flavor: "与えた分だけ、奪われる。奪った分だけ、与える。" })),
   LIBRA(art("ra51", "リーヴラの天秤", "{2}", "U", [upkeep(E16.nudge13(1))], { flavor: "針は、いつも13を指そうとする。" })),
-  LIBRA(cr("ra52", "均衡を説く者", "{1}{W/B}", "人間・クレリック", 2, 3, "C", [paidChoice(), etb(wb(E.gain(2), E.create(GOLD), E.lose(2, "you"), E.discard(1, "opp")))], { flavor: "「多すぎず、少なすぎず」それが彼女の口癖だった。" })),
+  LIBRA(cr("ra52", "均衡を説く者", "{1}{W/B}", "人間・クレリック", 2, 3, "C", [paidChoice(), { ...etb(wb(E.gain(2), E.create(GOLD), E.lose(2, "you"), E.discard(1, "opp"))), text: "出たとき、" + wbText(E.gain(2), E.create(GOLD), E.lose(2, "you"), E.discard(1, "opp")) }], { flavor: "「多すぎず、少なすぎず」それが彼女の口癖だった。" })),
 ];
 
 // ================================================================ 単体の汎用カード:清貧の裁官 アナライザー

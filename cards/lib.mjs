@@ -389,6 +389,12 @@ export const analyzer = (card, n = 5) => ({ a: "analyzer", card, n });
 /** 陰謀 ― ターン終了時に */
 export const intrigueEnd = (effects, targets) => ({ a: "trigger", on: "anyEndStep", effects: [effects].flat(), ...(targets ? { targets: [targets].flat() } : {}), if: "intrigue" });
 
+/** 均衡払い(混成 白/黒):白で払えば w、黒で払えば b。ライフ13なら両方(ライフの増減は起きない) */
+export function balancePayText(name, w, b) {
+  const t = (list) => list.map((x) => effectText(x, name, {}, [])).join("");
+  return `均衡払い ― 白:${t(w)} 黒:${t(b)}`;
+}
+
 // 第15弾:アイドル
 export const E15 = {
   audition: (cards, n = 1) => ({ do: "audition", n, cards }),
@@ -874,11 +880,11 @@ function effectText(e, name, abil, notes) {
     case "renken":
       return "次の3つを順に行う。(1)場のエンチャント1つを持ち主の手札に戻すか、《黄金》を2個生成する。(2)戻したカードのマナ総量以下の、対戦相手のパーマネント1つを破壊するか、《黄金》を1個生成する。(3)《黄金》を1個生成する。";
     case "millBoth":
-      return `各プレイヤーは切削${e.n}を行う(ライブラリーの上から${e.n}枚を墓地に置く)。`;
+      return `各プレイヤーは切削${e.n}。`;
     case "willOfBalance":
       return "あなたのライブラリーから、《均衡の意志》でないカードを無作為に1枚手札に加える。そうできないなら、あなたの墓地のカード1枚を手札に加える。";
     case "nudge13":
-      return `あなたのライフが13より多いなら${e.n}点失い、少ないなら${e.n}点得る(13を越えない)。`;
+      return `調律 ${e.n}。`;
     case "codePick":
       return `${e.groups.map((g) => `Code: ${g.label}(${g.cards.map((c) => `《${c.name}》`).join("")})`).join("、")}からそれぞれ1枚を選び、手札に生成する。`;
     case "analysisDraw":
@@ -1087,7 +1093,7 @@ function staticText(abil, name, card) {
       body = "これが出たときに出した数をXとする。これ以外のあなたの元々1/1のクリーチャーは+X/+Xの修整を受ける。";
       break;
     case "rivraForm":
-      body = `対戦相手のライフが13でないかぎり、これは速攻を持ち、元々のパワーとタフネスはX/3になる(Xはあなたの信仰(${st.faith}))。`;
+      body = `天秤の姿(信仰(${st.faith}))`;
       break;
     case "drawSort":
       body = "あなたがカードを引くたび、それがクリーチャーならマナゾーンに置いてもよい。クリーチャーでないなら、それを捨てる。";
@@ -1168,13 +1174,13 @@ function abilityTextBody(abil, card) {
     case "inheritIntrigue":
       return "これは、下に重なっているカードの「陰謀 ― ターン終了時に」の能力を持つ。";
     case "paidChoice":
-      return "(混成マナをどちらの色で払ったかで、効果が変わる)";
+      return "";
     case "faithCost":
-      return `あなたの信仰(${abil.faith})が${abil.n}以上なら、これのコストは${abil.cost}になる。`;
+      return `信仰(${abil.faith})${abil.n} ― コスト${abil.cost}`;
     case "freeOnIntrigue":
       return "あなたの「陰謀 ― ターン終了時に」の能力が働くとき、あなたはこのカードを手札からコストを払わずに唱えてもよい。";
     case "anyNumber":
-      return `これは秘蔵庫に何枚でも入れられる。そうしたなら、秘蔵庫のほかのクリーチャーは名前に「${abil.vaultName}」を含むものだけにする。`;
+      return `同胞(${abil.vaultName})`;
     case "analyzer":
       return `ゲーム開始時に、これがあなたのデッキか秘蔵庫にあるなら、あなたのライブラリーに《分析対象》を${abil.n}枚生成する。\n信仰(アナライザー):あなたのターンの終了時に、ライブラリーに《分析対象》がなく、手札がちょうど13枚なら、信仰が1増える。信仰が3になったら、あなたはゲームに勝利する。`;
     case "backstage":
@@ -1200,7 +1206,7 @@ function abilityTextBody(abil, card) {
     case "offering":
       return `奉納 ${abil.n}${abil.sub ? `(${abil.sub})` : ""}`;
     case "vaultCast":
-      if (abil.label) return `${abil.label}(このカードは秘蔵庫に入れる。あなたはソーサリーのタイミングで、秘蔵庫からこのカードを唱えてもよい。戦場を離れたら、秘蔵庫には戻らない)`;
+      if (abil.label) return abil.label;
       return "秘蔵 ―(このカードは秘蔵庫に入れる。あなたは秘蔵庫からこのカードを唱えてもよい。戦場を離れたら、秘蔵庫には戻らない)";
     case "oneShot":
       return `${name}は、一度秘蔵庫から出たら、秘蔵庫には戻らない(戦場やマナゾーンを離れると墓地などへ行く)。`;
@@ -1291,7 +1297,8 @@ export function cardText(card) {
       continue;
     }
     flush();
-    lines.push(abilityText(abil, card));
+    const t = abilityText(abil, card);
+    if (t) lines.push(t);
   }
   flush();
   return lines;

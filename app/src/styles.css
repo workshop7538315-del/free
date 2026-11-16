@@ -2832,3 +2832,26 @@ button.applause:focus-visible { outline: 2px solid var(--accent); outline-offset
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+
+/* ログ・スタック・重なりのカード名(ツールチップつき) */
+.log-card,
+.stack-name,
+.under-name,
+.prompt-card-name {
+  text-decoration: underline dotted color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 2px;
+  display: inline;
+}
+.stack-name {
+  font-weight: 700;
+}
+
+/* 絞り込みの選択肢は、長いパック名でも画面からはみ出さない */
+.filters select {
+  max-width: 100%;
+  min-width: 0;
+}
+.filter-row label {
+  min-width: 0;
+  max-width: 100%;
+}

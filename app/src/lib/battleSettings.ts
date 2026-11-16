@@ -4,10 +4,11 @@
  * - oppInstants:相手のターンにインスタントを使うか確認する(オフなら相手のターンは止まらずにパスする)
  */
 export type PayMode = "auto" | "ask" | "self";
-export type BattleSettings = { payMode: PayMode; oppInstants: boolean };
+/** hideReminders:カードの文章で、キーワードのあとの説明(かっこ書き)を省略する(ツールチップだけにする) */
+export type BattleSettings = { payMode: PayMode; oppInstants: boolean; hideReminders: boolean };
 
 const KEY = "battle.settings.v1";
-const DEFAULT: BattleSettings = { payMode: "auto", oppInstants: true };
+const DEFAULT: BattleSettings = { payMode: "auto", oppInstants: true, hideReminders: false };
 
 function load(): BattleSettings {
   try {
