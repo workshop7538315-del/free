@@ -15,8 +15,9 @@ const ONE = (n) => E.token(n, 1, 1, "G", "星屑");
 
 // ================================================================ 青緑:星図の咎人(1/1大量展開)
 // 青なのに呪文が少なく、緑なのに大型を出さない。ドローとマナ加速を、元々1/1の物量に注ぐ。
+// 星の名前のクリーチャーも元々1/1(ステラや星図の大陣の対象)。出たときに自分を強化する(星座に裏返ると消える)
 const star = (id, name, cost, sub, p, t, rar, need, back, abilities, flavor) =>
-  STAR(cr(id, name, cost, sub, p, t, rar, [...abilities, constellation(need, back)], { flavor }));
+  STAR(cr(id, name, cost, sub, 1, 1, rar, [...abilities, etb({ ...E.buffSelf(p - 1, t - 1), tag: "star" }), constellation(need, back)], { flavor }));
 const sign = (id, name, p, t, abilities) => ({ ...cr(id, name, "{0}", "星座", p, t, "R", abilities), rarity: "生成" });
 
 export const STARS = [

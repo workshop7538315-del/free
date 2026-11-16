@@ -1696,6 +1696,8 @@ export class Game {
       const back = c.back as Card;
       const before = o.card.name;
       o.card = back;
+      // 星の「出たときの強化」は、星座に裏返ると消える
+      o.perm = o.perm.filter((m) => (m as { tag?: string }).tag !== "star");
       this.addLog(`${before}は星座《${back.name}》になった!`, p);
       for (const ab of abilitiesOf(back)) if (ab.a === "trigger" && ab.on === "etb") this.pendingTriggers.push({ obj: o, ability: ab, controller: p });
     }
@@ -3259,7 +3261,7 @@ export class Game {
         break;
       }
       case "buffSelf":
-        if (src.zone === "battlefield") src.perm.push({ p: e.p, t: e.t, kw: e.kw ?? [] });
+        if (src.zone === "battlefield") src.perm.push({ p: e.p, t: e.t, kw: e.kw ?? [], ...((e as { tag?: string }).tag ? { tag: (e as { tag?: string }).tag } : {}) });
         break;
       case "counters": {
         const o = e.self ? (src.zone === "battlefield" ? src : null) : this.refObj(ctx, e.tg);
