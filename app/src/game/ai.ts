@@ -100,8 +100,13 @@ export class CpuAgent implements Agent {
       case "payMana":
         return d.suggested;
       case "color": {
-        // 出せるマナがいちばん多い色で払う(ほかの色を残す)
         const me = g.players[p];
+        // 混成マナの色で効果が変わる(第16a弾):ライフを13に近づける色。白黒以外は、相手を妨害する黒・赤を優先
+        if (d.prompt.includes("混成マナ")) {
+          if (d.options.includes("W") && d.options.includes("B")) return me.life > 13 ? "B" : me.life < 13 ? "W" : d.options[0];
+          if (d.options.includes("B") && d.options.includes("R")) return g.players[g.other(p)].hand.length > 0 ? "B" : "R";
+        }
+        // 出せるマナがいちばん多い色で払う(ほかの色を残す)
         const count = (c: string) => me.mana.filter((o) => !o.tapped && manaColors(o).includes(c as never)).length;
         return [...d.options].sort((a, b) => count(b) - count(a))[0];
       }
@@ -291,6 +296,10 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
     else if (a.type === "trap") s = scoreTrap(g, p, a, main);
     // 百鬼顕現:呼べるなら呼ぶ(マナ総量100の大型)
     else if (a.type === "hyakki") s = main ? scoreHyakki(g, p, a.uid) : -1;
+    // 進化(第16a弾):ふつうに唱えるより軽く、速攻で出せる
+    else if (a.type === "evolve") s = main ? 8.5 : -1;
+    // 星座:重ねて要求値に届くなら
+    else if (a.type === "constellate") s = main ? scoreConstellate(g, p, a.uid, a.mat) : -1;
     // プロデュース:担当が合う練習生(まだその担当のレッスンをつけていない)がいるなら
     else if (a.type === "produce") s = main ? scoreProduce(g, p, a.uid) : -1;
     else if (a.type === "summon")
@@ -305,6 +314,22 @@ function chooseAction(g: Game, p: PlayerId, options: Action[]): Action {
     if (s > 0 && (!best || s > best.s)) best = { a, s };
   }
   return best?.a ?? pass;
+}
+
+// ---------------------------------------------------------------- 星座(第16a弾)
+function scoreConstellate(g: Game, p: PlayerId, uid: number, mat: number): number {
+  const o = g.find(uid);
+  const m = g.find(mat);
+  const c = o && (o.card.abilities?.find((a) => a.a === "constellation") as { need: number } | undefined);
+  if (!o || !m || !c) return -1;
+  const v = (x: Obj) => Math.max(0, g.power(x)) + Math.max(0, g.toughness(x));
+  const rest = c.need - (o.starSum ?? 0);
+  if (v(m) >= rest) return 9;
+  // 手持ちの元々1/1で届くなら、少しずつ重ねる(召喚酔いのものから)
+  const pool = g.creatures(p).filter((x) => x !== o && x.card.power === 1 && x.card.toughness === 1 && x.card.type.includes("クリーチャー"));
+  const total = pool.reduce((s, x) => s + v(x), 0);
+  if (total >= rest) return m.sick ? 6 : 5;
+  return -1;
 }
 
 // ---------------------------------------------------------------- プロデュース(第15弾)

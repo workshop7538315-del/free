@@ -25,6 +25,8 @@ export type Filter = {
   color?: Color;
   /** 名前がこれらのどれかに当たる */
   names?: string[];
+  /** 元々のパワーとタフネスが1/1(第16a弾) */
+  orig11?: boolean;
 };
 
 /** 喝采のカテゴリー(第9.5弾) */
@@ -32,6 +34,8 @@ export type Filter = {
 export type Applause = "狂気" | "悲劇" | "喜劇" | "呪い";
 
 export type CondName =
+  /** 第16a弾:払った色・ライフ13 */
+  | "paidW" | "paidB" | "paidR" | "paidWor13" | "paidBor13" | "paidWnot13" | "paidBnot13" | "life13" | "oppNot13"
   /** グループ活動(第15弾) */
   | "groupVoDa" | "groupVoVi" | "groupDaVi" | "groupAll"
   /** 開顕で出た(第14弾) */
@@ -118,7 +122,7 @@ export type Cond =
   /** 系譜:これらの名前の神が、自分の戦場か墓地にある(第13弾) */
   | { lineage: string[] };
 
-export type CountKind = "gold" | "facetPower" | "facetCount" | "mana" | "creatures" | "graveyard" | "graveyardCreatures" | "colorsInMana" | "hand" | "oppCreatures" | "burned" | "crests" | "colorlessMana";
+export type CountKind = "orig11" | "myGrave" | "analysisGrave" | "gold" | "facetPower" | "facetCount" | "mana" | "creatures" | "graveyard" | "graveyardCreatures" | "colorsInMana" | "hand" | "oppCreatures" | "burned" | "crests" | "colorlessMana";
 
 /** 数。"X"=唱えたときのX、count=数を数える、perm=条件に合う自分のパーマネントの数 */
 export type Amount = number | "X" | { count: CountKind } | { count: "under" } | { count: "perm"; filter: Filter } | { count: "applause"; cat: Applause } | { count: "primary"; color: Color };
@@ -316,6 +320,27 @@ export type Effect = Common &
     | { do: "lessonDuel"; tg: number }
     /** 資産運用 N:《黄金》をN個使ってもよい。そうしたなら then(第15弾) */
     | { do: "invest"; n: number; then: Effect[] }
+    /** 第16a弾 */
+    | { do: "stellaReveal"; n: number }
+    | { do: "grantAssassin" }
+    | { do: "handBuff"; p: number; kw?: string[] }
+    | { do: "tuckUnder" }
+    | { do: "eachBounceOwn" }
+    | { do: "renken"; card: unknown }
+    | { do: "millBoth"; n: number }
+    | { do: "willOfBalance" }
+    | { do: "nudge13"; n: number }
+    | { do: "codePick"; groups: unknown }
+    | { do: "analysisDraw" }
+    | { do: "copyEmulate" }
+    | { do: "emulatesPump"; p: number; t: number; kw?: string[] }
+    | { do: "counterUpTo"; tg: number; plus: number }
+    | { do: "prison" }
+    | { do: "handExile" }
+    | { do: "analyzerReduce" }
+    | { do: "violettaEtb" }
+    | { do: "sacOwn" }
+    | { do: "returnSelf" }
     /** 内部:金剛羅刹の紋章で引いたカードを仕分ける */
     | { do: "drawSortCard"; uid: number }
   );
@@ -374,6 +399,8 @@ export type TriggerEvent =
   | "questDone"
   /** あなたが罠を発動するたび(裏向きから使うたび) */
   | "trapUse"
+  /** どちらのターンでも、ターン終了時に(第16a弾の陰謀) */
+  | "anyEndStep"
   /** このパーマネント(装備品)を装備しているクリーチャーが攻撃するたび(第15弾) */
   | "equippedAttacks"
   /** このクリーチャーがプレイヤーに戦闘ダメージを与えるたび */
@@ -390,6 +417,10 @@ export type StaticSpec =
   | { s: "self"; p: number; t: number; kw?: string[] }
   /** 数えたものの数だけ自身を強化する */
   | { s: "scale"; per: Amount; p: number; t: number }
+  /** 星図の咎人 ステラ:ほかの元々1/1は、出したときの数だけ+X/+X(第16a弾) */
+  | { s: "stellaLord" }
+  /** 均衡の裁定者 リーヴラ:相手のライフが13でないなら、速攻を得て X/3(X=信仰) */
+  | { s: "rivraForm"; faith: string }
   /** 毎ターン追加でチャージできる */
   | { s: "extraCharge"; n: number }
   /** オーラ:エンチャントしているクリーチャーは攻撃もブロックもできない */
@@ -500,7 +531,7 @@ export type Ability = { text?: string } & (
   /** 虚食:自分のマナゾーンの裏向きのカード1枚につき、唱えるコストが{1}少なくなる */
   | { a: "voidAffinity" }
   /** 秘蔵 ―:秘蔵庫に入れ、そこからマナコストを払って唱えられる(第11.5弾) */
-  | { a: "vaultCast" }
+  | { a: "vaultCast"; label?: string }
   /** パワーが maxPower 以下のクリーチャーしかブロックできない */
   | { a: "blockOnly"; maxPower: number; maxToughness?: number }
   /** 開拓進化の素材に、相手のクリーチャーも使える(相手の場に minOpp 体以上いるとき、元のパワーとタフネスが maxStat 以下のもの) */
@@ -512,6 +543,16 @@ export type Ability = { text?: string } & (
   /** 計略:秘蔵庫に入れるインスタント・ソーサリー。献策で手札に加える */
   | { a: "lesson" }
   /** 第15弾:アイドルのレッスン(秘蔵庫の両面の装備品)。genre の練習生につけて、flip の条件で裏返る */
+  /** 第16a弾 */
+  | { a: "constellation"; need: number; back: unknown }
+  | { a: "evolve"; cost: string; colors: Color[]; higher?: boolean }
+  | { a: "assassin" }
+  | { a: "inheritIntrigue" }
+  | { a: "paidChoice" }
+  | { a: "faithCost"; faith: string; n: number; cost: string }
+  | { a: "freeOnIntrigue" }
+  | { a: "analyzer"; card: unknown; n: number }
+  | { a: "anyNumber"; vaultName: string }
   /** 裏方:プロデュースで、指定のタイプでなくてもこのカードを捨ててよい(第15弾) */
   | { a: "backstage" }
   | { a: "idolLesson"; genre: Genre; need: "creature" | "spell" | "perm"; flip: LessonFlip }

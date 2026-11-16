@@ -584,6 +584,25 @@ function PlayerBar({ g, p, targetable, onClick, onOpen }: { g: Game; p: Player; 
             加護《{b}》{b === "ミナモの加護" && p.minamoCount !== undefined ? ` 残り${p.minamoCount}` : ""}
           </button>
         ))}
+        {Object.entries(p.faith ?? {}).map(([name, n]) => (
+          <button
+            key={`faith-${name}`}
+            type="button"
+            className="applause"
+            title={`信仰(${name}):${n}`}
+            onClick={() =>
+              onOpen({
+                kind: "info",
+                text:
+                  name === "リーヴラ"
+                    ? `信仰(リーヴラ) ${n}\nライフが13に近づくように回復するか、ダメージを受けるたびに1増える(13を行きすぎたら増えない)。5以上で《均衡の裁定者 リーヴラ》のコストが{B}になる。`
+                    : `信仰(アナライザー) ${n}/3\nあなたのターンの終了時に、ライブラリーに《分析対象》がなく、手札がちょうど13枚なら1増える。3になったら勝利する。`,
+              })
+            }
+          >
+            信仰({name}) {n}
+          </button>
+        ))}
         {Object.entries(p.applause).map(([cat, n]) => {
           const c = cat as keyof typeof APPLAUSE_RULE;
           const total = p.applauseTotal[c] ?? 0;
@@ -1192,6 +1211,17 @@ function actionLabel(g: Game, a: Action): string {
       if (a.mode === "set") return o ? `罠を仕掛ける(${g.trapSetCost(ME, o) || "{0}"}・裏向き)` : "罠を仕掛ける";
       if (a.mode === "flip") return "罠を発動する(コストなし)";
       return `裏向きに仕掛け直す(${tr?.cost ?? ""})`;
+    }
+    case "evolve": {
+      const o = g.find(a.uid);
+      const b = g.find(a.base);
+      return o && b ? `進化:${b.card.name}の上に重ねて出す(${g.evolveCost(o)}・速攻)` : "進化";
+    }
+    case "constellate": {
+      const o = g.find(a.uid);
+      const m = g.find(a.mat);
+      const need = (o?.card.abilities?.find((x) => x.a === "constellation") as { need: number } | undefined)?.need ?? 0;
+      return o && m ? `${m.card.name}を${o.card.name}の下に重ねる(${o.starSum ?? 0}/${need})` : "星座";
     }
     case "produce": {
       const o = g.find(a.uid);

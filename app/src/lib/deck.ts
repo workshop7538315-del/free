@@ -11,7 +11,9 @@ export const EXTRA_COPIES = 2;
 /** 秘蔵庫に入るカード(エンジンと同じ判定を使う。龍生九子など新しい種類もここに揃う) */
 export const isExtra = (c: Card | undefined) => !!c && isExtraCard(c);
 /** 同名カードの上限。制限カード(limit)はそれより少ない */
-export const maxCopies = (c: Card | undefined) => Math.min(isExtra(c) ? EXTRA_COPIES : MAX_COPIES, c?.limit ?? 99);
+/** 秘蔵庫に何枚でも入れられるカード(均衡の裁定者 リーヴラ) */
+const anyNumberOf = (c: Card | undefined) => c?.abilities?.find((a) => a.a === "anyNumber") as { a: "anyNumber"; vaultName: string } | undefined;
+export const maxCopies = (c: Card | undefined) => (anyNumberOf(c) ? EXTRA_SIZE : Math.min(isExtra(c) ? EXTRA_COPIES : MAX_COPIES, c?.limit ?? 99));
 
 /** メインデッキの枚数(byId があれば秘蔵庫のカードを除く) */
 export function deckCount(cards: DeckCards, byId?: Map<string, Card>): number {
@@ -39,6 +41,16 @@ export function validateDeck(cards: DeckCards, byId: Map<string, Card>): string[
   if (total > DECK_SIZE) issues.push(`${total - DECK_SIZE}枚多いです(デッキはちょうど${DECK_SIZE}枚)。`);
   const extra = extraCount(cards, byId);
   if (extra > EXTRA_SIZE) issues.push(`秘蔵庫が${extra}枚あります(秘蔵庫は${EXTRA_SIZE}枚まで)。`);
+  // 秘蔵庫に何枚でも入れられるカードを2枚以上入れたら、ほかの秘蔵庫のクリーチャーはその名前を含むものだけ
+  for (const [id, n] of Object.entries(cards)) {
+    const an = anyNumberOf(byId.get(id));
+    if (!an || n < 3) continue;
+    for (const [id2] of Object.entries(cards)) {
+      const c2 = byId.get(id2);
+      if (c2 && id2 !== id && isExtra(c2) && c2.type.includes("クリーチャー") && !c2.name.includes(an.vaultName))
+        issues.push(`「${byId.get(id)!.name}」を3枚以上入れたので、秘蔵庫のクリーチャーは名前に「${an.vaultName}」を含むものだけにしてください(「${c2.name}」)。`);
+    }
+  }
   for (const [id, n] of Object.entries(cards)) {
     const card = byId.get(id);
     if (!card) issues.push(`カードID「${id}」はカードリストにありません。`);

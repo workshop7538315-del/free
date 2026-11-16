@@ -356,6 +356,39 @@ export const E13 = {
   curseGain: (id) => ({ do: "applauseGain", cat: "呪い", id }),
   consume: (n, then) => ({ do: "consume", cat: "呪い", n, then: [then].flat() }),
 };
+// 第16a弾:リメイク
+export const E16 = {
+  stellaReveal: (n = 4) => ({ do: "stellaReveal", n }),
+  grantAssassin: () => ({ do: "grantAssassin" }),
+  handBuff: (p, kw) => ({ do: "handBuff", p, ...(kw ? { kw } : {}) }),
+  tuckUnder: () => ({ do: "tuckUnder" }),
+  eachBounceOwn: () => ({ do: "eachBounceOwn" }),
+  renken: (card) => ({ do: "renken", card }),
+  millBoth: (n) => ({ do: "millBoth", n }),
+  willOfBalance: () => ({ do: "willOfBalance" }),
+  nudge13: (n = 1) => ({ do: "nudge13", n }),
+  codePick: (groups) => ({ do: "codePick", groups }),
+  analysisDraw: () => ({ do: "analysisDraw" }),
+  copyEmulate: () => ({ do: "copyEmulate" }),
+  emulatesPump: (p, t, kw) => ({ do: "emulatesPump", p, t, ...(kw ? { kw } : {}) }),
+  counterUpTo: (plus = 2) => ({ do: "counterUpTo", tg: 0, plus }),
+  prison: () => ({ do: "prison" }),
+  handExile: () => ({ do: "handExile" }),
+  analyzerReduce: () => ({ do: "analyzerReduce" }),
+};
+export const sympathy = () => ({ a: "affinity", filter: { orig11: true }, sympathy: true });
+export const constellation = (need, back) => ({ a: "constellation", need, back: { ...back, text: cardText(back) } });
+export const evolve = (cost, colors, higher = false) => ({ a: "evolve", cost, colors, ...(higher ? { higher } : {}) });
+export const assassin = () => ({ a: "assassin" });
+export const inheritIntrigue = () => ({ a: "inheritIntrigue" });
+export const paidChoice = () => ({ a: "paidChoice" });
+export const faithCost = (faith, n, cost) => ({ a: "faithCost", faith, n, cost });
+export const freeOnIntrigue = () => ({ a: "freeOnIntrigue" });
+export const anyNumber = (vaultName) => ({ a: "anyNumber", vaultName });
+export const analyzer = (card, n = 5) => ({ a: "analyzer", card, n });
+/** 陰謀 ― ターン終了時に */
+export const intrigueEnd = (effects, targets) => ({ a: "trigger", on: "anyEndStep", effects: [effects].flat(), ...(targets ? { targets: [targets].flat() } : {}), if: "intrigue" });
+
 // 第15弾:アイドル
 export const E15 = {
   audition: (cards, n = 1) => ({ do: "audition", n, cards }),
@@ -438,6 +471,7 @@ export function filterPhrase(f = {}, ctx = "creature") {
   if (f.maxPower !== undefined) adj.push(`パワーが${f.maxPower}以下の`);
   if (f.minPower !== undefined) adj.push(`パワーが${f.minPower}以上の`);
   if (f.minToughness !== undefined) adj.push(`タフネスが${f.minToughness}以上の`);
+  if (f.orig11) adj.push("元々1/1の");
   let noun;
   if (f.sub) noun = ctx === "spell" ? `${f.sub}呪文` : ctx === "card" ? `${f.sub}・カード` : f.sub;
   else if (f.type) noun = ctx === "spell" ? `${f.type}呪文` : ctx === "card" ? `${f.type}・カード` : f.type;
@@ -459,6 +493,9 @@ const COUNT_TEXT = {
   colorlessMana: "あなたのマナゾーンにある欠色のカード(裏向きを含む)の枚数",
   graveyardCreatures: "あなたの墓地にあるクリーチャー・カードの枚数",
   gold: "あなたの場にある《黄金》の数",
+  myGrave: "あなたの墓地のカードの枚数",
+  orig11: "あなたの元々1/1のクリーチャーの数",
+  analysisGrave: "あなたの墓地の《分析対象》の数",
   facetCount: "あなたのファセットシャイン・クリーチャーの数",
   facetPower: "これ以外のあなたのファセットシャイン・クリーチャーのパワーの合計",
 };
@@ -474,6 +511,8 @@ const PER_TEXT = {
   colorlessMana: "あなたのマナゾーンにある欠色のカード1枚につき",
   graveyardCreatures: "あなたの墓地にあるクリーチャー・カード1枚につき",
   gold: "あなたの場にある《黄金》1つにつき",
+  myGrave: "あなたの墓地のカード1枚につき",
+  orig11: "あなたの元々1/1のクリーチャー1体につき",
   facetCount: "あなたのファセットシャイン・クリーチャー1体につき",
 };
 function countText(n) {
@@ -522,6 +561,7 @@ export function condLabel(c) {
       ferocious: "獰猛",
       oppTurn: "伏兵",
       intrigue: "陰謀",
+      life13: "ライフ13",
       void: "虚空",
       raid: "強襲",
       chain: "連唱",
@@ -553,7 +593,7 @@ function condPrefix(c) {
   if (typeof c === "object" && "manaMV" in c) return `あなたのマナゾーンにあるカードのマナ総量の合計が${c.manaMV}以上なら、`;
   if (typeof c === "object") return `あなたが${filterPhrase(c.control, "permanent")}を${c.n}${unitOf(c.control)}以上コントロールしているなら、`;
   if (typeof c === "object" && "lineage" in c) return `${c.lineage.map((n) => `《${n}》`).join("か")}があなたの戦場か墓地にあるなら、`;
-  return { kaiken: "開顕で唱えられたなら、", questDone: "このゲームであなたが任務を達成したなら、", pioneeredGame: "このゲームであなたが開拓進化をしたなら、", buriedInMana: "あなたのマナゾーンに埋蔵を持つカードがあるなら、", burned: "燃焼したなら、", kicked: "追加払いしたなら、", fewerMana: "あなたのマナゾーンのカードが対戦相手より少ないなら、", notMoreMana: "あなたのマナゾーンのカードが対戦相手の枚数以下なら、" }[c];
+  return { paidR: "赤で払ったなら、", paidB: "黒で払ったなら、", paidW: "白で払ったなら、", paidWnot13: "白で払ったなら(ライフが13でないとき)、", paidBnot13: "黒で払ったなら(ライフが13でないとき)、", paidWor13: "白で払ったかライフが13なら、", paidBor13: "黒で払ったかライフが13なら、", oppNot13: "対戦相手のライフが13でないなら、", kaiken: "開顕で唱えられたなら、", questDone: "このゲームであなたが任務を達成したなら、", pioneeredGame: "このゲームであなたが開拓進化をしたなら、", buriedInMana: "あなたのマナゾーンに埋蔵を持つカードがあるなら、", burned: "燃焼したなら、", kicked: "追加払いしたなら、", fewerMana: "あなたのマナゾーンのカードが対戦相手より少ないなら、", notMoreMana: "あなたのマナゾーンのカードが対戦相手の枚数以下なら、" }[c];
 }
 
 /** 条件の前置き(常在能力に付けるとき) */
@@ -599,6 +639,15 @@ function condPlain(c) {
     vacuum: "あなたのマナゾーンのカードがすべて欠色である",
     underdog: "対戦相手のライフかクリーチャーの数があなたより多い",
     intrigue: "このターン、対戦相手がカードを捨てたか、対戦相手のクリーチャーが戦場を離れた",
+    life13: "あなたのライフがちょうど13である",
+    oppNot13: "対戦相手のライフが13でない",
+    paidW: "白で払った",
+    paidB: "黒で払った",
+    paidR: "赤で払った",
+    paidWor13: "白で払ったか、あなたのライフが13である",
+    paidBor13: "黒で払ったか、あなたのライフが13である",
+    paidWnot13: "白で払い、あなたのライフが13でない",
+    paidBnot13: "黒で払い、あなたのライフが13でない",
     threshold: "あなたの墓地にカードが7枚以上ある",
     hellbent: "あなたの手札がない",
     highlander: "あなたのデッキに同じ名前のカードが2枚以上入っていない",
@@ -806,6 +855,46 @@ function effectText(e, name, abil, notes) {
       return "あなたの手札をすべてマナゾーンに置く。";
     case "audition":
       return e.n === 1 ? "オーディションを行う。" : `オーディションを${e.n}回行う。`;
+    case "violettaEtb":
+      return `${name}のパワーをXとする。ターン終了時まで、${name}と対戦相手のクリーチャーはすべて-X/+0の修整を受ける。その後、パワーが0以下のものをすべてタップし、その数だけ対戦相手にダメージを与える。その後、あなたの手札のクリーチャー1枚は、戦場に出たとき+1/+0と絆魂を得る。`;
+    case "returnSelf":
+      return `${name}を持ち主の手札に戻す。`;
+    case "sacOwn":
+      return "あなたのクリーチャー1体を生け贄に捧げる。";
+    case "stellaReveal":
+      return `あなたのライブラリーの上から${e.n}枚をめくる。その中の元々1/1のクリーチャー・カードをすべて戦場に出し、残りをライブラリーの一番下に置く。出した数をXとし、${name}の上に+1/+1カウンターをX個置く。`;
+    case "grantAssassin":
+      return "あなたの手札のクリーチャー1枚に刺客を与える(すでに刺客を持つなら、代わりに刺客を2溜める)。";
+    case "handBuff":
+      return `あなたの手札のクリーチャー1枚は、戦場に出たとき+${e.p}/+0${e.kw?.length ? `と${e.kw.join("・")}` : ""}を得る。`;
+    case "tuckUnder":
+      return `あなたの手札のエンチャント1枚を${name}の下に重ねる。`;
+    case "eachBounceOwn":
+      return "各プレイヤーは、自分のパーマネント1つを手札に戻す。";
+    case "renken":
+      return "次の3つを順に行う。(1)場のエンチャント1つを持ち主の手札に戻すか、《黄金》を2個生成する。(2)戻したカードのマナ総量以下の、対戦相手のパーマネント1つを破壊するか、《黄金》を1個生成する。(3)《黄金》を1個生成する。";
+    case "millBoth":
+      return `各プレイヤーは切削${e.n}を行う(ライブラリーの上から${e.n}枚を墓地に置く)。`;
+    case "willOfBalance":
+      return "あなたのライブラリーから、《均衡の意志》でないカードを無作為に1枚手札に加える。そうできないなら、あなたの墓地のカード1枚を手札に加える。";
+    case "nudge13":
+      return `あなたのライフが13より多いなら${e.n}点失い、少ないなら${e.n}点得る(13を越えない)。`;
+    case "codePick":
+      return `${e.groups.map((g) => `Code: ${g.label}(${g.cards.map((c) => `《${c.name}》`).join("")})`).join("、")}からそれぞれ1枚を選び、手札に生成する。`;
+    case "analysisDraw":
+      return "あなたの墓地にある《分析対象》の数+1枚まで、カードを引く。";
+    case "copyEmulate":
+      return "あなたのエミュレートのトークン1体のコピーであるトークンを1体出す。";
+    case "emulatesPump":
+      return `ターン終了時まで、あなたのエミュレートはすべて+${e.p}/+${e.t}${e.kw?.length ? `の修整を受け、${e.kw.join("・")}を得る` : "の修整を受ける"}。`;
+    case "counterUpTo":
+      return `マナ総量がX+${e.plus}以下の呪文1つを打ち消す。`;
+    case "prison":
+      return "カードタイプを1つ選ぶ。対戦相手は、次の対戦相手のターンの終了時まで、そのタイプのカードを唱えられない。";
+    case "handExile":
+      return "対戦相手の手札を見て、その中から1枚を選んで追放する。";
+    case "analyzerReduce":
+      return "あなたのマナゾーンのマナの種類(白・青・黒・赤・緑・欠色)2つにつき、あなたの手札のカード1枚のコストを{1}少なくする(最大3)。6種類すべてがあるなら、これが戦場に出たときの能力をもう一度行う。";
     case "invest":
       return `資産運用 ${e.n} ― 《黄金》を${e.n}個使ってもよい。そうしたなら、${e.then.map((x) => effectText(x, name, abil, notes)).join("")}`;
     case "lessonDuel":
@@ -950,6 +1039,7 @@ const TRIGGER_PREFIX = {
   oppDies: () => "対戦相手のクリーチャーが死亡するたび、",
   questDone: () => "あなたが任務を達成するたび、",
   trapUse: () => "あなたが罠を発動するたび、",
+  anyEndStep: () => "ターン終了時に、",
   equippedAttacks: () => "これを装備しているクリーチャーが攻撃するたび、",
   hitPlayer: (name) => `${name}がプレイヤーに戦闘ダメージを与えるたび、`,
 };
@@ -992,6 +1082,12 @@ function staticText(abil, name, card) {
       break;
     case "questDouble":
       body = "あなたが任務を進めるとき、代わりに2回進める。";
+      break;
+    case "stellaLord":
+      body = "これが出たときに出した数をXとする。これ以外のあなたの元々1/1のクリーチャーは+X/+Xの修整を受ける。";
+      break;
+    case "rivraForm":
+      body = `対戦相手のライフが13でないかぎり、これは速攻を持ち、元々のパワーとタフネスはX/3になる(Xはあなたの信仰(${st.faith}))。`;
       break;
     case "drawSort":
       body = "あなたがカードを引くたび、それがクリーチャーならマナゾーンに置いてもよい。クリーチャーでないなら、それを捨てる。";
@@ -1063,6 +1159,24 @@ function abilityTextBody(abil, card) {
       const cond = abil.cond === "attacked" ? "このターン、装備しているクリーチャーが攻撃したなら" : "装備しているクリーチャーに装備品が2つ以上ついているなら";
       return `組み立て【${COLOR_JA[abil.color]}】 / 武装進化 ― ${cond}、そのクリーチャーと${name}を《${abil.partnerName}》に武装進化してもよい。`;
     }
+    case "constellation":
+      return `星座 ${abil.need} ― ソーサリーのタイミングで、あなたの元々1/1のクリーチャー1体をこれの下に重ねてよい(コストなし)。重ねたクリーチャーの、そのときのパワーとタフネスの合計が${abil.need}以上になったら、これは裏返って《${abil.back.name}》(${abil.back.power}/${abil.back.toughness}${abil.back.text?.length ? `、${abil.back.text.join(" ")}` : ""})になる`;
+    case "evolve":
+      return `進化 ${abil.cost}(ソーサリーのタイミングで、あなたの場の${abil.colors.map((c) => ({ W: "白", U: "青", B: "黒", R: "赤", G: "緑" })[c]).join("か")}のエンチャント${abil.higher ? "(このカードの今のコストよりマナ総量が大きいもの)" : ""}の上に重ねて、${abil.cost}で出してもよい。そうしたなら、これは速攻を持つ。下のカードは一緒に戦場を離れる)`;
+    case "assassin":
+      return "刺客(あなたか対戦相手が、そのターンに初めて陰謀を満たすたび、これに刺客が1つ溜まる。手札にあるあいだ、溜まった数だけコストが{1}ずつ少なくなる。戦場では溜まった数だけ+1/+0)";
+    case "inheritIntrigue":
+      return "これは、下に重なっているカードの「陰謀 ― ターン終了時に」の能力を持つ。";
+    case "paidChoice":
+      return "(混成マナをどちらの色で払ったかで、効果が変わる)";
+    case "faithCost":
+      return `あなたの信仰(${abil.faith})が${abil.n}以上なら、これのコストは${abil.cost}になる。`;
+    case "freeOnIntrigue":
+      return "あなたの「陰謀 ― ターン終了時に」の能力が働くとき、あなたはこのカードを手札からコストを払わずに唱えてもよい。";
+    case "anyNumber":
+      return `これは秘蔵庫に何枚でも入れられる。そうしたなら、秘蔵庫のほかのクリーチャーは名前に「${abil.vaultName}」を含むものだけにする。`;
+    case "analyzer":
+      return `ゲーム開始時に、これがあなたのデッキか秘蔵庫にあるなら、あなたのライブラリーに《分析対象》を${abil.n}枚生成する。\n信仰(アナライザー):あなたのターンの終了時に、ライブラリーに《分析対象》がなく、手札がちょうど13枚なら、信仰が1増える。信仰が3になったら、あなたはゲームに勝利する。`;
     case "backstage":
       return "裏方(プロデュースで、指定のタイプでなくてもこのカードを捨ててよい)";
     case "idolLesson":
@@ -1086,6 +1200,7 @@ function abilityTextBody(abil, card) {
     case "offering":
       return `奉納 ${abil.n}${abil.sub ? `(${abil.sub})` : ""}`;
     case "vaultCast":
+      if (abil.label) return `${abil.label}(このカードは秘蔵庫に入れる。あなたはソーサリーのタイミングで、秘蔵庫からこのカードを唱えてもよい。戦場を離れたら、秘蔵庫には戻らない)`;
       return "秘蔵 ―(このカードは秘蔵庫に入れる。あなたは秘蔵庫からこのカードを唱えてもよい。戦場を離れたら、秘蔵庫には戻らない)";
     case "oneShot":
       return `${name}は、一度秘蔵庫から出たら、秘蔵庫には戻らない(戦場やマナゾーンを離れると墓地などへ行く)。`;
@@ -1123,6 +1238,7 @@ function abilityTextBody(abil, card) {
     case "voidAffinity":
       return "虚食(この呪文を唱えるためのコストは、あなたのマナゾーンにある裏向きのカード1枚につき{1}少なくなる)";
     case "affinity":
+      if (abil.sympathy) return "シンパシー:元々1/1のクリーチャー(この呪文を唱えるためのコストは、あなたの元々1/1のクリーチャー1体につき{1}少なくなる。ただし1より少なくはならない)";
       return `共鳴(${filterPhrase(abil.filter, "permanent")})(この呪文を唱えるためのコストは、あなたがコントロールする${filterPhrase(abil.filter, "permanent")}1つにつき{1}少なくなる)`;
     case "free":
       return `零式(${condPlain(abil.if)}なら、この呪文をマナを支払わずに唱えてもよい)`;

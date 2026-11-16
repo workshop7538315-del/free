@@ -97,6 +97,12 @@ export type Obj = {
   fromManaTurn?: number;
   /** 百鬼夜行を持つ(墓地にあるあいだ) */
   yakou?: boolean;
+  /** 第16a弾:ステラが出したときの数、刺客の蓄積、刺客を与えられた、手札にあるあいだの強化、星座の合計 */
+  stellaX?: number;
+  assassin?: number;
+  grantedAssassin?: boolean;
+  handBuff?: { p: number; kw: string[] };
+  starSum?: number;
   /** 資源トークンの山の数(1つなら undefined) */
   pile?: number;
   /** 第15弾:練習生とアイドルの担当(ダンス・ボーカル・ビジュアル) */
@@ -179,6 +185,10 @@ export type Player = {
   questsDone: number;
   /** このターンに仕掛けた罠の数(加護《迷宮の回廊》) */
   trapsSetThisTurn: number;
+  /** 第16a弾:信仰(名前ごと)、牢獄(使えないタイプ)、アナライザー */
+  faith?: Record<string, number>;
+  prison?: { type: string; until: number };
+  analyzer?: boolean;
   /** 第15弾:出来事の通し番号(黄金を生成した、打ち消すか手札に戻した、引いた、ライフを得た) */
   goldSeq?: number;
   goldTurn?: number;
@@ -225,6 +235,10 @@ export type Action =
   | { type: "equip"; uid: number }
   /** 百鬼顕現(第14弾) */
   | { type: "hyakki"; uid: number }
+  /** 進化(第16a弾):手札のクリーチャーを、場のエンチャントの上に重ねて出す */
+  | { type: "evolve"; uid: number; base: number }
+  /** 星座:元々1/1を、星の名前のクリーチャーの下に重ねる */
+  | { type: "constellate"; uid: number; mat: number }
   /** プロデュース(第15弾):手札を1枚捨てて、秘蔵庫のレッスンを自分のクリーチャーにつけて出す */
   | { type: "produce"; uid: number }
   /** 罠(第13弾):set=手札から仕掛ける、flip=裏向きの罠を発動する(コストなし)、reset=表向きの罠をコストを払って裏向きに仕掛け直す */
@@ -237,7 +251,7 @@ export type Decision =
   | { kind: "target"; prompt: string; spec: TargetSpec; options: TargetRef[]; source: Obj; effects: Effect[]; index: number }
   | { kind: "yesno"; prompt: string; reason: "may" | "burn" | "kicker" | "lookTop" | "mulligan" | "reclaim" | "blessing" | "learn" | "learnDiscard" | "altCost" | "trap"; obj?: Obj; subject?: Obj }
   | { kind: "number"; prompt: string; min: number; max: number; reason?: "x" | "burn"; obj?: Obj }
-  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" | "pioneerBase" | "heist" | "muster" | "dig" | "shatter" | "tuck" | "rotate" | "dragon" | "dragonBase" | "altTap" | "manaToGrave" | "underToVault" | "underToHand" | "quest" | "setTrap" | "regrow" | "seek" | "foxCover" | "lesson" | "produceDiscard" }
+  | { kind: "chooseCards"; prompt: string; options: number[]; count: number; reason: "discard" | "burn" | "reclaim" | "erode" | "sacrifice" | "bottom" | "tutor" | "sacCost" | "veil" | "pioneerBase" | "heist" | "muster" | "dig" | "shatter" | "tuck" | "rotate" | "dragon" | "dragonBase" | "altTap" | "manaToGrave" | "underToVault" | "underToHand" | "quest" | "setTrap" | "regrow" | "seek" | "foxCover" | "lesson" | "produceDiscard" | "legend" | "pick" }
   | { kind: "attackers"; options: number[] }
   /** モード呪文:選択肢から1つ選ぶ(答えは番号) */
   | { kind: "mode"; prompt: string; options: string[]; source: Obj; modes: SpellMode[] }
@@ -382,6 +396,7 @@ export function abilityOf<K extends Ability["a"]>(c: Card, kind: K): Extract<Abi
 /** カードが絞り込みに合うか */
 export function matchFilter(c: Card, f: Filter | undefined, colors?: Color[]): boolean {
   if (!f) return true;
+  if (f.orig11 && !(isCreatureCard(c) && c.power === 1 && c.toughness === 1)) return false;
   if (f.type && !c.type.includes(f.type)) return false;
   if (f.spell && !(isInstantCard(c) || isSorceryCard(c))) return false;
   if (f.sub && !(c.subtype ?? "").split("・").includes(f.sub)) return false;
@@ -658,13 +673,22 @@ export class Game {
     // 領域を移ると表向きに戻る
     o.faceDown = false;
     // 手札を離れると、手札にあるあいだの効果は消える(唱えるときはスタックで使い終わる)
+    // 手札にあるあいだに与えられた強化は、戦場に出ると残る(第16a弾)
+    if (to === "battlefield" && o.handBuff) {
+      o.perm.push({ p: o.handBuff.p, t: 0, kw: o.handBuff.kw });
+      o.handBuff = undefined;
+    } else if (to !== "hand" && to !== "stack") o.handBuff = undefined;
+    if (to !== "battlefield" && to !== "hand" && to !== "stack") {
+      o.assassin = undefined;
+      o.grantedAssassin = undefined;
+    }
     if (to !== "hand") {
       o.handDiscount = undefined;
       o.handFlash = undefined;
     }
     // 陰謀:戦場を離れたクリーチャーと、手札から墓地に置かれた(捨てた)カードを数える
-    if (wasBattlefield && to !== "battlefield" && isCreatureCard(o.card)) this.players[o.controller].lostThisTurn++;
-    if (o.zone === "hand" && to === "graveyard") this.players[o.owner].lostThisTurn++;
+    if (wasBattlefield && to !== "battlefield" && isCreatureCard(o.card)) this.noteLost(o.controller);
+    if (o.zone === "hand" && to === "graveyard") this.noteLost(o.owner);
     // 手札から墓地に置かれた=捨てた(陶酔・「捨てるたび」)
     const discarded = o.zone === "hand" && to === "graveyard";
     // 領域を移ると新しいオブジェクトとして扱う
@@ -829,6 +853,25 @@ export class Game {
         return pl.questsDone > 0;
       case "kaiken":
         return !!obj?.viaKaiken;
+      case "paidW":
+        return obj?.paidColor === "W";
+      case "paidB":
+        return obj?.paidColor === "B";
+      case "paidR":
+        return obj?.paidColor === "R";
+      case "life13":
+        return pl.life === 13;
+      case "oppNot13":
+        return this.players[this.other(p)].life !== 13;
+      // ライフが13なら、白でも黒でも両方の効果(ライフの増減は相殺して起きない)
+      case "paidWor13":
+        return obj?.paidColor === "W" || pl.life === 13;
+      case "paidBor13":
+        return obj?.paidColor === "B" || pl.life === 13;
+      case "paidWnot13":
+        return obj?.paidColor === "W" && pl.life !== 13;
+      case "paidBnot13":
+        return obj?.paidColor === "B" && pl.life !== 13;
       case "groupVoDa":
         return this.hasIdols(p, ["Vo", "Da"]);
       case "groupVoVi":
@@ -889,6 +932,12 @@ export class Game {
         return pl.mana.filter((o) => manaColors(o).length === 0).length;
       case "gold":
         return pl.battlefield.filter((o) => o.card.name === "黄金").reduce((s, o) => s + (o.pile ?? 1), 0);
+      case "orig11":
+        return this.creatures(p).filter((o) => matchFilter(o.card, { orig11: true })).length;
+      case "myGrave":
+        return pl.graveyard.length;
+      case "analysisGrave":
+        return pl.graveyard.filter((o) => o.card.name === "分析対象").length;
       case "facetCount":
         return this.creatures(p).filter((o) => this.isFacet(o)).length;
       case "facetPower":
@@ -938,7 +987,10 @@ export class Game {
       const under = o.covers !== undefined ? this.players[o.owner].mana.find((m) => m.uid === o.covers) : undefined;
       return [...own, ...(o.inari ? [INARI] : []), ...(under ? abilitiesOf(under.card).filter(isCrestAbility) : [])];
     }
-    const own = abilitiesOf(o.card).filter((a) => !isCrestAbility(a));
+    let own = abilitiesOf(o.card).filter((a) => !isCrestAbility(a));
+    // 下に重ねたカードの陰謀を得る(仮面の刺客 ロザリンド)
+    if (o.zone === "battlefield" && abilityOf(o.card, "inheritIntrigue") && o.under?.length)
+      own = [...own, ...o.under.flatMap((u) => abilitiesOf(u.card).filter((a) => a.a === "trigger" && a.on === "anyEndStep" && a.if === "intrigue"))];
     // 下に重なったアイドルの面の能力も加わる(第15弾)
     if (o.idolStack?.length) return [...own, ...o.idolStack.flatMap((c) => abilitiesOf(c).filter((a) => !isCrestAbility(a) && a.a !== "kw"))];
     return own;
@@ -969,6 +1021,12 @@ export class Game {
         if (st.s === "anthem" && creature && !(st.others && src === o) && matchFilter(o.card, st.filter, this.colorsOf(o)))
           mods.push({ p: st.p, t: st.t, kw: st.kw ?? [] });
         if (st.s === "self" && src === o) mods.push({ p: st.p, t: st.t, kw: st.kw ?? [] });
+        if (st.s === "stellaLord" && src !== o && creature && (src.stellaX ?? 0) > 0 && matchFilter(o.card, { orig11: true }))
+          mods.push({ p: src.stellaX!, t: src.stellaX!, kw: [] });
+        if (st.s === "rivraForm" && src === o && this.players[this.other(o.controller)].life !== 13) {
+          const x = this.players[o.controller].faith?.[st.faith] ?? 0;
+          mods.push({ p: x - (o.card.power ?? 0), t: 3 - (o.card.toughness ?? 0), kw: ["速攻"] });
+        }
         if (st.s === "scale" && src === o) {
           const k = this.count(st.per, o.controller);
           mods.push({ p: st.p * k, t: st.t * k, kw: [] });
@@ -988,7 +1046,9 @@ export class Game {
   }
 
   private allMods(o: Obj): Mod[] {
-    return [...o.perm, ...o.temp, ...this.statics(o)];
+    // 刺客:蓄積した数だけ+1/+0(第16a弾)
+    const extra: Mod[] = (o.assassin ?? 0) > 0 && (abilityOf(o.card, "assassin") || o.grantedAssassin) ? [{ p: o.assassin!, t: 0, kw: [] }] : [];
+    return [...o.perm, ...o.temp, ...this.statics(o), ...extra];
   }
 
   power(o: Obj): number {
@@ -1344,7 +1404,12 @@ export class Game {
       const free = abilityOf(c, "free");
       if (free && this.cond(free.if, p)) return "";
     }
+    // 信仰が溜まると、コストが変わる(均衡の裁定者 リーヴラ)
+    const fc = abilityOf(c, "faithCost");
+    if (fc && (this.players[p].faith?.[fc.faith] ?? 0) >= fc.n) cost = fc.cost;
     let discount = from === "hand" ? (o.handDiscount ?? 0) : 0;
+    // 刺客:手札にあるあいだ、蓄積した数だけコストが少なくなる
+    if (from === "hand" && (abilityOf(c, "assassin") || o.grantedAssassin)) discount += o.assassin ?? 0;
     const aff = abilityOf(c, "affinity");
     if (aff) discount += this.players[p].battlefield.filter((x) => matchFilter(x.card, aff.filter, this.colorsOf(x))).length;
     if (abilityOf(c, "voidAffinity")) discount += this.players[p].mana.filter((x) => x.faceDown).length;
@@ -1365,6 +1430,9 @@ export class Game {
     const c = o.card;
     // 罠は唱えず、仕掛ける
     if (isTrapCard(c)) return false;
+    // Code: Prison:選ばれたタイプは使えない
+    const pr = this.players[p].prison;
+    if (pr && this.turn <= pr.until && c.type.includes(pr.type)) return false;
     const instantSpeed = isInstantCard(c) || hasPrintedKw(c, "瞬速") || (from === "hand" && !!o.handFlash);
     if (!instantSpeed && !this.sorcerySpeed(p)) return false;
     const cost = this.effectiveCost(p, o, from);
@@ -1453,6 +1521,14 @@ export class Game {
       if (tr.on || !(tr.targets ?? []).every((t) => this.targetOptions(t, p).length > 0)) continue;
       if (this.trapReady(p, o)) out.push({ type: "trap", uid: o.uid, mode: "flip" });
     }
+    // 進化・星座(第16a弾)
+    if (this.sorcerySpeed(p)) {
+      for (const o of pl.hand) for (const b of this.evolveBases(p, o)) out.push({ type: "evolve", uid: o.uid, base: b.uid });
+      for (const o of pl.battlefield) {
+        if (!abilityOf(o.card, "constellation")) continue;
+        for (const m of this.creatures(p)) if (m !== o && matchFilter(m.card, { orig11: true })) out.push({ type: "constellate", uid: o.uid, mat: m.uid });
+      }
+    }
     // プロデュース(第15弾):秘蔵庫のレッスン
     if (this.sorcerySpeed(p)) for (const o of pl.extra) if (this.canProduce(p, o)) out.push({ type: "produce", uid: o.uid });
     // 百鬼顕現:手札にほかのカードがないなら、マナゾーンか手札から(第14弾)
@@ -1516,6 +1592,14 @@ export class Game {
     } else if (a.type === "activate") {
       const o = this.players[p].battlefield.find((x) => x.uid === a.uid);
       if (o && this.canActivate(p, o, a.index)) await this.activate(p, o, a.index);
+    } else if (a.type === "evolve") {
+      const o = this.players[p].hand.find((x) => x.uid === a.uid);
+      const b = this.find(a.base);
+      if (o && b && this.sorcerySpeed(p) && this.evolveBases(p, o).includes(b)) await this.evolveOnto(p, o, b);
+    } else if (a.type === "constellate") {
+      const o = this.find(a.uid);
+      const m = this.find(a.mat);
+      if (o && m && this.sorcerySpeed(p) && o.controller === p && m.controller === p && m.zone === "battlefield" && abilityOf(o.card, "constellation")) this.constellate(p, o, m);
     } else if (a.type === "produce") {
       const o = this.players[p].extra.find((x) => x.uid === a.uid);
       if (o && this.canProduce(p, o) && this.sorcerySpeed(p)) await this.produce(p, o);
@@ -1541,6 +1625,105 @@ export class Game {
         }
       }
     }
+  }
+
+  // ------------------------------------------------------------ 第16a弾
+  /** 陰謀の記録。そのプレイヤーの対戦相手が、このターンに初めて陰謀を行ったなら、刺客が溜まる */
+  private noteLost(q: PlayerId) {
+    const pl = this.players[q];
+    pl.lostThisTurn++;
+    if (pl.lostThisTurn !== 1) return;
+    for (const r of this.players)
+      for (const o of [...r.hand, ...r.battlefield])
+        if (abilityOf(o.card, "assassin") || o.grantedAssassin) o.assassin = (o.assassin ?? 0) + 1;
+  }
+
+  /** 進化先:場のその色のエンチャント(higher なら、自分の今のコストより重いもの) */
+  evolveBases(p: PlayerId, o: Obj): Obj[] {
+    const ev = abilityOf(o.card, "evolve");
+    if (!ev || o.zone !== "hand") return [];
+    const now = manaValue(this.effectiveCost(p, o, "hand") ?? o.card.cost);
+    const cost = this.evolveCost(o);
+    if (!this.canPay(p, cost, 0)) return [];
+    return this.players[p].battlefield.filter((b) => b.card.type.includes("エンチャント") && ev.colors.some((col) => this.colorsOf(b).includes(col)) && (!ev.higher || manaValue(b.card.cost) > now));
+  }
+
+  evolveCost(o: Obj): string {
+    const ev = abilityOf(o.card, "evolve")!;
+    const asn = abilityOf(o.card, "assassin") || o.grantedAssassin ? o.assassin ?? 0 : 0;
+    return reduceGeneric(ev.cost, asn);
+  }
+
+  /** Code・連剣の鉄茨などを、コストを払わずに唱えるとき */
+  private freeCastUid?: number;
+
+  private async evolveOnto(p: PlayerId, o: Obj, base: Obj) {
+    const cost = this.evolveCost(o);
+    if (!(await this.pay(p, cost, 0))) return;
+    const pl = this.players[p];
+    pl.battlefield.splice(pl.battlefield.indexOf(base), 1);
+    const unders = [base, ...(base.under ?? [])];
+    base.under = [];
+    base.attachedTo = null;
+    this.usedCards.add(o.card.id);
+    this.move(o, "battlefield", { controller: p });
+    for (const u of unders) u.zone = "under";
+    o.under = [...(o.under ?? []), ...unders];
+    o.perm.push({ p: 0, t: 0, kw: ["速攻"] });
+    this.addLog(`進化:${o.card.name}を${base.card.name}の上に重ねて出した(速攻)`, p);
+    this.entered(o);
+  }
+
+  /** 星座:元々1/1を下に重ねる。今のパワーとタフネスの合計が要求値に届くと裏返る */
+  private constellate(p: PlayerId, o: Obj, m: Obj) {
+    const c = abilityOf(o.card, "constellation")!;
+    const pl = this.players[p];
+    const v = Math.max(0, this.power(m)) + Math.max(0, this.toughness(m));
+    pl.battlefield.splice(pl.battlefield.indexOf(m), 1);
+    for (const e of pl.battlefield) if (e.attachedTo === m.uid) e.attachedTo = null;
+    if (!m.token) {
+      m.zone = "under";
+      (o.under ??= []).push(m);
+    } else m.zone = "limbo";
+    o.starSum = (o.starSum ?? 0) + v;
+    this.addLog(`${m.card.name}を${o.card.name}の下に重ねた(${o.starSum}/${c.need})`, p);
+    if (o.starSum >= c.need) {
+      const back = c.back as Card;
+      const before = o.card.name;
+      o.card = back;
+      this.addLog(`${before}は星座《${back.name}》になった!`, p);
+      for (const ab of abilitiesOf(back)) if (ab.a === "trigger" && ab.on === "etb") this.pendingTriggers.push({ obj: o, ability: ab, controller: p });
+    }
+  }
+
+  private async offerFreeOnIntrigue(p: PlayerId) {
+    const pl = this.players[p];
+    for (const o of [...pl.hand]) {
+      if (!abilityOf(o.card, "freeOnIntrigue")) continue;
+      if (!(await this.askYesNo(p, `陰謀が働きます。${o.card.name}をコストを払わずに唱えますか?`, "may", o))) continue;
+      this.freeCastUid = o.uid;
+      try {
+        await this.cast(p, o, "hand");
+      } finally {
+        this.freeCastUid = undefined;
+      }
+    }
+  }
+
+  /** 信仰を増やす */
+  private addFaith(p: PlayerId, name: string, n = 1) {
+    const pl = this.players[p];
+    pl.faith ??= {};
+    pl.faith[name] = (pl.faith[name] ?? 0) + n;
+    this.addLog(`信仰(${name}):${pl.faith[name]}`, p);
+  }
+
+  /** 信仰(リーヴラ):ライフが13に近づくように回復するか、ダメージを受けたとき(行きすぎたら増えない) */
+  private faithLife(p: PlayerId, before: number, after: number) {
+    const pl = this.players[p];
+    if (!pl.faith || pl.faith["リーヴラ"] === undefined) return;
+    if (before === after) return;
+    if (Math.abs(after - 13) < Math.abs(before - 13) && (before - 13) * (after - 13) >= 0) this.addFaith(p, "リーヴラ");
   }
 
   // ------------------------------------------------------------ 第15弾:オーディション・プロデュース・レッスン
@@ -1864,7 +2047,18 @@ export class Game {
       }
     }
     const c = o.card;
-    let cost = (o.viaKaiken ? "" : this.effectiveCost(p, o, from)) ?? c.cost;
+    let cost = (o.viaKaiken || this.freeCastUid === o.uid ? "" : this.effectiveCost(p, o, from)) ?? c.cost;
+    // 払う色を選ぶ(第16a弾:混成マナの色で効果が変わる)
+    if (abilityOf(c, "paidChoice") && cost) {
+      const m = cost.match(/\{([WUBRG])\/([WUBRG])\}/);
+      if (m) {
+        const cols = ([m[1], m[2]] as Color[]).filter((col) => this.canPay(p, withPaid(cost, col), 0, from === "mana" ? o : undefined));
+        const col = cols.length <= 1 ? cols[0] ?? (m[1] as Color) : await this.ask<Color>(p, { kind: "color", prompt: `${c.name}:混成マナをどちらの色で払いますか?(払った色で効果が変わる)`, options: cols, source: o });
+        o.paidColor = cols.includes(col) ? col : cols[0] ?? (m[1] as Color);
+        cost = withPaid(cost, o.paidColor);
+        this.addLog(`${c.name}の混成マナを${COLOR_JA[o.paidColor]}で払う`, p);
+      }
+    }
     const exclude = from === "mana" ? o : undefined;
     let x = 0;
     if (cost.includes("{X}")) {
@@ -1998,7 +2192,28 @@ export class Game {
       for (const ab of this.activeAbilities(o)) if (ab.a === "trigger" && ab.on === on) this.pendingTriggers.push({ obj: o, ability: ab, controller: o.controller });
   }
 
+  /** 伝説:同じ名前の伝説が2つ以上あれば、どれを残すか選ぶ(第16a弾から) */
+  private legendPending = false;
+  private async resolveLegends() {
+    if (!this.legendPending) return;
+    this.legendPending = false;
+    for (const [i, pl] of this.players.entries()) {
+      const groups = new Map<string, Obj[]>();
+      for (const o of pl.battlefield) if (isLegendary(o.card)) groups.set(o.card.name, [...(groups.get(o.card.name) ?? []), o]);
+      for (const [name, list] of groups) {
+        if (list.length < 2) continue;
+        // 新しいものを先に並べる(CPUは新しいほうを残す)
+        const opts = [...list].reverse();
+        const [keep] = await this.askCards(i as PlayerId, `伝説:${name}は1つしか置けません。残すものを選んでください`, opts, 1, "legend");
+        for (const o of list) if (o !== (keep ?? opts[0])) this.move(o, "graveyard");
+        this.addLog(`伝説:${name}を1つ残し、ほかを墓地に置いた`, i as PlayerId);
+      }
+    }
+    this.checkState();
+  }
+
   private async flushTriggers() {
+    await this.resolveLegends();
     await this.processTrapEvents();
     while (this.pendingTriggers.length || this.trapEvents.length) {
       await this.processTrapEvents();
@@ -2009,6 +2224,8 @@ export class Game {
       for (const t of list) {
         const ab = t.ability;
         if (ab.if && !this.cond(ab.if, t.controller, t.obj.burned, t.obj.kicked, t.obj)) continue;
+        // 陰謀が働くとき、《連剣の鉄茨》をコストを払わずに唱えてもよい(第16a弾)
+        if (ab.on === "anyEndStep" && ab.if === "intrigue") await this.offerFreeOnIntrigue(t.controller);
         // 「1ターンに1回」の誘発
         if (ab.oncePerTurn) {
           const key = `${t.obj.uid}:${abilitiesOf(t.obj.card).indexOf(ab)}`;
@@ -2128,6 +2345,7 @@ export class Game {
   /** ライフを得る(ライフを得たときの誘発つき) */
   gainLife(p: PlayerId, n: number) {
     if (n <= 0) return;
+    this.faithLife(p, this.players[p].life, this.players[p].life + n);
     this.players[p].life += n;
     this.players[p].lifeGainedThisTurn = (this.players[p].lifeGainedThisTurn ?? 0) + n;
     this.players[p].gainSeq = ++this.evSeq;
@@ -2215,6 +2433,7 @@ export class Game {
       o.damage += n;
       if (source && this.hasKw(source, "接死")) o.deathtouched = true;
     } else if (target.kind === "player") {
+      this.faithLife(target.id, this.players[target.id].life, this.players[target.id].life - n);
       this.players[target.id].life -= n;
       if (!combat) this.addLog(`${srcName}が${this.players[target.id].name}に${n}点のダメージ`, source?.controller ?? null);
     } else if (target.kind === "obj") {
@@ -2496,7 +2715,7 @@ export class Game {
       const i = arr.indexOf(base);
       if (i >= 0) arr.splice(i, 1);
     }
-    if (isCreatureCard(base.card)) this.players[base.controller].lostThisTurn++;
+    if (isCreatureCard(base.card)) this.noteLost(base.controller);
     const below = base.under ?? [];
     base.under = [];
     for (const u of [base, ...below]) {
@@ -3066,6 +3285,7 @@ export class Game {
       case "loseLife": {
         const who = e.who === "opp" ? opp : p;
         const n = this.amount(e.n, ctx);
+        this.faithLife(who, this.players[who].life, this.players[who].life - n);
         this.players[who].life -= n;
         this.addLog(`${this.players[who].name}は${n}点のライフを失った`, p);
         break;
@@ -3401,6 +3621,247 @@ export class Game {
           o.sick = true;
           this.entered(o);
         }
+        break;
+      }
+      // ---------------------------------------------------------- 第16a弾
+      case "stellaReveal": {
+        const top = pl.library.slice(0, e.n);
+        const ones = top.filter((o) => matchFilter(o.card, { orig11: true }));
+        this.addLog(`${src.card.name}:ライブラリーの上から${top.length}枚をめくった(${top.map((o) => o.card.name).join("、")})`, p);
+        for (const o of ones) {
+          this.move(o, "battlefield", { controller: p });
+          this.entered(o);
+        }
+        for (const o of top) if (!ones.includes(o) && o.zone === "library") {
+          pl.library.splice(pl.library.indexOf(o), 1);
+          pl.library.push(o);
+        }
+        const x = ones.length;
+        if (src.zone === "battlefield") {
+          src.counters += x;
+          src.stellaX = x;
+        }
+        this.addLog(`${src.card.name}:元々1/1を${x}体出した。+1/+1カウンター${x}個、ほかの元々1/1は+${x}/+${x}`, p);
+        break;
+      }
+      case "grantAssassin": {
+        const cs = pl.hand.filter((o) => isCreatureCard(o.card));
+        if (!cs.length) break;
+        const [o] = await this.askCards(p, "刺客を与える手札のクリーチャーを選んでください", cs, 1, "pick");
+        if (!o) break;
+        if (abilityOf(o.card, "assassin") || o.grantedAssassin) {
+          o.assassin = (o.assassin ?? 0) + 2;
+          this.addLog(`${o.card.name}はすでに刺客を持つので、刺客が2溜まった`, p);
+        } else {
+          o.grantedAssassin = true;
+          this.addLog(`手札の${o.card.name}に刺客を与えた`, p);
+        }
+        break;
+      }
+      case "handBuff": {
+        const cs = pl.hand.filter((o) => isCreatureCard(o.card));
+        if (!cs.length) break;
+        const [o] = await this.askCards(p, "強化する手札のクリーチャーを選んでください", cs, 1, "pick");
+        if (!o) break;
+        o.handBuff = { p: (o.handBuff?.p ?? 0) + e.p, kw: [...(o.handBuff?.kw ?? []), ...(e.kw ?? [])] };
+        this.addLog(`手札の${o.card.name}は、戦場に出たとき+${e.p}/+0${e.kw?.length ? `と${e.kw.join("・")}` : ""}を得る`, p);
+        break;
+      }
+      case "tuckUnder": {
+        const es = pl.hand.filter((o) => o.card.type.includes("エンチャント"));
+        if (!es.length || src.zone !== "battlefield") break;
+        const [o] = await this.askCards(p, `${src.card.name}の下に重ねる手札のエンチャントを選んでください`, es, 1, "pick");
+        if (!o) break;
+        pl.hand.splice(pl.hand.indexOf(o), 1);
+        o.zone = "under";
+        (src.under ??= []).push(o);
+        this.addLog(`手札の${o.card.name}を${src.card.name}の下に重ねた`, p);
+        break;
+      }
+      case "eachBounceOwn": {
+        for (const q of [p, opp] as PlayerId[]) {
+          const ps = this.players[q].battlefield.filter((o) => !o.token || true);
+          if (!ps.length) continue;
+          const [o] = await this.askCards(q, "手札に戻す自分のパーマネントを選んでください", ps, 1, "pick");
+          if (o) {
+            this.move(o, "hand");
+            this.addLog(`${this.players[q].name}は${o.card.name}を手札に戻した`, q);
+          }
+        }
+        break;
+      }
+      case "renken": {
+        const gold = e.card as Card;
+        const ench = [...pl.battlefield, ...this.players[opp].battlefield].filter((o) => o.card.type.includes("エンチャント"));
+        const best = ench.reduce((m, o) => Math.max(m, manaValue(o.card.cost)), 0);
+        let limit = -1;
+        const i1 = ench.length ? await this.ask<number>(p, { kind: "mode", prompt: `${src.card.name}:1つ目`, options: [`場のエンチャントを手札に戻す(${best + 1})`, "《黄金》を2個生成する(2)"], source: src, modes: [] }) : 1;
+        if (i1 === 0 && ench.length) {
+          const [o] = await this.askCards(p, "手札に戻すエンチャントを選んでください", [...ench].sort((a, b) => Number(b.controller !== p) - Number(a.controller !== p) || manaValue(b.card.cost) - manaValue(a.card.cost)), 1, "pick");
+          if (o) {
+            limit = manaValue(o.card.cost);
+            this.move(o, "hand");
+            this.addLog(`${o.card.name}を手札に戻した`, p);
+          }
+        } else for (let k = 0; k < 2; k++) this.putPile(gold, p);
+        const victims = this.players[opp].battlefield.filter((o) => manaValue(o.card.cost) <= limit);
+        const i2 = victims.length ? await this.ask<number>(p, { kind: "mode", prompt: `${src.card.name}:2つ目`, options: [`マナ総量${limit}以下のパーマネントを破壊する(3)`, "《黄金》を1個生成する(1)"], source: src, modes: [] }) : 1;
+        if (i2 === 0 && victims.length) {
+          const [o] = await this.askCards(p, "破壊するパーマネントを選んでください", victims, 1, "pick");
+          if (o) this.destroy(o);
+        } else this.putPile(gold, p);
+        this.putPile(gold, p);
+        this.addLog(`${src.card.name}:最後に《黄金》を1個生成した`, p);
+        break;
+      }
+      case "millBoth": {
+        for (const q of [p, opp] as PlayerId[]) {
+          const lib = this.players[q].library;
+          const n = Math.min(e.n, lib.length);
+          for (let k = 0; k < n; k++) this.move(lib[0], "graveyard");
+          this.addLog(`${this.players[q].name}のライブラリーの上から${n}枚を墓地に置いた(切削)`, p);
+        }
+        break;
+      }
+      case "willOfBalance": {
+        const cs = pl.library.filter((o) => o.card.name !== "均衡の意志");
+        if (cs.length) {
+          const o = cs[Math.floor(this.rng() * cs.length)];
+          this.move(o, "hand");
+          this.addLog(`均衡の意志:ライブラリーから${o.card.name}を手札に加えた`, p);
+        } else if (pl.graveyard.length) {
+          const [o] = await this.askCards(p, "均衡の意志:墓地から手札に加えるカードを選んでください", pl.graveyard, 1, "pick");
+          if (o) this.move(o, "hand");
+        }
+        break;
+      }
+      case "nudge13": {
+        const d = 13 - pl.life;
+        if (d > 0) this.gainLife(p, Math.min(e.n, d));
+        else if (d < 0) {
+          const n = Math.min(e.n, -d);
+          this.faithLife(p, pl.life, pl.life - n);
+          pl.life -= n;
+          this.addLog(`${pl.name}は${n}点のライフを失った(13に近づける)`, p);
+        }
+        break;
+      }
+      case "codePick": {
+        const groups = e.groups as { label: string; cards: Card[] }[];
+        for (const gr of groups) {
+          const idx = await this.ask<number>(p, { kind: "mode", prompt: `${src.card.name}:Code: ${gr.label} から1枚選んで手札に生成します`, options: gr.cards.map((c) => c.name), source: src, modes: [] });
+          const c = gr.cards[Math.max(0, Math.min(gr.cards.length - 1, Math.floor(idx ?? 0)))];
+          const o = this.newObj(c, p, "hand");
+          o.generated = true;
+          pl.hand.push(o);
+          this.addLog(`《${c.name}》を手札に生成した`, p);
+        }
+        break;
+      }
+      case "analyzerReduce": {
+        const kinds = new Set<string>();
+        for (const m of pl.mana) {
+          const cs = manaColors(m);
+          if (!cs.length) kinds.add("C");
+          for (const c of cs) kinds.add(c);
+        }
+        const k = Math.min(3, Math.floor(kinds.size / 2));
+        for (let i = 0; i < k && pl.hand.length; i++) {
+          const [o] = await this.askCards(p, `${src.card.name}:コストを{1}少なくする手札のカードを選んでください(${i + 1}/${k})`, [...pl.hand].sort((a, b) => manaValue(b.card.cost) - manaValue(a.card.cost)), 1, "pick");
+          if (o) o.handDiscount = (o.handDiscount ?? 0) + 1;
+        }
+        if (k) this.addLog(`${src.card.name}:マナの種類が${kinds.size}つ。手札のカードのコストを${k}つ少なくした`, p);
+        if (kinds.size >= 6) {
+          const ab = abilitiesOf(src.card).find((a) => a.a === "trigger" && a.on === "etb");
+          if (ab && ab.a === "trigger") await this.runEffects(ab.effects, ctx);
+        }
+        break;
+      }
+      case "analysisDraw": {
+        const n = this.count({ count: "analysisGrave" }, p) + 1;
+        const k = n <= 1 ? n : await this.ask<number>(p, { kind: "number", prompt: `分析対象:何枚引きますか?(${n}枚まで)`, min: 0, max: n });
+        this.draw(p, Math.max(0, Math.min(n, Math.floor(k))));
+        break;
+      }
+      case "copyEmulate": {
+        // コピーできるのはトークンのエミュレートだけ(アナライザー自身をコピーして、Codeを無限に生成できないように)
+        const es = this.creatures(p).filter((o) => o.token && matchFilter(o.card, { sub: "エミュレート" }));
+        if (!es.length) break;
+        const [o] = await this.askCards(p, "コピーするエミュレート(トークン)を選んでください", [...es].sort((a, b) => this.power(b) - this.power(a)), 1, "pick");
+        if (!o) break;
+        const t = this.newObj(o.card, p, "battlefield");
+        t.token = true;
+        t.tokenColors = o.tokenColors;
+        pl.battlefield.push(t);
+        t.sick = true;
+        this.entered(t);
+        this.addLog(`${o.card.name}のコピーを出した`, p);
+        break;
+      }
+      case "emulatesPump": {
+        for (const o of this.creatures(p)) if (matchFilter(o.card, { sub: "エミュレート" })) o.temp.push({ p: e.p, t: e.t, kw: e.kw ?? [] });
+        break;
+      }
+      case "counterUpTo": {
+        const limit = this.amount("X", ctx) + e.plus;
+        const t = ctx.item.targets[e.tg];
+        const it = t && t.kind === "stack" ? this.stack.find((x) => x.id === t.id) : undefined;
+        if (!it) break;
+        if (manaValue(it.obj.card.cost) > limit) {
+          this.addLog(`${it.obj.card.name}はマナ総量が${limit}より大きいので、打ち消せなかった`, p);
+          break;
+        }
+        await this.runEffect({ do: "counter", tg: e.tg } as Effect, ctx);
+        break;
+      }
+      case "prison": {
+        const types = ["クリーチャー", "インスタント", "ソーサリー", "エンチャント", "アーティファクト"];
+        const cnt = (t: string) => this.players[opp].hand.length ? types.indexOf(t) : 0;
+        void cnt;
+        const idx = await this.ask<number>(p, { kind: "mode", prompt: `${src.card.name}:対戦相手が次のターンの終わりまで使えないタイプを選んでください`, options: types.map((t) => `${t}(${t === "クリーチャー" ? 5 : t === "インスタント" ? 3 : 1})`), source: src, modes: [] });
+        const type = types[Math.max(0, Math.min(4, Math.floor(idx ?? 0)))];
+        this.players[opp].prison = { type, until: this.active === opp ? this.turn + 2 : this.turn + 1 };
+        this.addLog(`${src.card.name}:対戦相手は次のターンの終わりまで${type}を使えない`, p);
+        break;
+      }
+      case "handExile": {
+        const h = this.players[opp].hand;
+        this.addLog(`${src.card.name}:対戦相手の手札を見た(${h.map((o) => o.card.name).join("、") || "なし"})`, p);
+        if (!h.length) break;
+        const [o] = await this.askCards(p, "追放する対戦相手の手札のカードを選んでください", [...h].sort((a, b) => manaValue(b.card.cost) - manaValue(a.card.cost)), 1, "pick");
+        if (o) {
+          this.move(o, "exile");
+          this.addLog(`${o.card.name}を追放した`, p);
+        }
+        break;
+      }
+      case "violettaEtb": {
+        // 自身のパワーXだけ、自身と相手の全クリーチャーを-X/+0。パワー0になったものをタップし、その数だけ相手に1点
+        const x = Math.max(0, this.power(src));
+        const list = [src, ...this.creatures(opp)].filter((o) => o.zone === "battlefield");
+        for (const o of list) o.temp.push({ p: -x, t: 0, kw: [] });
+        let n = 0;
+        for (const o of list)
+          if (this.power(o) <= 0) {
+            o.tapped = true;
+            n++;
+          }
+        this.addLog(`${src.card.name}:パワー${x}。-${x}/+0で${n}体がパワー0になってタップした`, p);
+        if (n) this.dealDamage(src, { kind: "player", id: opp }, n, false);
+        await this.runEffect({ do: "handBuff", p: 1, kw: ["絆魂"] } as Effect, ctx);
+        break;
+      }
+      case "returnSelf":
+        if (src.zone === "battlefield") {
+          this.move(src, "hand");
+          this.addLog(`${src.card.name}が手札に戻った`, p);
+        }
+        break;
+      case "sacOwn": {
+        const cs = this.creatures(p);
+        if (!cs.length) break;
+        const [o] = await this.askCards(p, "生け贄に捧げる自分のクリーチャーを選んでください", [...cs].sort((a, b) => this.power(a) - this.power(b)), 1, "sacCost");
+        if (o) this.sacrifice(o, p);
         break;
       }
       case "invest": {
@@ -3834,15 +4295,13 @@ export class Game {
       }
       if (this.checkLessons()) changed = true;
       // 伝説:同じ名前の伝説が2つ以上あれば、新しいものを残して墓地へ(第14弾)
+      // (どちらを残すかは、誘発を解決する前に選ぶ。resolveLegends)
       for (const p of this.players) {
-        const seen = new Map<string, Obj>();
-        for (const o of [...p.battlefield].reverse()) {
+        const seen = new Set<string>();
+        for (const o of p.battlefield) {
           if (!isLegendary(o.card)) continue;
-          if (seen.has(o.card.name)) {
-            this.addLog(`伝説:${o.card.name}は2つ並べられないので、古いほうが墓地に置かれた`, o.controller);
-            this.move(o, "graveyard");
-            changed = true;
-          } else seen.set(o.card.name, o);
+          if (seen.has(o.card.name)) this.legendPending = true;
+          seen.add(o.card.name);
         }
       }
       for (const p of this.players) {
@@ -3876,6 +4335,7 @@ export class Game {
     for (;;) {
       await this.flushTriggers();
       this.checkState();
+      await this.resolveLegends();
       let p = this.active;
       let passes = 0;
       while (passes < 2) {
@@ -4058,6 +4518,22 @@ export class Game {
   // ------------------------------------------------------------ ゲームの流れ
   async run(): Promise<PlayerId | null> {
     try {
+      // 第16a弾:ゲーム開始時(アナライザーの分析対象、信仰の記録)
+      for (const [i, pl] of this.players.entries()) {
+        const all = [...pl.library, ...pl.extra];
+        const an = all.map((o) => abilityOf(o.card, "analyzer")).find((a) => a);
+        if (an) {
+          pl.analyzer = true;
+          (pl.faith ??= {})["アナライザー"] = 0;
+          for (let k = 0; k < an.n; k++) {
+            const g = this.newObj(an.card as Card, i as PlayerId, "library");
+            g.generated = true;
+            pl.library.push(g);
+          }
+          this.addLog(`アナライザー:ライブラリーに《分析対象》を${an.n}枚生成した`, i as PlayerId);
+        }
+        if (all.some((o) => abilityOf(o.card, "faithCost")?.faith === "リーヴラ")) (pl.faith ??= {})["リーヴラ"] = 0;
+      }
       for (const p of this.players) this.shuffle(p.library);
       for (const id of [0, 1] as PlayerId[]) {
         this.draw(id, 6);
@@ -4148,6 +4624,8 @@ export class Game {
       }
     }
     this.queueTriggers("endStep", this.sources(p));
+    // 陰謀 ― ターン終了時に(どちらのターンでも)
+    for (const q of [p, this.other(p)] as PlayerId[]) this.queueTriggers("anyEndStep", this.sources(q));
     // 百鬼顕現で出たクリーチャー:次の対戦相手のターンの終了時に墓地に置かれる
     for (const q of [0, 1] as PlayerId[])
       for (const o of [...this.players[q].battlefield])
@@ -4163,6 +4641,15 @@ export class Game {
         this.enterBattlefield(o, q);
         for (const c of this.creatures(q)) c.perm.push({ p: 2, t: 1, kw: [] });
         this.addLog(`百鬼夜行:${this.players[q].name}のクリーチャーは+2/+1`, q);
+      }
+    }
+    // 信仰(アナライザー):ライブラリーに分析対象がなく、手札が13枚なら+1。3で勝利
+    if (pl.analyzer && !pl.library.some((o) => o.card.name === "分析対象") && pl.hand.length === 13) {
+      this.addFaith(p, "アナライザー");
+      if ((pl.faith?.["アナライザー"] ?? 0) >= 3) {
+        this.winner = p;
+        this.addLog(`信仰(アナライザー)が3になった。${pl.name}の勝ち`, p);
+        throw new GameOver(p);
       }
     }
     // 加護《死者の書》:あなたのターンの終了時、表向きの罠が3つ以上あるならカードを1枚引く
