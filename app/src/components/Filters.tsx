@@ -78,10 +78,19 @@ export function Filters({ archetypes, value: f, onChange, shown, total }: Props)
           type="button"
           className="chip chip-multi"
           aria-pressed={f.multi}
-          onClick={() => set({ multi: !f.multi, colorless: false })}
+          onClick={() => set({ multi: !f.multi, colorless: false, mono: false })}
         >
           <span className="pip pip-M" aria-hidden="true" />
           多色
+        </button>
+        <button
+          type="button"
+          className="chip"
+          aria-pressed={f.mono}
+          title="選んだ色の単色カードだけを表示する(多色カードを含めない)"
+          onClick={() => set({ mono: !f.mono, multi: false })}
+        >
+          単色だけ
         </button>
       </fieldset>
 

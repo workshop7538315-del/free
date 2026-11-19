@@ -12,6 +12,8 @@ export type FilterState = {
   colorless: boolean;
   /** 多色を選んでいるか */
   multi: boolean;
+  /** 単色だけ(色を選んだとき、多色カードを含めない) */
+  mono: boolean;
   /** 多色を選んで色も指定したとき:その色をすべて含む / ちょうどその色 */
   multiMatch: "include" | "exact";
   /** カードタイプ(複数選べる。空ならすべて) */
@@ -34,6 +36,7 @@ export const initialFilters = (): FilterState => ({
   colors: [],
   colorless: false,
   multi: false,
+  mono: false,
   multiMatch: "include",
   types: [],
   keyword: "",
@@ -59,6 +62,7 @@ export function isFiltering(f: FilterState): boolean {
     f.colors.length > 0 ||
     f.colorless ||
     f.multi ||
+    f.mono ||
     f.types.length > 0 ||
     !!f.keyword ||
     !!f.archetype ||
@@ -72,7 +76,8 @@ export function isFiltering(f: FilterState): boolean {
 /**
  * 色の判定。
  * - 何も選んでいない:すべて
- * - 多色を選んでいない:選んだ単色・欠色のカードだけ
+ * - 多色を選んでいない:選んだ色の単色カードと、選んだ色を1つでも含む多色カード(と、選んでいれば欠色)
+ * - 単色だけ:選んだ単色・欠色のカードだけ(色を選んでいなければ、単色と欠色のカードすべて)
  * - 多色だけ選んだ:多色カードだけ
  * - 多色+色:その色を含む(またはちょうどその色の)多色カード
  */
@@ -84,9 +89,11 @@ function matchColor(card: Card, f: FilterState): boolean {
     const hasAll = f.colors.every((c) => colors.includes(c));
     return f.multiMatch === "include" ? hasAll : hasAll && colors.length === f.colors.length;
   }
+  if (f.mono && colors.length >= 2) return false;
   if (f.colors.length === 0 && !f.colorless) return true;
   const cat = colorCategory(card.cost);
   if (cat === "C") return f.colorless;
+  if (!f.mono && colors.length >= 2) return colors.some((c) => f.colors.includes(c));
   if (cat === "M") return false;
   return f.colors.includes(cat);
 }
@@ -120,6 +127,7 @@ export function filterParts(f: FilterState, packName: (id: string) => string): s
     ...f.colors.map((c) => COLOR_JA[c]),
     f.colorless ? "欠色" : "",
     f.multi ? (f.multiMatch === "exact" && f.colors.length ? "ちょうど多色" : "多色") : "",
+    f.mono ? "単色だけ" : "",
     ...f.types,
     f.keyword,
     f.archetype,
